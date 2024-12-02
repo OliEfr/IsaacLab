@@ -203,7 +203,7 @@ class RigidObjectData:
 
         This quantity is the angular velocity of the root rigid body's center of mass frame.
         """
-        return self.root_state_w[:, 10:13]
+        return self.root_state_w[:, 10:13] # [pos, quat, lin_vel, ang_vel]
 
     @property
     def root_lin_vel_b(self) -> torch.Tensor:
