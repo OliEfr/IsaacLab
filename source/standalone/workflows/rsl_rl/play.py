@@ -41,6 +41,7 @@ simulation_app = app_launcher.app
 import gymnasium as gym
 import os
 import torch
+import time
 
 from rsl_rl.runners import OnPolicyRunner
 
@@ -56,6 +57,7 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     export_policy_as_onnx,
 )
 
+from rsl_rl.storage import ObservationHistoryStorage
 
 def main():
     """Play with RSL-RL agent."""
@@ -110,17 +112,35 @@ def main():
         ppo_runner.alg.actor_critic, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
     )
 
+    # thats how to import the model
+    policy = torch.jit.load(os.path.join(export_model_dir, "policy.pt")).cuda()
+
     # reset environment
     obs, _ = env.get_observations()
+    obs_history_storage = ObservationHistoryStorage(
+        num_envs=args_cli.num_envs,
+        num_obs=obs.shape[1],
+        max_length=5,
+        device=env.unwrapped.device,
+    )
+
+    obs_history_storage.add(obs)
+    obs_history = obs_history_storage.get()
+
     timestep = 0
     # simulate environment
     while simulation_app.is_running():
         # run everything in inference mode
         with torch.inference_mode():
             # agent stepping
-            actions = policy(obs)
+            actions = policy(obs_history)
             # env stepping
-            obs, _, _, _ = env.step(actions)
+            obs, _, dones, _ = env.step(actions)
+            time.sleep(0.015)
+            if dones.any():
+                obs_history_storage.reset(dones)
+            obs_history_storage.add(obs)
+            obs_history = obs_history_storage.get()
         if args_cli.video:
             timestep += 1
             # Exit the play loop after recording one video

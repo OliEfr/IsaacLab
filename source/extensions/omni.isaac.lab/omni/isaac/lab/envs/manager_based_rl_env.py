@@ -89,7 +89,6 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
     """
     Properties.
     """
-
     @property
     def max_episode_length_s(self) -> float:
         """Maximum episode length in seconds."""

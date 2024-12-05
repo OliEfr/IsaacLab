@@ -372,6 +372,15 @@ class ArticulationData:
         This quantity is the orientation of the actor frame of the articulation root.
         """
         return self.root_state_w[:, 3:7]
+    
+    @property
+    def root_euler_w(self) -> torch.Tensor:
+        """Root orientation rpy in simulation world frame. Shape is (num_instances, 3).
+
+        This quantity is the orientation of the actor frame of the root rigid body.
+        """
+        r, p, y = math_utils.euler_xyz_from_quat(self.root_quat_w)
+        return torch.stack((r, p, y), dim=-1)
 
     @property
     def root_vel_w(self) -> torch.Tensor:

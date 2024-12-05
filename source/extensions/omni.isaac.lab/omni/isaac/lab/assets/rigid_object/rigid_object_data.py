@@ -179,7 +179,16 @@ class RigidObjectData:
 
         This quantity is the orientation of the actor frame of the root rigid body.
         """
-        return self.root_state_w[:, 3:7]
+        return self.root_state_w[:, 3:7] 
+    
+    @property
+    def root_euler_w(self) -> torch.Tensor:
+        """Root orientation rpy in simulation world frame. Shape is (num_instances, 3).
+
+        This quantity is the orientation of the actor frame of the root rigid body.
+        """
+        r, p, y = math_utils.euler_xyz_from_quat(self.root_quat_w)
+        return torch.stack((r, p, y), dim=-1)
 
     @property
     def root_vel_w(self) -> torch.Tensor:
@@ -203,7 +212,7 @@ class RigidObjectData:
 
         This quantity is the angular velocity of the root rigid body's center of mass frame.
         """
-        return self.root_state_w[:, 10:13]
+        return self.root_state_w[:, 10:13] # [pos, quat, lin_vel, ang_vel]
 
     @property
     def root_lin_vel_b(self) -> torch.Tensor:
