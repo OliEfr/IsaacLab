@@ -371,3 +371,106 @@ class ActionManager(ManagerBase):
             # add term name and parameters
             self._term_names.append(term_name)
             self._terms[term_name] = term
+
+
+class LatentActionManager(ActionManager):
+
+    def __init__(self, cfg: object, env: ManagerBasedEnv):
+        self.robot_action_dim = 12
+        self.residual_action_dim = self.robot_action_dim
+        self.latent_action_dim = 4
+
+        super().__init__(cfg, env)
+
+        # action buffers
+        self._action = torch.zeros(
+            (self.num_envs, self.robot_action_dim), device=self.device
+        )
+        self._prev_action = torch.zeros_like(self._action)
+
+        self._residual_action = torch.zeros(
+            (self.num_envs, self.residual_action_dim), device=self.device
+        )
+        self._prev_residual_action = torch.zeros_like(
+            self._residual_action
+        )
+        self._latent_action = torch.zeros(
+            (self.num_envs, self.latent_action_dim), device=self.device
+        )
+        self._prev_latent_action = torch.zeros_like(
+            self._latent_action
+        )
+
+        self.projector = torch.nn.Linear(
+            self.latent_action_dim, self.robot_action_dim, device=self.device
+        )
+
+    @property
+    def action_term_dim(self) -> list[int]:
+        """Shape of each action term."""
+        return [self.residual_action_dim + self.latent_action_dim] # This is queried by the policy to get output dimension. Its seems save to use this variable
+
+    def process_action(self, residual_and_latent_action: torch.Tensor):
+        """Processes the actions sent to the environment.
+
+        Note:
+            This function should be called once per environment step.
+
+        Args:
+            action: The actions to process.
+        """
+        assert residual_and_latent_action.shape[1] == self.total_action_dim
+
+        self._residual_action[:] = residual_and_latent_action[
+            :, : self.residual_action_dim
+        ].to(self.device)
+        self._prev_residual_action[:] = self.residual_action
+
+        self._latent_action[:] = residual_and_latent_action[
+            :, self.residual_action_dim :
+        ].to(self.device)
+        self._prev_latent_action[:] = self.latent_action
+
+        projected_action = self.projector(self.latent_action)
+        assert projected_action.shape == self.residual_action.shape
+
+        action = projected_action + self.residual_action
+
+        self._action[:] = action.to(self.device)
+        self._prev_action[:] = self.action
+
+        # split the actions and apply to each tensor
+        idx = 0
+        for term in self._terms.values():
+            term_actions = action[:, idx : idx + term.action_dim]
+            term.process_actions(term_actions) # does rescaling, offset of joint targets
+            idx += term.action_dim
+
+    def apply_action(self) -> None:
+        """Applies the actions to the environment/simulation.
+
+        Note:
+            This should be called at every simulation step.
+        """
+        for term in self._terms.values():
+            term.apply_actions() # sets joint pos targets
+
+    @property
+    def latent_action(self) -> torch.Tensor:
+        """The actions sent to the environment. Shape is (num_envs, total_action_dim)."""
+        return self._latent_action
+
+    @property
+    def prev_latent_action(self) -> torch.Tensor:
+        """The previous actions sent to the environment. Shape is (num_envs, total_action_dim)."""
+        return self._prev_latent_action
+
+    @property
+    def residual_action(self) -> torch.Tensor:
+        """The actions sent to the environment. Shape is (num_envs, total_action_dim)."""
+        return self._residual_action
+
+    @property
+    def prev_residual_action(self) -> torch.Tensor:
+        """The previous actions sent to the environment. Shape is (num_envs, total_action_dim)."""
+        return self._prev_residual_action

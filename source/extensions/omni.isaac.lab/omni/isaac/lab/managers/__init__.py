@@ -10,7 +10,7 @@ and observations. Each manager implements a specific functionality for the envir
 designed to be modular and can be easily extended to support new functionality.
 """
 
-from .action_manager import ActionManager, ActionTerm
+from .action_manager import ActionManager, ActionTerm, LatentActionManager
 from .command_manager import CommandManager, CommandTerm
 from .curriculum_manager import CurriculumManager
 from .event_manager import EventManager
