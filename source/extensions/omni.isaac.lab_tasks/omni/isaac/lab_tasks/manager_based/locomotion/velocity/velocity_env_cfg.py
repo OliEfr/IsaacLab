@@ -6,6 +6,8 @@
 import math
 from dataclasses import MISSING
 
+from omni.isaac.lab.envs.mdp.rewards import joint_deviation_l1, joint_pos_limits
+from omni.isaac.lab.envs.mdp.terminations import bad_orientation, root_height_below_minimum
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg
 from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
@@ -110,6 +112,8 @@ class ActionsCfg:
     """Action specifications for the MDP."""
 
     joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+
+    # joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=10.0) # torque control; also change Go2 config actuator damping and stiffness to 0.0!
 
 
 @configclass
@@ -253,6 +257,14 @@ class RewardsCfg:
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
     dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
 
+    # joint_deviation_l1 = RewTerm(
+    #     func=joint_deviation_l1,
+    #     weight=-100.0,
+    # )
+    # joint_pos_limits = RewTerm(
+    #     func=joint_pos_limits,
+    #     weight=-100.0,
+    # )
 
 @configclass
 class TerminationsCfg:
@@ -263,7 +275,18 @@ class TerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
     )
-
+    # joint_pos_out_of_limits = DoneTerm(
+    #     func=mdp.joint_pos_out_of_limit,
+    #     params={"asset_cfg": SceneEntityCfg("robot")}
+    # )
+    # root_height_below_minimum = DoneTerm(
+    #     func=root_height_below_minimum,
+    #     params={"asset_cfg": SceneEntityCfg("robot"), "minimum_height": 0.20}
+    # )
+    # bad_orientation = DoneTerm(
+    #     func=bad_orientation,
+    #     params={"asset_cfg": SceneEntityCfg("robot"), "limit_angle": 0.4},
+    # )
 
 @configclass
 class CurriculumCfg:
