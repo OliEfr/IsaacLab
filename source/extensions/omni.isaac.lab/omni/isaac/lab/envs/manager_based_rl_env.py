@@ -84,6 +84,8 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # -- set the framerate of the gym video recorder wrapper so that the playback speed of the produced video matches the simulation
         self.metadata["render_fps"] = 1 / self.step_dt
 
+        self.reset_buf = self.termination_manager.compute() # required access in action_manager
+
         print("[INFO]: Completed setting up the environment...")
 
     """

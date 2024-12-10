@@ -27,6 +27,9 @@ class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
         # no terrain curriculum
         self.curriculum.terrain_levels = None
 
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
+
 
 class UnitreeGo2FlatEnvCfg_PLAY(UnitreeGo2FlatEnvCfg):
     def __post_init__(self) -> None:

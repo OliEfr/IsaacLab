@@ -1,0 +1,31 @@
+JOINT_UNITREE_TO_ISAAC_LAB_MAPPING:
+  [3, 0, 9, 6, 4, 1, 10, 7, 5, 2, 11, 8]
+JOINT_ISAAC_LAB_TO_UNITREE_MAPPING: [
+    1,
+    5,
+    9,
+    0,
+    4,
+    8,
+    3,
+    7,
+    11,
+    2,
+    6,
+    10,
+  ] # VERIFIED IN SIMULATION
+DEFAULT_JOINT_POS_ISAAC_LAB:
+  [
+    0.1000,
+    -0.1000,
+    0.1000,
+    -0.1000,
+    0.8000,
+    0.8000,
+    1.0000,
+    1.0000,
+    -1.5000,
+    -1.5000,
+    -1.5000,
+    -1.5000,
+  ]
