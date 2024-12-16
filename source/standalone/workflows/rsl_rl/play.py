@@ -108,9 +108,9 @@ def main():
     export_policy_as_jit(
         ppo_runner.alg.actor_critic, ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.pt"
     )
-    export_policy_as_onnx(
-        ppo_runner.alg.actor_critic, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
-    )
+    # export_policy_as_onnx(
+    #     ppo_runner.alg.actor_critic, normalizer=ppo_runner.obs_normalizer, path=export_model_dir, filename="policy.onnx"
+    # ) # doesnt work for current actor_critic model
 
     # thats how to import the model
     policy = torch.jit.load(os.path.join(export_model_dir, "policy.pt")).cuda()
@@ -127,25 +127,38 @@ def main():
     obs_history_storage.add(obs)
     obs_history = obs_history_storage.get()
 
+    simulated_step_time = env.unwrapped.step_dt  
+
     timestep = 0
     # simulate environment
     while simulation_app.is_running():
-        # run everything in inference mode
+        # Record the start time of the current loop
+        current_time = time.time()
+
+        # Run everything in inference mode
         with torch.inference_mode():
-            # agent stepping
+            # Agent stepping
             actions = policy(obs_history)
-            # env stepping
+            # Environment stepping
             obs, _, dones, _ = env.step(actions)
-            time.sleep(0.1)
             if dones.any():
                 obs_history_storage.reset(dones)
             obs_history_storage.add(obs)
             obs_history = obs_history_storage.get()
+
         if args_cli.video:
             timestep += 1
             # Exit the play loop after recording one video
             if timestep == args_cli.video_length:
                 break
+
+        # Calculate the elapsed real-world time for this loop iteration
+        elapsed_real_time = time.time() - current_time
+
+        # Sleep for the remaining time to match the simulated step time
+        sleep_time = simulated_step_time - elapsed_real_time
+        if sleep_time > 0:
+            time.sleep(sleep_time)
 
     # close the simulator
     env.close()
