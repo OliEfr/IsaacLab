@@ -11,7 +11,7 @@ from typing import Any
 import omni.isaac.core.utils.torch as torch_utils
 import omni.log
 
-from omni.isaac.lab.managers import LatentActionManager, EventManager, ObservationManager
+from omni.isaac.lab.managers import LegwiseLatentActionManager, EventManager, ObservationManager
 from omni.isaac.lab.scene import InteractiveScene
 from omni.isaac.lab.sim import SimulationContext
 from omni.isaac.lab.utils.timer import Timer
@@ -209,7 +209,7 @@ class ManagerBasedEnv:
         """
         # prepare the managers
         # -- action manager
-        self.action_manager = LatentActionManager(self.cfg.actions, self)
+        self.action_manager = LegwiseLatentActionManager(self.cfg.actions, self)
         print("[INFO] Action Manager: ", self.action_manager)
         # -- observation manager
         self.observation_manager = ObservationManager(self.cfg.observations, self)

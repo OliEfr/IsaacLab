@@ -240,6 +240,16 @@ def action_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using L2 squared kernel."""
     return torch.sum(torch.square(env.action_manager.action), dim=1)
 
+def residual_action_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the actions using L2 squared kernel."""
+    return torch.sum(torch.square(env.action_manager.action), dim=1)
+
+def freq_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    return torch.sum(torch.square(env.action_manager.freqs - env.action_manager.prev_freqs), dim=1)
+
+def amp_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    return torch.sum(torch.square(env.action_manager.amps - env.action_manager.prev_amps), dim=1)
+
 
 """
 Contact sensor.

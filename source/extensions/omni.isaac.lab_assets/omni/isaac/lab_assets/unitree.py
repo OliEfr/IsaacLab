@@ -149,11 +149,18 @@ UNITREE_GO2_CFG = ArticulationCfg(
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=False, solver_position_iteration_count=4, solver_velocity_iteration_count=0
+            enabled_self_collisions=False,
+            solver_position_iteration_count=4,
+            solver_velocity_iteration_count=0,
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.4),
+        # """Quaternion rotation (w, x, y, z) of the root in simulation world frame.
+        # Defaults to (1.0, 0.0, 0.0, 0.0).
+        # """
+        #rot =(-0.9424459338188171, -0.005245980806648731, 0.005978023167699575, 0.33426418900489807),
+        # default isaac lab
         joint_pos={
             ".*L_hip_joint": 0.1,
             ".*R_hip_joint": -0.1,
@@ -161,6 +168,36 @@ UNITREE_GO2_CFG = ArticulationCfg(
             "R[L,R]_thigh_joint": 1.0,
             ".*_calf_joint": -1.5,
         },
+        # default unitree (corresponds to unitree joint ordering)
+        # joint_pos={
+        #     "FL_hip_joint": 0.05573350936174393,
+        #     "FL_thigh_joint": 0.8409121036529541,
+        #     "FL_calf_joint": -1.483660101890564,
+        #     "FR_hip_joint": -0.05421962961554527,
+        #     "FR_thigh_joint": 0.7803268432617188,
+        #     "FR_calf_joint": -1.5061076879501343,
+        #     "RL_hip_joint": 0.07113967835903168,
+        #     "RL_thigh_joint": 0.7458655834197998,
+        #     "RL_calf_joint": -1.4758249521255493,
+        #     "RR_hip_joint": -0.0678393766283989,
+        #     "RR_thigh_joint": 0.8056031465530396,
+        #     "RR_calf_joint": -1.4828861951828003,
+        # },
+        # start gait cycle (corresponds to unitree joint ordering)
+        # joint_pos={
+        #     "FL_hip_joint": 0.0735669806599617,
+        #     "FL_thigh_joint": 0.9497295618057251,
+        #     "FL_calf_joint": -1.594949722290039,
+        #     "FR_hip_joint": -0.10308756679296494,
+        #     "FR_thigh_joint": 0.7876842617988586,
+        #     "FR_calf_joint": -1.908045768737793,
+        #     "RL_hip_joint": 0.008162420243024826,
+        #     "RL_thigh_joint": 0.7421717643737793,
+        #     "RL_calf_joint": -1.8416037559509277,
+        #     "RR_hip_joint": -0.0335349403321743,
+        #     "RR_thigh_joint": 0.897495448589325,
+        #     "RR_calf_joint": -1.5823912620544434,
+        # },
         joint_vel={".*": 0.0},
     ),
     soft_joint_pos_limit_factor=0.9,

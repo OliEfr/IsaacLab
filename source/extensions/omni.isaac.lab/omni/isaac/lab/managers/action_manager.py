@@ -372,19 +372,23 @@ class ActionManager(ManagerBase):
             self._term_names.append(term_name)
             self._terms[term_name] = term
 
+
+torch.pi = torch.acos(torch.zeros(1)).item() * 2
 import yaml
+import matplotlib.pyplot as plt
 constants_path = "source/constants.yaml"
 with open(constants_path, "r") as file:
     constants = yaml.safe_load(file)
 JOINT_UNITREE_TO_ISAAC_LAB_MAPPING = constants["JOINT_UNITREE_TO_ISAAC_LAB_MAPPING"]
 JOINT_ISAAC_LAB_TO_UNITREE_MAPPING = constants["JOINT_ISAAC_LAB_TO_UNITREE_MAPPING"]
 
-class LatentActionManager(ActionManager):
+
+class LegwiseLatentActionManager(ActionManager):
 
     def __init__(self, cfg: object, env: ManagerBasedEnv):
         self.robot_action_dim = 12
         self.latent_action_dim = 1 + 4 * 2 # main freq, 4 legs with freq and amp each
-        self.residual_action_weight = 0.0
+        self.residual_action_weight = 0.1
 
         super().__init__(cfg, env)
 
@@ -409,28 +413,60 @@ class LatentActionManager(ActionManager):
 
         self.projector = torch.jit.load("expert_projectors/temporal_spatial_prior.pt").to(self.device)
 
-        self.mean_freq = None
+        self.live_plot = False
+        if self.live_plot:
+            plt.ion()
+            self._values_to_plot = {}
+            for i in range(4):
+                    self._values_to_plot.setdefault(f"leg_{i}_freq", [])
+                    self._values_to_plot.setdefault(f"leg_{i}_amp", [])
+                    self._values_to_plot.setdefault(f"leg_{i}_phase", [])
+                    self._values_to_plot.setdefault(f"main_freq", [])
+            self.figure, self.axs = plt.subplots(len(self._values_to_plot))
+            self.figure.set_size_inches(10, 5 * len(self._values_to_plot))
+            
+
+
+        self.has_freq = False
         if self.projector.get_frequency() is not None: # temporal prior
-            self.mean_freq = self.projector.get_frequency()
+
+            self.has_freq = True
+
+            _demo_freq = self.projector.get_frequency()
+            
+            self.mean_main_freq = 0.0
+
             self.mean_amp = 1.0
 
-            self.range_leg_freq = 0.0 # 0.3
-            self.range_main_freq = 0.0 # 1.0
-            self.range_amp = 0.0 # 0.3
+            self.range_main_freq = _demo_freq * 1.2 # 0.3 # 1.0
+            self.range_leg_freq = 0.3 # 0.3 # 0.3
+            self.range_amp = 0.3 # 0.2 # 0.3
 
             self.phases = torch.zeros((self.num_envs, 4), device=self.device) # phase for each leg
+            # sin cos phase for observations
+            self.sin_cos_phases = torch.cat(
+                (
+                    self.mean_amp * torch.sin(self.phases),
+                    self.mean_amp * torch.cos(self.phases),
+                ),
+                dim=1,
+            ) # sin cos phase for leg; required for observations
+            
+            self.one_hot_vector = torch.eye(4).repeat(self.num_envs, 1).to(self.device)
 
-            self.one_hot_vector = torch.tensor(torch.eye(4)).repeat(self.num_envs, 1).to(self.device)
+            # buffers
+            self._freqs = torch.zeros((self.num_envs, 4), device=self.device) # freq for each leg
+            self._prev_freqs = torch.zeros_like(self._freqs)
+            self._amps = torch.zeros((self.num_envs, 4), device=self.device) # amp for each leg
+            self._prev_amps = torch.zeros_like(self._amps)
 
-
-            torch.pi = torch.acos(torch.zeros(1)).item() * 2
         else:
             raise NotImplementedError("Only temporal prior is supported")
 
     @property
     def action_term_dim(self) -> list[int]:
         """Shape of each action term."""
-        return [self.robot_action_dim + self.latent_action_dim] # This is queried by the policy to get output dimension. Its seems save to use this variable
+        return [self.robot_action_dim + self.latent_action_dim] # This is queried by the policy to get output dimension. Its seems save to modify this variable.
 
     def process_action(self, residual_and_latent_action: torch.Tensor):
         """Processes the actions sent to the environment.
@@ -441,44 +477,78 @@ class LatentActionManager(ActionManager):
         Args:
             action: The actions to process.
         """
+        self._prev_action[:] = self.action
+        self._prev_freqs = self.freqs
+        self._prev_amps = self.amps
+
         assert residual_and_latent_action.shape[1] == self.total_action_dim
 
-        # TODO possibly clip actions [-1,1]
+        # clip actions [-1,1]
         residual_and_latent_action = torch.clamp(residual_and_latent_action, -1.0, 1.0)
 
-        # get residual actions (should be same for all projectors)
+        # get residual actions (should be same for all projectors); these are the first 12 actions
         self._residual_action[:] = residual_and_latent_action[
             :, : self.robot_action_dim
         ].to(self.device)
         self._prev_residual_action[:] = self.residual_action
 
+        # latent actions are remaining actions
         self._latent_action[:] = residual_and_latent_action[
             :, self.robot_action_dim :
         ].to(self.device)
         self._prev_latent_action[:] = self.latent_action
 
         # get projected actions
-        if self.mean_freq is not None:  # temporal prior
+        if self.has_freq:  # temporal prior
+
             main_freq = (
-                self.latent_action[:, 0] * self.range_main_freq
-                + self.mean_freq
+                self.latent_action[:, 0] * self.range_main_freq + self.mean_main_freq
             )
             # for each leg we have two parameters: freq and amp
             n = (self.latent_action.shape[1] - 1) // 2
-            assert n == 4 # number of legs
-            _params = self.latent_action[:, 1 :].reshape(-1, 2, n)
+            assert n == 4  # number of legs
+            _params = self.latent_action[:, 1:].reshape(-1, 2, n)
             amps = _params[:, 0] * self.range_amp + self.mean_amp
             leg_freqs = _params[:, 1] * self.range_leg_freq
 
-            self.phases = self.phases + self._env.step_dt * 2 * torch.pi * (main_freq.unsqueeze(1) + leg_freqs)
+            self._freqs = main_freq.unsqueeze(1) + leg_freqs
+            self._amps = amps
 
-            # reset phases for envs where episode length is 0
+            self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self.freqs
+
+            if self.live_plot:
+                self._values_to_plot.setdefault(f"main_freq", []).append(main_freq[0].cpu().numpy())
+                for i in range(self._freqs.shape[1]): # for each leg
+                    self._values_to_plot.setdefault(f"leg_{i}_freq", []).append(self.freqs[0][i].cpu().numpy())
+                    self._values_to_plot.setdefault(f"leg_{i}_amp", []).append(amps[0][i].cpu().numpy())
+                    self._values_to_plot.setdefault(f"leg_{i}_phase", []).append(self.phases[0][i].cpu().numpy())
+                   
+
+                for i, (key, value) in enumerate(self._values_to_plot.items()):
+                    self.axs[i].clear()
+                    self.axs[i].plot(value)
+                    self.axs[i].set_title(key)
+                
+                plt.pause(0.001)
+                plt.show()
+
+
+
+            # reset phases for envs where episode length is 0; possible not required, as its handled by reset method of this class
             self.phases[torch.where(self._env.episode_length_buf == 0, True, False)] = (
                 0.0
             )
 
-            sin_phase = amps * torch.sin(self.phases)
-            cos_phase = amps * torch.cos(self.phases)
+            sin_phase = self.amps * torch.sin(self.phases)
+            cos_phase = self.amps * torch.cos(self.phases)
+
+            # sin cos phase for observations
+            self.sin_cos_phases = torch.cat(
+                (sin_phase, cos_phase),
+                dim=1,
+            )
+
+            # sin cos phase for projector
             sin_cos_phase = torch.cat(
                 (sin_phase.flatten().unsqueeze(1), cos_phase.flatten().unsqueeze(1)),
                 dim=1,
@@ -500,40 +570,83 @@ class LatentActionManager(ActionManager):
         action = action[:, JOINT_UNITREE_TO_ISAAC_LAB_MAPPING]
 
         self._action[:] = action.to(self.device)
-        self._prev_action[:] = self.action
 
         # split the actions and apply to each tensor
         idx = 0
         for term in self._terms.values():
             term_actions = action[:, idx : idx + term.action_dim]
-            term.process_actions(term_actions) # does rescaling, offset of joint targets
+            term.process_actions(term_actions) # rescaling, offset
             idx += term.action_dim
 
-    def apply_action(self) -> None:
-        """Applies the actions to the environment/simulation.
 
-        Note:
-            This should be called at every simulation step.
+    def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
+        """Resets the action history.
+
+        Args:
+            env_ids: The environment ids. Defaults to None, in which case
+                all environments are considered.
+
+        Returns:
+            An empty dictionary.
         """
+        # resolve environment ids
+        if env_ids is None:
+            env_ids = slice(None)
+        # reset the action history
+        self._prev_action[env_ids] = 0.0
+        self._action[env_ids] = 0.0
+        self._prev_residual_action[env_ids] = 0.0
+        self._residual_action[env_ids] = 0.0
+        self._prev_latent_action[env_ids] = 0.0
+        self._latent_action[env_ids] = 0.0
+        self._prev_freqs[env_ids] = 0.0
+        self._freqs[env_ids] = 0.0
+        self._prev_amps[env_ids] = 0.0
+        self._amps[env_ids] = 0.0
+        if self.has_freq:
+            self.phases[env_ids] = 0.0
+            self.sin_cos_phases = torch.cat(
+                (
+                    self.mean_amp * torch.sin(self.phases),
+                    self.mean_amp * torch.cos(self.phases),
+                ),
+                dim=1,
+            )
+
+        # reset all action terms
         for term in self._terms.values():
-            term.apply_actions() # sets joint pos targets
+            term.reset(env_ids=env_ids)
+        # nothing to log here
+        return {}
 
     @property
     def latent_action(self) -> torch.Tensor:
-        """The actions sent to the environment. Shape is (num_envs, total_action_dim)."""
         return self._latent_action
 
     @property
     def prev_latent_action(self) -> torch.Tensor:
-        """The previous actions sent to the environment. Shape is (num_envs, total_action_dim)."""
         return self._prev_latent_action
 
     @property
     def residual_action(self) -> torch.Tensor:
-        """The actions sent to the environment. Shape is (num_envs, total_action_dim)."""
         return self._residual_action
 
     @property
     def prev_residual_action(self) -> torch.Tensor:
-        """The previous actions sent to the environment. Shape is (num_envs, total_action_dim)."""
         return self._prev_residual_action
+    
+    @property
+    def freqs(self) -> torch.Tensor:
+        return self._freqs
+    
+    @property
+    def prev_freqs(self) -> torch.Tensor:
+        return self._prev_freqs
+    
+    @property
+    def amps(self) -> torch.Tensor:
+        return self._amps
+    
+    @property
+    def prev_amps(self) -> torch.Tensor:
+        return self._prev_amps
