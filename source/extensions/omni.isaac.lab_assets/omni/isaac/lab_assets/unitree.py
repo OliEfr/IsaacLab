@@ -155,7 +155,7 @@ UNITREE_GO2_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.4),
+        pos=(0.0, 0.0, 0.3),
         # """Quaternion rotation (w, x, y, z) of the root in simulation world frame.
         # Defaults to (1.0, 0.0, 0.0, 0.0).
         # """

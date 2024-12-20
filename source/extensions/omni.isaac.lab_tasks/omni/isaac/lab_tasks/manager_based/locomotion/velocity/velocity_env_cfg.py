@@ -101,8 +101,13 @@ class CommandsCfg:
         heading_command=True,
         heading_control_stiffness=0.5,
         debug_vis=True,
+        # training
+        # ranges=mdp.UniformVelocityCommandCfg.Ranges(
+        #     lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+        # ),
+        # inference
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0,0), ang_vel_z=(0,0), heading=(0, 0)
         ),
     )
 
@@ -125,13 +130,17 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
+        
+        # cmd terms
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel, noise=Unoise(n_min=-0.1, n_max=0.1))
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.2, n_max=0.2))
+        velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
+        
+        # state terms
         projected_gravity = ObsTerm(
             func=mdp.projected_gravity,
             noise=Unoise(n_min=-0.05, n_max=0.05),
         )
-        velocity_commands = ObsTerm(func=mdp.generated_commands, params={"command_name": "base_velocity"})
         joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01))
         joint_vel = ObsTerm(func=mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5))
         actions = ObsTerm(func=mdp.last_action)
@@ -164,9 +173,12 @@ class EventCfg:
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
-            "static_friction_range": (0.4, 1.0),
-            "dynamic_friction_range": (0.2, 0.8),
-            "restitution_range": (0.0, 0.1),
+            # "static_friction_range": (0.4, 1.0),
+            # "dynamic_friction_range": (0.2, 0.8),
+            # "restitution_range": (0.0, 0.1),
+            "static_friction_range": (2.0, 2.0),
+            "dynamic_friction_range": (1.0, 1.0),
+            "restitution_range": (0.0, 0.0),
             "num_buckets": 64,
         },
     )
@@ -272,8 +284,16 @@ class RewardsCfg:
 
     residual_action_l2 = RewTerm(
         func=mdp.residual_action_l2,
-        weight=-1.0,
+        weight=0.0,#-0.04,
     )
+    # freq_rate_l2 = RewTerm(
+    #     func=mdp.freq_rate_l2,
+    #     weight=-0.1,
+    # )
+    # amp_rate_l2 = RewTerm(
+    #     func=mdp.amp_rate_l2,
+    #     weight=-0.05,
+    # )
 
 @configclass
 class TerminationsCfg:

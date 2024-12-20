@@ -381,6 +381,7 @@ with open(constants_path, "r") as file:
     constants = yaml.safe_load(file)
 JOINT_UNITREE_TO_ISAAC_LAB_MAPPING = constants["JOINT_UNITREE_TO_ISAAC_LAB_MAPPING"]
 JOINT_ISAAC_LAB_TO_UNITREE_MAPPING = constants["JOINT_ISAAC_LAB_TO_UNITREE_MAPPING"]
+DEFAULT_JOINT_POS_ISAAC_LAB = constants["DEFAULT_JOINT_POS_ISAAC_LAB"]
 
 
 class LegwiseLatentActionManager(ActionManager):
@@ -388,7 +389,7 @@ class LegwiseLatentActionManager(ActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
         self.robot_action_dim = 12
         self.latent_action_dim = 1 + 4 * 2 # main freq, 4 legs with freq and amp each
-        self.residual_action_weight = 0.1
+        self.residual_action_weight = 0.05
 
         super().__init__(cfg, env)
 
@@ -413,6 +414,27 @@ class LegwiseLatentActionManager(ActionManager):
 
         self.projector = torch.jit.load("expert_projectors/temporal_spatial_prior.pt").to(self.device)
 
+        self.init_joint_pos_gait = torch.tensor([
+            0.0735669806599617,
+            0.9497295618057251,
+            -1.594949722290039,
+            -0.10308756679296494,
+            0.7876842617988586,
+            -1.908045768737793,
+            0.008162420243024826,
+            0.7421717643737793,
+            -1.8416037559509277,
+            -0.0335349403321743,
+            0.897495448589325,
+            -1.5823912620544434,
+        ]) - torch.tensor(DEFAULT_JOINT_POS_ISAAC_LAB)[JOINT_ISAAC_LAB_TO_UNITREE_MAPPING]
+
+        self.init_joint_pos_gait = torch.zeros_like(self.init_joint_pos_gait)
+
+        self.init_joint_pos_gait = self.init_joint_pos_gait.repeat(self.num_envs, 1).to(self.device)
+
+
+        self.live_print = False
         self.live_plot = False
         if self.live_plot:
             plt.ion()
@@ -422,8 +444,13 @@ class LegwiseLatentActionManager(ActionManager):
                     self._values_to_plot.setdefault(f"leg_{i}_amp", [])
                     self._values_to_plot.setdefault(f"leg_{i}_phase", [])
                     self._values_to_plot.setdefault(f"main_freq", [])
-            self.figure, self.axs = plt.subplots(len(self._values_to_plot))
-            self.figure.set_size_inches(10, 5 * len(self._values_to_plot))
+            for i in range(12):
+                self._values_to_plot.setdefault(f"joint_{i}_pos", [])
+            num_plots = len(self._values_to_plot)
+            num_rows = (num_plots + 1) // 2
+            self.figure, self.axs = plt.subplots(num_rows, 2)
+            self.figure.set_size_inches(10, 5 * num_rows)
+            self.axs = self.axs.flatten()
             
 
 
@@ -432,15 +459,14 @@ class LegwiseLatentActionManager(ActionManager):
 
             self.has_freq = True
 
-            _demo_freq = self.projector.get_frequency()
-            
-            self.mean_main_freq = 0.0
+            self._demo_freq = self.projector.get_frequency()            
+            self.mean_main_freq = 0.0 # self._demo_freq
 
             self.mean_amp = 1.0
 
-            self.range_main_freq = _demo_freq * 1.2 # 0.3 # 1.0
-            self.range_leg_freq = 0.3 # 0.3 # 0.3
-            self.range_amp = 0.3 # 0.2 # 0.3
+            self.range_main_freq = 2 * self._demo_freq # * 1.2  # 0.3 # 1.0
+            self.range_leg_freq = 0.0 # 0.3 # 0.3
+            self.range_amp = 0.1 # 0.2 # 0.3
 
             self.phases = torch.zeros((self.num_envs, 4), device=self.device) # phase for each leg
             # sin cos phase for observations
@@ -460,6 +486,8 @@ class LegwiseLatentActionManager(ActionManager):
             self._amps = torch.zeros((self.num_envs, 4), device=self.device) # amp for each leg
             self._prev_amps = torch.zeros_like(self._amps)
 
+            self.i = 0
+
         else:
             raise NotImplementedError("Only temporal prior is supported")
 
@@ -477,6 +505,8 @@ class LegwiseLatentActionManager(ActionManager):
         Args:
             action: The actions to process.
         """
+        self.i += 1
+
         self._prev_action[:] = self.action
         self._prev_freqs = self.freqs
         self._prev_amps = self.amps
@@ -503,6 +533,11 @@ class LegwiseLatentActionManager(ActionManager):
 
             main_freq = (
                 self.latent_action[:, 0] * self.range_main_freq + self.mean_main_freq
+                # torch.where(
+                #     self._env.unwrapped.command_manager.get_command('base_velocity')[:, 0] < 0,
+                #     -self.mean_main_freq,
+                #     self.mean_main_freq
+                # )
             )
             # for each leg we have two parameters: freq and amp
             n = (self.latent_action.shape[1] - 1) // 2
@@ -516,18 +551,38 @@ class LegwiseLatentActionManager(ActionManager):
 
             self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self.freqs
 
+            if self.live_print:
+                for i in range(10):
+                    leg_freqs_str = ", ".join(
+                        [
+                            f"Leg {j+1} freq: {self.freqs[i][j].cpu().numpy().tolist():.5f}"
+                            for j in range(4)
+                        ]
+                    )
+                    print(
+                        f"Target velocity: {self._env.unwrapped.command_manager.get_command('base_velocity')[i].tolist()}, Main freq: {main_freq[i].cpu().numpy().tolist():.5f}, {leg_freqs_str}"
+                    )
+                print("###############")
+
             if self.live_plot:
+
                 self._values_to_plot.setdefault(f"main_freq", []).append(main_freq[0].cpu().numpy())
                 for i in range(self._freqs.shape[1]): # for each leg
                     self._values_to_plot.setdefault(f"leg_{i}_freq", []).append(self.freqs[0][i].cpu().numpy())
                     self._values_to_plot.setdefault(f"leg_{i}_amp", []).append(amps[0][i].cpu().numpy())
                     self._values_to_plot.setdefault(f"leg_{i}_phase", []).append(self.phases[0][i].cpu().numpy())
-                   
+
+                for i in range(12):
+                    self._values_to_plot.setdefault(f"joint_{i}_pos", []).append(self._env.unwrapped.scene["robot"].data.joint_pos.cpu().numpy()[0][i])
 
                 for i, (key, value) in enumerate(self._values_to_plot.items()):
                     self.axs[i].clear()
-                    self.axs[i].plot(value)
+                    self.axs[i].plot(
+                        [x * self._env.step_dt for x in range(len(value))], value
+                    )
                     self.axs[i].set_title(key)
+
+                
                 
                 plt.pause(0.001)
                 plt.show()
@@ -564,10 +619,16 @@ class LegwiseLatentActionManager(ActionManager):
             1 - self.residual_action_weight
         ) * projected_action + self.residual_action_weight * self.residual_action
 
+        # if self.i < 150:
+        #     action = self.init_joint_pos_gait
+        # else:
+        #     self.mean_main_freq = self._demo_freq
+
         assert action.shape[1] == self.robot_action_dim
 
         # re-order joints
         action = action[:, JOINT_UNITREE_TO_ISAAC_LAB_MAPPING]
+
 
         self._action[:] = action.to(self.device)
 
