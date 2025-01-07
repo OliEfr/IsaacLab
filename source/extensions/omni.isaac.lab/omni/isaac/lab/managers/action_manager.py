@@ -389,7 +389,7 @@ class LegwiseLatentActionManager(ActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
         self.robot_action_dim = 12
         self.latent_action_dim = 1 + 4 * 2 # main freq, 4 legs with freq and amp each
-        self.residual_action_weight = 0.05
+        self.residual_action_weight = 0.1
 
         super().__init__(cfg, env)
 
@@ -459,7 +459,7 @@ class LegwiseLatentActionManager(ActionManager):
 
             self.has_freq = True
 
-            self._demo_freq = self.projector.get_frequency()            
+            self._demo_freq = self.projector.get_frequency()
             self.mean_main_freq = 0.0 # self._demo_freq
 
             self.mean_amp = 1.0
@@ -552,7 +552,8 @@ class LegwiseLatentActionManager(ActionManager):
             self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self.freqs
 
             if self.live_print:
-                for i in range(10):
+                print(f"Residual Action Magnitude: {torch.mean(torch.abs(self.residual_action)):.5f}")
+                for i in range(20):
                     leg_freqs_str = ", ".join(
                         [
                             f"Leg {j+1} freq: {self.freqs[i][j].cpu().numpy().tolist():.5f}"

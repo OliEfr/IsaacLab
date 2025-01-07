@@ -107,7 +107,7 @@ class CommandsCfg:
         # ),
         # inference
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0,0), ang_vel_z=(0,0), heading=(0, 0)
+            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.5, 0.5), ang_vel_z=(0,0), heading=(0, 0)
         ),
     )
 
@@ -284,7 +284,7 @@ class RewardsCfg:
 
     residual_action_l2 = RewTerm(
         func=mdp.residual_action_l2,
-        weight=0.0,#-0.04,
+        weight=-0.04,#-0.04,
     )
     # freq_rate_l2 = RewTerm(
     #     func=mdp.freq_rate_l2,
