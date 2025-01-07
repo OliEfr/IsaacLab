@@ -1,0 +1,3 @@
+- Working RL with temporal prior Go2 for forward backward movement: 2024-12-20_13-00-27 (cfcb84eb43f2362ca3ebafd40c78636842b772ea)
+- Baseline RL standard IsaacLab: 2024-11-25_15-38-18
+- Walking to the side doesnt work for 1.0m/s target speed, but for up to ca 0.5m/s
