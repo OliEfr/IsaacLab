@@ -22,6 +22,8 @@ from omni.isaac.lab.assets import AssetBase
 from .manager_base import ManagerBase, ManagerTermBase
 from .manager_term_cfg import ActionTermCfg
 
+import yaml
+
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedEnv
 
@@ -412,22 +414,19 @@ class LegwiseLatentActionManager(ActionManager):
             self._latent_action
         )
 
-        self.projector = torch.jit.load("expert_projectors/temporal_spatial_prior.pt").to(self.device)
+        prior_suffix = "dog_retargeted"
 
-        self.init_joint_pos_gait = torch.tensor([
-            0.0735669806599617,
-            0.9497295618057251,
-            -1.594949722290039,
-            -0.10308756679296494,
-            0.7876842617988586,
-            -1.908045768737793,
-            0.008162420243024826,
-            0.7421717643737793,
-            -1.8416037559509277,
-            -0.0335349403321743,
-            0.897495448589325,
-            -1.5823912620544434,
-        ]) - torch.tensor(DEFAULT_JOINT_POS_ISAAC_LAB)[JOINT_ISAAC_LAB_TO_UNITREE_MAPPING]
+        self.projector = torch.jit.load(f"expert_projectors/temporal_spatial_prior_{prior_suffix}.pt").to(self.device)
+
+        with open(f"expert_projectors/output_{prior_suffix}.yaml", "r") as file:
+            prior_data = yaml.safe_load(file)
+
+        self.init_joint_pos_gait = (
+            torch.tensor(prior_data["FIRST_JOINT_POS_GAIT_CYCLE"])
+            - torch.tensor(DEFAULT_JOINT_POS_ISAAC_LAB)[
+                JOINT_ISAAC_LAB_TO_UNITREE_MAPPING
+            ]
+        )
 
         self.init_joint_pos_gait = torch.zeros_like(self.init_joint_pos_gait)
 

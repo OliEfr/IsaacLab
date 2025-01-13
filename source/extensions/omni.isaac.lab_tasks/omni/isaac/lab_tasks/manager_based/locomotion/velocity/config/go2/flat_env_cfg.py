@@ -19,13 +19,12 @@ class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
         # self.rewards.feet_air_time.weight = 0.25
 
         # change terrain to flat
-        # self.scene.terrain.terrain_type = "plane" # comment out for rough terrain
-        # self.scene.terrain.terrain_generator = None # comment out for rough terrain
+        self.scene.terrain.terrain_type = "plane" # comment out for rough terrain
+        self.scene.terrain.terrain_generator = None # comment out for rough terrain
+        self.curriculum.terrain_levels = None # comment out for rough terrain
         # no height scan
         self.scene.height_scanner = None
         self.observations.policy.height_scan = None
-        # no terrain curriculum
-        # self.curriculum.terrain_levels = None # comment out for rough terrain
 
 
 
