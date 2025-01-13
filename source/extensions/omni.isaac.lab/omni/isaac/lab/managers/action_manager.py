@@ -391,7 +391,7 @@ class LegwiseLatentActionManager(ActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
         self.robot_action_dim = 12
         self.latent_action_dim = 1 + 4 * 2 # main freq, 4 legs with freq and amp each
-        self.residual_action_weight = 0.1
+        self.residual_action_weight = 0.05
 
         super().__init__(cfg, env)
 
@@ -414,7 +414,7 @@ class LegwiseLatentActionManager(ActionManager):
             self._latent_action
         )
 
-        prior_suffix = "dog_retargeted"
+        prior_suffix = "dog_retargeted" # "real_robot", "dog_retargeted"
 
         self.projector = torch.jit.load(f"expert_projectors/temporal_spatial_prior_{prior_suffix}.pt").to(self.device)
 

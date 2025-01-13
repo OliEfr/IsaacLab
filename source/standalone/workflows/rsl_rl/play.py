@@ -138,6 +138,29 @@ def main():
         # Run everything in inference mode
         with torch.inference_mode():
             # Agent stepping
+
+            ###### Debug correspondance of target speeds with freq ######
+            # Generate x-values from -1.0 to 1.0 with a step of 0.1
+            x_speeds = torch.arange(-1.0, 1.0 + 0.1, 0.1)
+            target_cmds = torch.stack(
+                [torch.tensor([x, 0.0, 0.0] * 5) for x in x_speeds]
+            ).to(args_cli.device)
+            freq = policy.actor.actor_freq(target_cmds)[:, 0] * 2 + 0.0 # main_freq * scaling + offset
+            for x_speed, frequency in zip(x_speeds, freq):
+                print(f"x speed {x_speed:+.4f}: {frequency:+.4f} Hz")
+
+            print("######")
+
+            y_speeds = torch.arange(-1.0, 1.0 + 0.1, 0.1)
+            target_cmds = torch.stack(
+                [torch.tensor([0.0, y, 0.0] * 5) for y in y_speeds]
+            ).to(args_cli.device)
+            freq = policy.actor.actor_freq(target_cmds)[:, 0] * 2 + 0.0 # main_freq * scaling + offset
+            for x_speed, frequency in zip(y_speeds, freq):
+                print(f"y speed {x_speed:+.4f}: {frequency:+.4f} Hz")
+            print("######")
+            ###### ###################### ######
+
             actions = policy(obs_history)
             # Environment stepping
             obs, _, dones, _ = env.step(actions)
