@@ -391,7 +391,7 @@ class LegwiseLatentActionManager(ActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
         self.robot_action_dim = 12
         self.latent_action_dim = 1 + 4 * 2 # main freq, 4 legs with freq and amp each
-        self.residual_action_weight = 0.05
+        self.residual_action_weight = 0.1
 
         super().__init__(cfg, env)
 
