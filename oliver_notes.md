@@ -2,3 +2,4 @@
 - Baseline RL standard IsaacLab: 2024-11-25_15-38-18
 - Walking to the side doesnt work for 1.0m/s target speed, but for up to ca 0.5m/s
 - working forward and sidewards and angular movement with temporal prior and some DR and little rough terrain for real robot expert data -> ff27cc978beef8c526461033b4143ce72951558b -> tensorboard run: 2025-01-07_12-47-39
+- working forward and heading movement with temporal prior and mocap dog data 2025-01-14_10-58-54 | fbb917a5ae1bede9039e2768cce458ca7deb8dc9
