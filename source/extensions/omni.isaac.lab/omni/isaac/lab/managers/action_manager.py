@@ -391,7 +391,7 @@ class LegwiseLatentActionManager(ActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
         self.robot_action_dim = 12
         self.latent_action_dim = 1 + 4 * 2 # main freq, 4 legs with freq and amp each
-        self.residual_action_weight = 0.05
+        self.residual_action_weight = 0.1
 
         super().__init__(cfg, env)
 
@@ -414,7 +414,7 @@ class LegwiseLatentActionManager(ActionManager):
             self._latent_action
         )
 
-        prior_suffix = "dog_retargeted_6" # "real_robot", "dog_retargeted"
+        prior_suffix = "dog_retargeted_5" # "real_robot", "dog_retargeted"
 
         self.projector = torch.jit.load(f"expert_projectors/temporal_spatial_prior_{prior_suffix}.pt").to(self.device)
 
@@ -459,13 +459,13 @@ class LegwiseLatentActionManager(ActionManager):
             self.has_freq = True
 
             self._demo_freq = self.projector.get_frequency()
-            self.mean_main_freq = self._demo_freq
+            self.mean_main_freq = 0.0
 
             self.mean_amp = 1.0
 
-            self.range_main_freq = 2.0 # * 1.2  # 0.3 # 1.0
+            self.range_main_freq = 2 * self._demo_freq # * 1.2  # 0.3 # 1.0
             self.range_leg_freq = 0.0 # 0.3 # 0.3
-            self.range_amp = 0.3 # 0.2 # 0.3
+            self.range_amp = 0.1 # 0.2 # 0.3
 
             self.phases = torch.zeros((self.num_envs, 4), device=self.device) # phase for each leg
             # sin cos phase for observations
