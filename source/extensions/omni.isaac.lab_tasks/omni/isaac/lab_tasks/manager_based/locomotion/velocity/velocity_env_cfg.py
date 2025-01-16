@@ -105,9 +105,9 @@ class CommandsCfg:
         # ranges=mdp.UniformVelocityCommandCfg.Ranges(
         #     lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
         # ),
-        # inference
+        # https://arxiv.org/pdf/2203.15103 (AMP make good substitutes for reward function) uses (-1,2), (-0.3, 0.3), (-1.57, + 1.57)
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(0.0, 0.0), ang_vel_z=(-0.5, 0.5), heading=(0, 0)
+            lin_vel_x=(0.5, 0.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(0.0, 0.0), heading=(0, 0)
         ),
     )
 
@@ -302,6 +302,8 @@ class RewardsCfg:
     #     func=mdp.amp_rate_l2,
     #     weight=-0.05,
     # )
+
+    # add power penalty: "We define the mechanical COT as: Power / Weight×Velocity. P, where τ is the joint torque, ˙θ is the motor velocity.
 
     # styles
     style_jpos = RewTerm(func=mdp.style_jpos, weight=0.65, params={"factor": -2.0})

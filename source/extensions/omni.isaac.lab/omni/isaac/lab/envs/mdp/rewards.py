@@ -263,6 +263,7 @@ def style_jpos(
         ),
         dim=1,
     )
+    assert factor <= 0, "You probably want a non-positive factor"
     return torch.exp(factor * style)
 
 def style_jvel(
@@ -278,6 +279,7 @@ def style_jvel(
         ),
         dim=1,
     )
+    assert factor <= 0, "You probably want a non-positive factor"
     return torch.exp(factor * style)
 
 
