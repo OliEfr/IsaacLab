@@ -10,7 +10,7 @@ and observations. Each manager implements a specific functionality for the envir
 designed to be modular and can be easily extended to support new functionality.
 """
 
-from .action_manager import ActionManager, ActionTerm, LegwiseLatentActionManager, PhaseActionManager, LegwisePhaseActionManager, LegwiseProjectorInterpolatedStyleActionManager
+from .action_manager import ActionManager, ActionTerm, LegwiseLatentActionManager, PhaseActionManager, LegwisePhaseActionManager, InterpolatedStyleActionManager
 from .command_manager import CommandManager, CommandTerm
 from .curriculum_manager import CurriculumManager
 from .event_manager import EventManager

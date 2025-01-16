@@ -107,3 +107,6 @@ class ManagerBasedEnvCfg:
       step will be performed after each time an environment is reset.
 
     """
+
+    action_manager_class: str = "" # NOTE this should be MISSING, but it throws an error with wrong datatype. So I use "" for now. Should be fixed in the future.
+    """ The class name of the action manager that is used."""

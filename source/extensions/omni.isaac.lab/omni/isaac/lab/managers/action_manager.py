@@ -379,13 +379,13 @@ class ActionManager(ManagerBase):
 torch.pi = torch.acos(torch.zeros(1)).item() * 2
 import yaml
 import matplotlib.pyplot as plt
+
 constants_path = "source/constants.yaml"
 with open(constants_path, "r") as file:
     constants = yaml.safe_load(file)
 JOINT_UNITREE_TO_ISAAC_LAB_MAPPING = constants["JOINT_UNITREE_TO_ISAAC_LAB_MAPPING"]
 JOINT_ISAAC_LAB_TO_UNITREE_MAPPING = constants["JOINT_ISAAC_LAB_TO_UNITREE_MAPPING"]
 DEFAULT_JOINT_POS_ISAAC_LAB = constants["DEFAULT_JOINT_POS_ISAAC_LAB"]
-
 
 class LegwiseLatentActionManager(ActionManager):
 
@@ -512,6 +512,7 @@ class LegwiseLatentActionManager(ActionManager):
         self._prev_amps = self.amps
 
         assert residual_and_latent_action.shape[1] == self.total_action_dim
+        assert residual_and_latent_action.shape[1] - self.latent_action_dim == self.robot_action_dim, "Dims obtained from the actor policy do not match expected shape."
 
         # clip actions [-1,1]
         residual_and_latent_action = torch.clamp(residual_and_latent_action, -1.0, 1.0)
@@ -820,9 +821,9 @@ class LegwisePhaseActionManager(ActionManager):
     @property
     def freqs(self) -> torch.Tensor:
         return self._freqs
-    
 
-class LegwiseProjectorInterpolatedStyleActionManager(LegwisePhaseActionManager):
+
+class InterpolatedStyleActionManager(LegwisePhaseActionManager):
     """This action manager takes a (Legwise) projector as input. It provides the style to the current point in time using the phase. Using the projector, the expert style can be interpolated between the expert timestamps."""
 
     def __init__(self, cfg: object, env: ManagerBasedEnv):
@@ -863,6 +864,8 @@ class LegwiseProjectorInterpolatedStyleActionManager(LegwisePhaseActionManager):
         self._jpos_ref = self._jpos_ref[:, JOINT_UNITREE_TO_ISAAC_LAB_MAPPING]
 
     def process_action(self, action: torch.Tensor):
+        assert action.shape[1] == 12, "Not expecting latent actions, only 12 full actions."
+
         super().process_action(action)
 
         self._prev_jpos_ref = self._jpos_ref

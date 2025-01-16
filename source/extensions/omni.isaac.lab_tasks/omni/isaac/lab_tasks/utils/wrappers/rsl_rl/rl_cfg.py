@@ -28,6 +28,9 @@ class RslRlPpoActorCriticCfg:
     activation: str = MISSING
     """The activation function for the actor and critic networks."""
 
+    vel_dependent_actor_latent_dim: int = 0
+    """ Whether to use an actor that outputs something based only on the envs target velocity. Set zero to disable."""
+
 
 @configclass
 class RslRlPpoAlgorithmCfg:
