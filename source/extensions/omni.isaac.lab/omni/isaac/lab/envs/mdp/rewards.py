@@ -250,6 +250,36 @@ def freq_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
 def amp_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     return torch.sum(torch.square(env.action_manager.amps - env.action_manager.prev_amps), dim=1)
 
+def style_jpos(
+    env: ManagerBasedRLEnv,
+    factor: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    # compute the error
+    style = torch.sum(
+        torch.square(
+            asset.data.joint_pos[:, asset_cfg.joint_ids] - env.action_manager.jpos_ref
+        ),
+        dim=1,
+    )
+    return torch.exp(factor * style)
+
+def style_jvel(
+    env: ManagerBasedRLEnv,
+    factor: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    # compute the error
+    style = torch.sum(
+        torch.square(
+            asset.data.joint_vel[:, asset_cfg.joint_ids] - env.action_manager.jvel_ref
+        ),
+        dim=1,
+    )
+    return torch.exp(factor * style)
+
 
 """
 Contact sensor.

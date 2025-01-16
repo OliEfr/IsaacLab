@@ -129,33 +129,34 @@ def main():
 
     simulated_step_time = env.unwrapped.step_dt  
 
-     ###### Debug correspondance of target speeds with freq ######
-    x_speeds = torch.arange(-1.0, 2.0 + 0.1, 0.1)
-    target_cmds = torch.stack(
-        [torch.tensor([x, 0.0, 0.0] * 5) for x in x_speeds]
-    ).to(args_cli.device)
-    freq = (
-        torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
-        * env.unwrapped.action_manager.range_main_freq
-        + env.unwrapped.action_manager.mean_main_freq
-    )  # main_freq * scaling + offset
-    for x_speed, frequency in zip(x_speeds, freq):
-        print(f"x speed {x_speed:+.4f}: {frequency:+.4f} Hz")
+    ###### Debug correspondance of target speeds with freq ######
+    if hasattr(policy.actor, "actor_freq"):
+        x_speeds = torch.arange(-1.0, 2.0 + 0.1, 0.1)
+        target_cmds = torch.stack(
+            [torch.tensor([x, 0.0, 0.0] * 5) for x in x_speeds]
+        ).to(args_cli.device)
+        freq = (
+            torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
+            * env.unwrapped.action_manager.range_main_freq
+            + env.unwrapped.action_manager.mean_main_freq
+        )  # main_freq * scaling + offset
+        for x_speed, frequency in zip(x_speeds, freq):
+            print(f"x speed {x_speed:+.4f}: {frequency:+.4f} Hz")
 
-    print("######")
+        print("######")
 
-    y_speeds = torch.arange(-1.0, 1.0 + 0.1, 0.1)
-    target_cmds = torch.stack(
-        [torch.tensor([0.0, y, 0.0] * 5) for y in y_speeds]
-    ).to(args_cli.device)
-    freq = (
-        torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
-        * env.unwrapped.action_manager.range_main_freq
-        + env.unwrapped.action_manager.mean_main_freq
-    )  # main_freq * scaling + offset
-    for x_speed, frequency in zip(y_speeds, freq):
-        print(f"y speed {x_speed:+.4f}: {frequency:+.4f} Hz")
-    print("######")
+        y_speeds = torch.arange(-1.0, 1.0 + 0.1, 0.1)
+        target_cmds = torch.stack(
+            [torch.tensor([0.0, y, 0.0] * 5) for y in y_speeds]
+        ).to(args_cli.device)
+        freq = (
+            torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
+            * env.unwrapped.action_manager.range_main_freq
+            + env.unwrapped.action_manager.mean_main_freq
+        )  # main_freq * scaling + offset
+        for x_speed, frequency in zip(y_speeds, freq):
+            print(f"y speed {x_speed:+.4f}: {frequency:+.4f} Hz")
+        print("######")
     ###### ###################### ######
 
     timestep = 0

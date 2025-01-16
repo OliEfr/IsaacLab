@@ -303,6 +303,10 @@ class RewardsCfg:
     #     weight=-0.05,
     # )
 
+    # styles
+    style_jpos = RewTerm(func=mdp.style_jpos, weight=0.65, params={"factor": -2.0})
+    style_jvel = RewTerm(func=mdp.style_jvel, weight=0.1, params={"factor": -0.1})
+
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
