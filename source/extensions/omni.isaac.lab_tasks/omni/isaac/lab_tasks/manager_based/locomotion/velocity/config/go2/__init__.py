@@ -33,6 +33,9 @@ gym.register(
     },
 )
 
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
 gym.register(
     id="Isaac-Velocity-Rough-Unitree-Go2-v0",
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
@@ -54,3 +57,74 @@ gym.register(
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg.yaml",
     },
 )
+
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+gym.register(
+    id="Isaac-Velocity-InterpolatedStyleFlat-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.my_cfgs:InterpolatedStyleUnitreeGo2FlatEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-InterpolatedStyleFlat-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.my_cfgs:InterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+gym.register(
+    id="Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.my_cfgs:FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.my_cfgs:FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+gym.register(
+    id="Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.my_cfgs:LegwiseLatentActionUnitreeGo2FlatEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.my_cfgs:LegwiseLatentActionUnitreeGo2FlatEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+

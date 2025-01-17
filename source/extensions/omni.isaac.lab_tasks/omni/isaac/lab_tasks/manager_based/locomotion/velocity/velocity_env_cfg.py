@@ -306,8 +306,9 @@ class RewardsCfg:
     # add power penalty: "We define the mechanical COT as: Power / Weight×Velocity. P, where τ is the joint torque, ˙θ is the motor velocity.
 
     # styles
-    style_jpos = RewTerm(func=mdp.style_jpos, weight=0.65, params={"factor": -2.0})
-    style_jvel = RewTerm(func=mdp.style_jvel, weight=0.1, params={"factor": -0.1})
+    style_jpos = RewTerm(func=mdp.style_jpos, weight=0.0, params={"factor": -2.0})
+    style_jvel = RewTerm(func=mdp.style_jvel, weight=0.0, params={"factor": -0.1})
+    # TODO add foot z-height style penalty
 
 @configclass
 class TerminationsCfg:

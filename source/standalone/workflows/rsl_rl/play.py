@@ -77,10 +77,6 @@ def main():
     resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
     log_dir = os.path.dirname(resume_path)
 
-    # Load the same parameters as used for training
-    env_config_dir = os.path.join(log_dir, "params", "env.yaml")
-    with open(env_config_dir, "r") as file:
-        env_cfg.action_manager_class = yaml.load(file, Loader=yaml.Loader)["action_manager_class"]
 
     agent_cfg.policy.vel_dependent_actor_latent_dim = get_vel_dependent_actor_latent_dim_for_action_manager_class(
         env_cfg.action_manager_class
