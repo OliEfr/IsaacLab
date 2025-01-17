@@ -718,6 +718,8 @@ class PhaseActionManager(ActionManager):
     """Extends the standard action manager with a phase. This is a misuse of the action manager, but convenient as the action manager is called every env step."""
 
     def __init__(self, cfg: object, env: ManagerBasedEnv):
+        self.robot_action_dim = 12
+        
         super().__init__(cfg, env)
 
         self.phases = torch.zeros((self.num_envs, 1), device=self.device)
@@ -734,7 +736,19 @@ class PhaseActionManager(ActionManager):
         self._freqs = torch.zeros((self.num_envs, 1), device=self.device) # freq
 
     def process_action(self, action: torch.Tensor):
-        super().process_action(action)
+        # Dont inherit from base class as it checks for action dimensionality, and this is not correct for inheriting classes that change the actions
+        assert action.shape[1] == self.robot_action_dim
+        
+        # store the input actions
+        self._prev_action[:] = self._action
+        self._action[:] = action.to(self.device)
+
+        # split the actions and apply to each tensor
+        idx = 0
+        for term in self._terms.values():
+            term_actions = action[:, idx : idx + term.action_dim]
+            term.process_actions(term_actions)
+            idx += term.action_dim
 
         self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
 
@@ -771,6 +785,8 @@ class LegwisePhaseActionManager(ActionManager):
     """Extends the standard action manager with a phase for each leg. This is a misuse of the action manager, but convenient as the action manager is called every env step."""
 
     def __init__(self, cfg: object, env: ManagerBasedEnv):
+        self.robot_action_dim = 12
+
         super().__init__(cfg, env)
 
         self.phases = torch.zeros((self.num_envs, 4), device=self.device)
@@ -787,7 +803,19 @@ class LegwisePhaseActionManager(ActionManager):
         self._freqs = torch.zeros((self.num_envs, 4), device=self.device) # freq
 
     def process_action(self, action: torch.Tensor):
-        super().process_action(action)
+        # Dont inherit from base class as it checks for action dimensionality, and this is not correct for inheriting classes that change the actions
+        assert action.shape[1] == 12, "Not expecting any latent actions."
+        
+        # store the input actions
+        self._prev_action[:] = self._action
+        self._action[:] = action.to(self.device)
+
+        # split the actions and apply to each tensor
+        idx = 0
+        for term in self._terms.values():
+            term_actions = action[:, idx : idx + term.action_dim]
+            term.process_actions(term_actions)
+            idx += term.action_dim
 
         self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
 
@@ -832,11 +860,11 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
         self.projector = torch.jit.load(
             "expert_projectors/temporal_spatial_prior_dog_retargeted_5.pt"
         ).to(self.device)
-        expert_freq = self.projector.get_frequency()
+        self.expert_freq = self.projector.get_frequency()
 
         # buffers
         self._freqs = torch.full(
-            (self.num_envs, 1), expert_freq, device=self.device
+            (self.num_envs, 1), self.expert_freq, device=self.device
         )  # set expert frequency
 
         # required for legwise projector
@@ -875,8 +903,6 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
         self._jpos_ref = self._jpos_ref + torch.tensor(DEFAULT_JOINT_POS_ISAAC_LAB, device=self.device)
         self._jvel_ref = (self._jpos_ref - self._prev_jpos_ref) / self._env.step_dt
 
-        
-
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
         self.phases[env_ids] = 0.0
         self.sin_cos_phases = torch.cat(
@@ -889,10 +915,6 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
 
         self.get_current_jpos_reference() # initialize the jpos reference for the first frame; required for jvel calculation in process_action
         return super().reset(env_ids)
-
-    @property
-    def freqs(self) -> torch.Tensor:
-        return self._freqs
     
     @property
     def prev_jpos_ref(self) -> torch.Tensor:
@@ -906,60 +928,122 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
     def jvel_ref(self) -> torch.Tensor:
         return self._jvel_ref
     
-  
-class StyleActionManager(PhaseActionManager):
-    """Extends the PhaseActionManager to return a style to the current point in time. No interpolation implemented!"""
+class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
+    """This action manager extends the base class by making the frequency of the phase learnable."""
 
     def __init__(self, cfg: object, env: ManagerBasedEnv):
-        raise NotImplementedError("This class is not yet implemented")
-        
+        self.latent_action_dim = 1 # main freq
+
         super().__init__(cfg, env)
 
-        expert_data = "gait_cycle_data_5.json"
-        expert_metadata = "output_dog_retargeted_5.yaml"
-        expert_projector = "temporal_spatial_prior_dog_retargeted_5.pt"
+        self.mean_main_freq = 0.0
+        self.range_main_freq = self.expert_freq
 
-        self.projector = torch.jit.load(f"expert_projectors/{expert_projector}").to(self.device)
-        with open(f"expert_projectors/{expert_data}", "r") as file:
-            expert_data = json.load(file)
+       
+        # buffers
+        self._action = torch.zeros((self.num_envs,  self.robot_action_dim), device=self.device) # need to overwrite as it is set to self.action_term_dim by default
+        self._prev_action = torch.zeros_like(self._action)
 
-        with open(f"expert_projectors/{expert_metadata}", "r") as file:
-            expert_metadata = yaml.safe_load(file)
-
-        self._freqs = torch.full((self.num_envs, 1), expert_metadata["Learned frequency expert"],device=self.device) # set expert frequency
-
-
-
-    def process_action(self, action: torch.Tensor):
-        super().process_action(action)
-
-        self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
-
-        # reset phases for envs where episode length is 0; possible not required, as its handled by reset method of this class
-        self.phases[torch.where(self._env.episode_length_buf == 0, True, False)] = (
-            0.0
+        self._latent_action = torch.zeros(
+            (self.num_envs, self.latent_action_dim), device=self.device
         )
-        self.sin_cos_phases = torch.cat(
-            (
-                torch.sin(self.phases),
-                torch.cos(self.phases),
-            ),
-            dim=1,
-        ) # sin cos phase for observations
+        self._prev_latent_action = torch.zeros_like(
+            self._latent_action
+        )
+        self._prev_freqs = torch.zeros_like(self._freqs)
 
+
+    def process_action(self, residual_and_latent_action: torch.Tensor):
+        self._prev_freqs = self.freqs
+        self._prev_latent_action = self.latent_action
+        
+        self._latent_action = torch.clamp(residual_and_latent_action[:, self.robot_action_dim:], -1.0, 1.0)
+        residual_action = residual_and_latent_action[:, :self.robot_action_dim]
+
+        assert residual_action.shape[1] == self.robot_action_dim
+        assert self._latent_action.shape[1] == self.latent_action_dim
+
+        self._freqs = self._latent_action * self.range_main_freq + self.mean_main_freq
+        
+        super().process_action(residual_action)
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
-        self.phases[env_ids] = 0.0
-        self.sin_cos_phases = torch.cat(
-            (
-                torch.sin(self.phases),
-                torch.cos(self.phases),
-            ),
-            dim=1,
-        )
-
+        self._latent_action[env_ids] = 0.0
+        self._prev_latent_action[env_ids] = 0.0
+        self._prev_freqs[env_ids] = 0.0
         return super().reset(env_ids)
 
     @property
-    def freqs(self) -> torch.Tensor:
-        return self._freqs
+    def prev_freqs(self) -> torch.Tensor:
+        return self._prev_freqs
+    
+    @property
+    def latent_action(self) -> torch.Tensor:
+        return self._latent_action
+
+    @property
+    def prev_latent_action(self) -> torch.Tensor:
+        return self._prev_latent_action
+    
+    @property
+    def action_term_dim(self) -> list[int]:
+        """Shape of each action term."""
+        return [self.robot_action_dim + self.latent_action_dim] # This is queried by the policy to get output dimension. Its seems save to modify this variable.
+    
+  
+# class StyleActionManager(PhaseActionManager):
+#     """Extends the PhaseActionManager to return a style to the current point in time. No interpolation implemented!"""
+
+#     def __init__(self, cfg: object, env: ManagerBasedEnv):
+#         raise NotImplementedError("This class is not yet implemented")
+        
+#         super().__init__(cfg, env)
+
+#         expert_data = "gait_cycle_data_5.json"
+#         expert_metadata = "output_dog_retargeted_5.yaml"
+#         expert_projector = "temporal_spatial_prior_dog_retargeted_5.pt"
+
+#         self.projector = torch.jit.load(f"expert_projectors/{expert_projector}").to(self.device)
+#         with open(f"expert_projectors/{expert_data}", "r") as file:
+#             expert_data = json.load(file)
+
+#         with open(f"expert_projectors/{expert_metadata}", "r") as file:
+#             expert_metadata = yaml.safe_load(file)
+
+#         self._freqs = torch.full((self.num_envs, 1), expert_metadata["Learned frequency expert"],device=self.device) # set expert frequency
+
+
+
+#     def process_action(self, action: torch.Tensor):
+#         super().process_action(action)
+
+#         self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
+
+#         # reset phases for envs where episode length is 0; possible not required, as its handled by reset method of this class
+#         self.phases[torch.where(self._env.episode_length_buf == 0, True, False)] = (
+#             0.0
+#         )
+#         self.sin_cos_phases = torch.cat(
+#             (
+#                 torch.sin(self.phases),
+#                 torch.cos(self.phases),
+#             ),
+#             dim=1,
+#         ) # sin cos phase for observations
+
+
+#     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
+#         self.phases[env_ids] = 0.0
+#         self.sin_cos_phases = torch.cat(
+#             (
+#                 torch.sin(self.phases),
+#                 torch.cos(self.phases),
+#             ),
+#             dim=1,
+#         )
+
+#         return super().reset(env_ids)
+
+#     @property
+#     def freqs(self) -> torch.Tensor:
+#         return self._freqs
