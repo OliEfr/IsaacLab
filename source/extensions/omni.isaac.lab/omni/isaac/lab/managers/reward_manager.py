@@ -58,6 +58,9 @@ class RewardManager(ManagerBase):
         self._episode_sums = dict()
         for term_name in self._term_names:
             self._episode_sums[term_name] = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
+        # Add task rewards and style rewards
+        self._episode_sums["task"] = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
+        self._episode_sums["style"] = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
         # create buffer for managing reward per environment
         self._reward_buf = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
 
@@ -147,6 +150,10 @@ class RewardManager(ManagerBase):
             self._reward_buf += value
             # update episodic sum
             self._episode_sums[name] += value
+            if "style_" in name:
+                self._episode_sums["style"] += value
+            if "track_" in name or "task_" in name:
+                self._episode_sums["task"] += value
 
         return self._reward_buf
 

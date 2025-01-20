@@ -743,13 +743,6 @@ class PhaseActionManager(ActionManager):
         self._prev_action[:] = self._action
         self._action[:] = action.to(self.device)
 
-        # split the actions and apply to each tensor
-        idx = 0
-        for term in self._terms.values():
-            term_actions = action[:, idx : idx + term.action_dim]
-            term.process_actions(term_actions)
-            idx += term.action_dim
-
         self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
 
         # reset phases for envs where episode length is 0; possible not required, as its handled by reset method of this class
@@ -763,6 +756,13 @@ class PhaseActionManager(ActionManager):
             ),
             dim=1,
         ) # sin cos phase for observations
+
+        # split the actions and apply to each tensor
+        idx = 0
+        for term in self._terms.values():
+            term_actions = action[:, idx : idx + term.action_dim]
+            term.process_actions(term_actions)
+            idx += term.action_dim
 
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
@@ -810,13 +810,6 @@ class LegwisePhaseActionManager(ActionManager):
         self._prev_action[:] = self._action
         self._action[:] = action.to(self.device)
 
-        # split the actions and apply to each tensor
-        idx = 0
-        for term in self._terms.values():
-            term_actions = action[:, idx : idx + term.action_dim]
-            term.process_actions(term_actions)
-            idx += term.action_dim
-
         self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
 
         # reset phases for envs where episode length is 0; possible not required, as its handled by reset method of this class
@@ -833,6 +826,12 @@ class LegwisePhaseActionManager(ActionManager):
             dim=1,
         ) 
 
+        # split the actions and apply to each tensor
+        idx = 0
+        for term in self._terms.values():
+            term_actions = action[:, idx : idx + term.action_dim]
+            term.process_actions(term_actions)
+            idx += term.action_dim
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
         self.phases[env_ids] = 0.0
@@ -901,7 +900,7 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
         self.get_current_jpos_reference() 
 
         self._jpos_ref = self._jpos_ref + torch.tensor(DEFAULT_JOINT_POS_ISAAC_LAB, device=self.device)
-        self._jvel_ref = (self._jpos_ref - self._prev_jpos_ref) / self._env.step_dt
+        self._jvel_ref = (self._jpos_ref - self.prev_jpos_ref) / self._env.step_dt
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
         self.phases[env_ids] = 0.0
@@ -936,8 +935,9 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
 
         super().__init__(cfg, env)
 
-        self.mean_main_freq = 0.0
-        self.range_main_freq = self.expert_freq
+        # mean_main_freq = self.expert_freq, and range_main_freq = 0.5 also worked good. Range of frequency needs to be tuned in the future for a larger range of target velocities. Problematic might be that just frequency=0 is learned if 0 is included.
+        self.mean_main_freq = self.expert_freq / 2
+        self.range_main_freq = self.expert_freq / 2
 
        
         # buffers
@@ -957,8 +957,8 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
         self._prev_freqs = self.freqs
         self._prev_latent_action = self.latent_action
         
-        self._latent_action = torch.clamp(residual_and_latent_action[:, self.robot_action_dim:], -1.0, 1.0)
         residual_action = residual_and_latent_action[:, :self.robot_action_dim]
+        self._latent_action = torch.clamp(residual_and_latent_action[:, self.robot_action_dim:], -1.0, 1.0)
 
         assert residual_action.shape[1] == self.robot_action_dim
         assert self._latent_action.shape[1] == self.latent_action_dim
@@ -968,9 +968,9 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
         super().process_action(residual_action)
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
+        # Do not reset self._freqs to zero here!
         self._latent_action[env_ids] = 0.0
         self._prev_latent_action[env_ids] = 0.0
-        self._prev_freqs[env_ids] = 0.0
         return super().reset(env_ids)
 
     @property
@@ -990,6 +990,7 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
         """Shape of each action term."""
         return [self.robot_action_dim + self.latent_action_dim] # This is queried by the policy to get output dimension. Its seems save to modify this variable.
     
+   
   
 # class StyleActionManager(PhaseActionManager):
 #     """Extends the PhaseActionManager to return a style to the current point in time. No interpolation implemented!"""
@@ -1047,3 +1048,4 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
 #     @property
 #     def freqs(self) -> torch.Tensor:
 #         return self._freqs
+
