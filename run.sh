@@ -1,0 +1,3 @@
+./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-v0 --headless
+./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-v0 --headless
+./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-InterpolatedStyleFlat-Unitree-Go2-v0 --headless

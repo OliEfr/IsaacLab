@@ -2,6 +2,7 @@
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
+import glob
 
 from omni.isaac.lab.utils import configclass
 
@@ -11,11 +12,12 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     RslRlPpoAlgorithmCfg,
 )
 
+MOTION_FILES = glob.glob('datasets/mocap_motions/*')
 
 @configclass
 class UnitreeGo2RoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 1500 # num_learning_iterations
+    max_iterations = 1500 # num_learning_ifterations
     save_interval = 50
     experiment_name = "unitree_go2_rough"
     empirical_normalization = False
@@ -50,3 +52,26 @@ class UnitreeGo2FlatPPORunnerCfg(UnitreeGo2RoughPPORunnerCfg):
         self.experiment_name = "unitree_go2_flat"
         self.policy.actor_hidden_dims = [128, 128, 128]
         self.policy.critic_hidden_dims = [128, 128, 128]
+
+@configclass
+class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.experiment_name = "unitree_go2_AMPflat"
+
+        self.policy_class_name = 'ActorCritic'
+        self.max_iterations = 500000 # number of policy updates
+
+        self.amp_reward_coef = 2.0
+        self.amp_motion_files = MOTION_FILES
+        self.amp_num_preload_transitions = 2000000
+        self.amp_task_reward_lerp = 0.3
+        self.amp_discr_hidden_dims = [1024, 512]
+
+        self.min_normalized_std = [0.05, 0.02, 0.05] * 4
+
+        self.algorithm.amp_replay_buffer_size = 1_000_000
+        self.algorithm.num_learning_epochs = 5
+        self.algorithm.num_mini_batches = 4
+        self.algorithm.class_name = 'AMPPPO'
+        self.algorithm.entropy_coef = 0.01

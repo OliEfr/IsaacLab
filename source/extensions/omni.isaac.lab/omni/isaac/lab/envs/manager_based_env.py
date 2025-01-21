@@ -11,7 +11,7 @@ from typing import Any
 import omni.isaac.core.utils.torch as torch_utils
 import omni.log
 
-from omni.isaac.lab.managers import LegwiseLatentActionManager, EventManager, ObservationManager, PhaseActionManager, LegwisePhaseActionManager, InterpolatedStyleActionManager, FrequencyInterpolatedStyleActionManager
+from omni.isaac.lab.managers import LegwiseLatentActionManager, EventManager, ObservationManager, PhaseActionManager, LegwisePhaseActionManager, InterpolatedStyleActionManager, FrequencyInterpolatedStyleActionManager, ActionManager
 from omni.isaac.lab.scene import InteractiveScene
 from omni.isaac.lab.sim import SimulationContext
 from omni.isaac.lab.utils.timer import Timer

@@ -150,3 +150,9 @@ class RslRlOnPolicyRunnerCfg:
 
     If regex expression, the latest (alphabetical order) matching file will be loaded.
     """
+
+    ##
+    # AMP
+    ##
+
+    amp_replay_buffer_size: int = MISSING

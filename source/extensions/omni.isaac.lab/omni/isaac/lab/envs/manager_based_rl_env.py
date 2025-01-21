@@ -211,6 +211,15 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
 
         # return observations, rewards, resets and extras
         return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras
+    
+    def get_amp_observations(self):
+        # do not query from observation_manager as it applies noise transformations etc.
+        # TODO
+        joint_pos = self.scene["robot"].data.joint_pos
+        joint_vel = self.scene["robot"].data.joint_vel
+        # z_pos = self.root_states[:, 2:3]
+        # foot_pos = self.foot_positions_in_base_frame(self.dof_pos).to(self.device)
+        return torch.cat((joint_pos, joint_vel), dim=-1)
 
     def render(self, recompute: bool = False) -> np.ndarray | None:
         """Run rendering without stepping through the physics.

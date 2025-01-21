@@ -10,3 +10,4 @@
 # TODO
 - add energy penalty
 - add foot tracking reward for style
+- use this AMP implementation: https://github.com/Alescontrela/AMP_for_hardware/blob/bfb0dbdcf32bdf83a916790bddf193fffc7e79b8/rsl_rl/rsl_rl/runners/amp_on_policy_runner.py#L43
