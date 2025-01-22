@@ -174,7 +174,7 @@ class RslRlVecEnvWrapper(VecEnv):
 
     def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict]:
         # record step information
-        obs_dict, rew, terminated, truncated, extras = self.env.step(actions)
+        obs_dict, rew, terminated, truncated, extras, reset_env_ids, terminal_amp_states = self.env.step(actions)
         # compute dones for compatibility with RSL-RL
         dones = (terminated | truncated).to(dtype=torch.long)
         # move extra observations to the extras dict
@@ -186,7 +186,7 @@ class RslRlVecEnvWrapper(VecEnv):
             extras["time_outs"] = truncated
 
         # return the step information
-        return obs, rew, dones, extras
+        return obs, rew, dones, extras, reset_env_ids, terminal_amp_states
 
     def close(self):  # noqa: D102
         return self.env.close()

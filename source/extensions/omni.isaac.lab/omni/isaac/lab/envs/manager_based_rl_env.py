@@ -194,6 +194,7 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
 
         # -- reset envs that terminated/timed-out and log the episode information
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
+        terminal_amp_states=self.get_amp_observations()[reset_env_ids] # calculate terminal_amp_states before resetting, just as reference implementation
         if len(reset_env_ids) > 0:
             self._reset_idx(reset_env_ids)
             # if sensors are added to the scene, make sure we render to reflect changes in reset
@@ -209,8 +210,9 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # note: done after reset to get the correct observations for reset envs
         self.obs_buf = self.observation_manager.compute()
 
+
         # return observations, rewards, resets and extras
-        return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras
+        return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras, reset_env_ids, terminal_amp_states
     
     def get_amp_observations(self):
         # do not query from observation_manager as it applies noise transformations etc.
@@ -220,6 +222,15 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # z_pos = self.root_states[:, 2:3]
         # foot_pos = self.foot_positions_in_base_frame(self.dof_pos).to(self.device)
         return torch.cat((joint_pos, joint_vel), dim=-1)
+    
+
+        # joint_pos = self.dof_pos
+        # foot_pos = self.foot_positions_in_base_frame(self.dof_pos).to(self.device)
+        # base_lin_vel = self.base_lin_vel
+        # base_ang_vel = self.base_ang_vel
+        # joint_vel = self.dof_vel
+        # z_pos = self.root_states[:, 2:3]
+        # return torch.cat((joint_pos, foot_pos, base_lin_vel, base_ang_vel, joint_vel, z_pos), dim=-1)
 
     def render(self, recompute: bool = False) -> np.ndarray | None:
         """Run rendering without stepping through the physics.

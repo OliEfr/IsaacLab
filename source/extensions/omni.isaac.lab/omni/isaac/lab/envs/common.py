@@ -89,7 +89,7 @@ Note:
 
 """
 
-VecEnvStepReturn = tuple[VecEnvObs, torch.Tensor, torch.Tensor, torch.Tensor, dict]
+VecEnvStepReturn = tuple[VecEnvObs, torch.Tensor, torch.Tensor, torch.Tensor, dict, torch.Tensor, torch.Tensor]
 """The environment signals processed at the end of each step.
 
 The tuple contains batched information for each sub-environment. The information is stored in the following order:
