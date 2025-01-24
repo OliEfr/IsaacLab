@@ -69,6 +69,8 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import RslRlOnPolicyRunnerCfg, R
 
 from actionManagerLatentActorMapping import get_vel_dependent_actor_latent_dim_for_action_manager_class
 
+from utils import TensorTracker, setup_tensor_tracking
+
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.deterministic = False
@@ -147,6 +149,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     dump_pickle(os.path.join(log_dir, "params", "agent.pkl"), agent_cfg)
 
     # run training
+    # logger_tensors = setup_tensor_tracking()
+    # with TensorTracker():
     runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
 
     # close the simulator
