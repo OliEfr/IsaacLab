@@ -36,8 +36,8 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
 
         self.amp_motion_files = MOTION_FILES
 
+        # use reference state initialization
         self.events.reset_robot_joints = None
-
         self.events.reference_state_initialization = EventTerm(
             func=mdp.reference_state_initialization,
             mode="reset",

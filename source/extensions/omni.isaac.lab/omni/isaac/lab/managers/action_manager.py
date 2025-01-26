@@ -889,7 +889,8 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
 
         
         self._jpos_ref = self._jpos_ref[:, JOINT_UNITREE_TO_ISAAC_LAB_MAPPING]
-
+        self._jpos_ref = self._jpos_ref + torch.tensor(DEFAULT_JOINT_POS_ISAAC_LAB, device=self.device)
+        
     def process_action(self, action: torch.Tensor):
         assert action.shape[1] == 12, "Not expecting latent actions, only 12 full actions."
 
@@ -899,7 +900,6 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
 
         self.get_current_jpos_reference() 
 
-        self._jpos_ref = self._jpos_ref + torch.tensor(DEFAULT_JOINT_POS_ISAAC_LAB, device=self.device)
         self._jvel_ref = (self._jpos_ref - self.prev_jpos_ref) / self._env.step_dt
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:

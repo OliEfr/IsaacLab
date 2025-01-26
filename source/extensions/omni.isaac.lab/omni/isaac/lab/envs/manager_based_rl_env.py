@@ -216,7 +216,7 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
     
     def get_amp_observations(self):
         # do not query from observation_manager as it applies noise transformations etc.
-        # TODO
+        # TODO check
         joint_pos = self.scene["robot"].data.joint_pos
         joint_vel = self.scene["robot"].data.joint_vel
         # z_pos = self.root_states[:, 2:3]
