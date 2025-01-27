@@ -85,7 +85,7 @@ class reference_state_initialization(ManagerTermBase):
         joint_pos_min = joint_pos_limits[..., 0]
         joint_pos_max = joint_pos_limits[..., 1]
         joint_pos_limit_reached = (joint_pos <= joint_pos_min) | (joint_pos >= joint_pos_max)
-        # assert not joint_pos_limit_reached.any(), "Joint position limits reached in init."
+        assert not joint_pos_limit_reached.any(), "Joint position limits reached in init."
         
         # clamp joint pos to limits
         joint_pos = joint_pos.clamp_(joint_pos_limits[..., 0], joint_pos_limits[..., 1])
@@ -1069,30 +1069,6 @@ def reset_joints_by_offset(
     # set into the physics simulation
     asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
 
-
-# from rsl_rl.datasets.motion_loader import AMPLoader
-# def reference_state_initialization(
-#     env: ManagerBasedEnv,
-#     env_ids: torch.Tensor,
-#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-# ):
-#     """Reset the robot joints with offsets around the default position and velocity by the given ranges.
-
-#     This function samples random values from the given ranges and biases the default joint positions and velocities
-#     by these values. The biased values are then set into the physics simulation.
-#     """
-#     # extract the used quantities (to enable type-hinting)
-#     asset: Articulation = env.scene[asset_cfg.name]
-
-# # clamp joint pos to limits
-# joint_pos_limits = asset.data.soft_joint_pos_limits[env_ids]
-# joint_pos = joint_pos.clamp_(joint_pos_limits[..., 0], joint_pos_limits[..., 1])
-# # clamp joint vel to limits
-# joint_vel_limits = asset.data.soft_joint_vel_limits[env_ids]
-# joint_vel = joint_vel.clamp_(-joint_vel_limits, joint_vel_limits)
-
-# # set into the physics simulation
-# asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
 
 
 def reset_nodal_state_uniform(

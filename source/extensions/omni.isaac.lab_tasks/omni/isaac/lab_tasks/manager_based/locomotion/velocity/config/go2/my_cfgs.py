@@ -27,6 +27,9 @@ class InterpolatedStyleUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
 
         # style
         self.action_manager_class = "InterpolatedStyleActionManager"
+        
+        self.actions.joint_pos.scale = 1.0
+        
 
 
 class InterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY(InterpolatedStyleUnitreeGo2FlatEnvCfg):
@@ -34,7 +37,6 @@ class InterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY(InterpolatedStyleUnitreeGo2Flat
         # post init of parent
         super().__post_init__()
 
-        self.action_manager_class = "InterpolatedStyleActionManager"
 
 
         # make a smaller scene for play
@@ -64,6 +66,9 @@ class FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg(InterpolatedStyleUnitreeGo2
 
         self.rewards.style_jpos.params["factor"] = -0.5
         self.rewards.style_jvel.params["factor"] = -0.0001
+        
+        self.actions.joint_pos.scale = 1.0
+        
 
 
 class FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY(FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg):
@@ -71,7 +76,6 @@ class FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY(FrequencyInterpolatedS
         # post init of parent
         super().__post_init__()
 
-        self.action_manager_class = "FrequencyInterpolatedStyleActionManager"
 
         # make a smaller scene for play
         self.scene.num_envs = 50
@@ -100,6 +104,9 @@ class LegwiseLatentActionUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         self.rewards.residual_action_l2.weight = 0.0
 
         self.action_manager_class = "LegwiseLatentActionManager"
+        
+        self.actions.joint_pos.scale = 1.0
+        
 
 
 class LegwiseLatentActionUnitreeGo2FlatEnvCfg_PLAY(LegwiseLatentActionUnitreeGo2FlatEnvCfg):
@@ -107,7 +114,6 @@ class LegwiseLatentActionUnitreeGo2FlatEnvCfg_PLAY(LegwiseLatentActionUnitreeGo2
         # post init of parent
         super().__post_init__()
 
-        self.action_manager_class = "LegwiseLatentActionManager"
 
 
         # make a smaller scene for play

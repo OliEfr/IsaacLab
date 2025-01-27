@@ -17,7 +17,7 @@ MOTION_FILES = glob.glob('datasets/mocap_motions/*')
 @configclass
 class UnitreeGo2RoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 1500 # num_learning_ifterations
+    max_iterations = 1500 # num_learning_iterations
     save_interval = 50
     experiment_name = "unitree_go2_rough"
     empirical_normalization = False
@@ -60,7 +60,7 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.experiment_name = "unitree_go2_AMPflat"
 
         self.policy_class_name = 'ActorCritic'
-        self.max_iterations = 500_000 # number of policy updates
+        self.max_iterations = 25_000 # number of policy updates
 
         self.amp_reward_coef = 2.0
         self.amp_motion_files = MOTION_FILES
@@ -68,7 +68,7 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.amp_task_reward_lerp = 0.3 # weighting factor of task reward (style reward is 1-task_reward_lerp)
         self.amp_discr_hidden_dims = [1024, 512]
 
-        self.min_normalized_std = [0.05, 0.02, 0.05] * 4
+        self.min_normalized_std = [0.05] * 4 + [0.02] * 4 +[0.05] * 4
 
         self.algorithm.amp_replay_buffer_size = 1_000_000
         self.algorithm.num_learning_epochs = 5

@@ -17,6 +17,7 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
+    
 
         # disable
         self.rewards.track_lin_vel_xy_exp.weight = 1.5
@@ -48,3 +49,20 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
                 "motion_files": MOTION_FILES,
             },
         )
+        
+@configclass
+class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+        
+        # make a smaller scene for play
+        self.scene.num_envs = 50
+        self.scene.env_spacing = 2.5
+        # disable randomization for play
+        self.observations.policy.enable_corruption = False
+        # remove random pushing event
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
+
+
