@@ -5,9 +5,24 @@
 - working forward and sidewards and angular movement with temporal prior and some DR and little rough terrain for real robot expert data -> ff27cc978beef8c526461033b4143ce72951558b -> tensorboard run: 2025-01-07_12-47-39
 - working forward and heading movement with temporal prior and mocap dog data 2025-01-14_10-58-54 | fbb917a5ae1bede9039e2768cce458ca7deb8dc9 
 - working style reward (not task reward included, that probably requires more reward tuning); also style reward could use some improved tuning! | 2025-01-16_11-57-36 | 40a0487be62db39ea6166487fb752ca84f1cb5e9
+- AMP working: 2025-01-29_15-02-15 and corresponding commit (4 mocap files and 1 mocap file)
+
 
 
 # TODO
 - add energy penalty
-- add foot tracking reward for style
-- use this AMP implementation: https://github.com/Alescontrela/AMP_for_hardware/blob/bfb0dbdcf32bdf83a916790bddf193fffc7e79b8/rsl_rl/rsl_rl/runners/amp_on_policy_runner.py#L43
+- add foot tracking reward for style / AMP
+
+
+
+# differences to amp_for_hw
+ - different expert trajectories
+ - different observations in amp_for_hw:
+ - reference_state_initialization_prob
+ - maybe different rewards?
+ - maybe different DR?
+ - different command ranges
+ - they use some empirical normalization
+ - different sim dt
+
+

@@ -20,8 +20,10 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
     
 
         # disable
-        self.rewards.track_lin_vel_xy_exp.weight = 1.5
-        self.rewards.track_ang_vel_z_exp.weight = 0.5
+        self.rewards.track_lin_vel_xy_exp.weight = 60
+        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
+        self.rewards.track_ang_vel_z_exp.weight = 20
+        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
         self.rewards.dof_torques_l2.weight = 0.0
         self.rewards.dof_acc_l2.weight = 0.0
         self.rewards.residual_action_l2.weight = 0.0
