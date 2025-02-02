@@ -5,7 +5,7 @@
 - working forward and sidewards and angular movement with temporal prior and some DR and little rough terrain for real robot expert data -> ff27cc978beef8c526461033b4143ce72951558b -> tensorboard run: 2025-01-07_12-47-39
 - working forward and heading movement with temporal prior and mocap dog data 2025-01-14_10-58-54 | fbb917a5ae1bede9039e2768cce458ca7deb8dc9 
 - working style reward (not task reward included, that probably requires more reward tuning); also style reward could use some improved tuning! | 2025-01-16_11-57-36 | 40a0487be62db39ea6166487fb752ca84f1cb5e9
-- AMP working: 2025-01-29_15-02-15 and corresponding commit (4 mocap files and 1 mocap file)
+- AMP working: 2025-01-29_15-02-15 (4 mocap files) // 2025-01-30_14-11-46 (one mocap file) 258b2bb000626753543722ad734a1e7a01a859f2
 
 
 

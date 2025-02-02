@@ -75,6 +75,8 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         super().__init__(cfg=cfg)
         # store the render mode
         self.render_mode = render_mode
+        
+        self.is_amp_env = getattr(cfg, "is_amp_env", False)
 
         # initialize data and constants
         # -- counter for curriculum
@@ -194,7 +196,7 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
 
         # -- reset envs that terminated/timed-out and log the episode information
         reset_env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
-        terminal_amp_states=self.get_amp_observations()[reset_env_ids] # calculate terminal_amp_states before resetting, just as reference implementation
+        terminal_amp_states= self.get_amp_observations()[reset_env_ids] if self.is_amp_env else None # calculate terminal_amp_states before resetting, just as in reference implementation
         if len(reset_env_ids) > 0:
             self._reset_idx(reset_env_ids)
             # if sensors are added to the scene, make sure we render to reflect changes in reset
@@ -209,10 +211,16 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         # -- compute observations
         # note: done after reset to get the correct observations for reset envs
         self.obs_buf = self.observation_manager.compute()
+        
 
+        return_tuple = (self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras)
+        
+        if self.is_amp_env:
+            return_tuple += (reset_env_ids,)
+            return_tuple += (terminal_amp_states,)
 
         # return observations, rewards, resets and extras
-        return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras, reset_env_ids, terminal_amp_states
+        return return_tuple
     
     def get_amp_observations(self):
         # do not query from observation_manager as it applies noise transformations etc.

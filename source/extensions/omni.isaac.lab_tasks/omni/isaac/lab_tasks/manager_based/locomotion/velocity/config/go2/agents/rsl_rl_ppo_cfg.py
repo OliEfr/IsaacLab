@@ -12,6 +12,9 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
     RslRlPpoAlgorithmCfg,
 )
 
+from rsl_rl.runners import OnPolicyRunner, AMPOnPolicyRunner
+
+
 MOTION_FILES = glob.glob('datasets/mocap_motions/*')
 
 @configclass
@@ -75,3 +78,5 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.algorithm.class_name = 'AMPPPO'
         self.algorithm.entropy_coef = 0.01
         self.algorithm.num_mini_batches = 6 # 4?
+        
+        self.runner_class = AMPOnPolicyRunner

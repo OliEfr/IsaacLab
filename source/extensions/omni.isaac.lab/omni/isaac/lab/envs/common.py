@@ -89,7 +89,7 @@ Note:
 
 """
 
-VecEnvStepReturn = tuple[VecEnvObs, torch.Tensor, torch.Tensor, torch.Tensor, dict, torch.Tensor, torch.Tensor]
+VecEnvStepReturn = tuple[VecEnvObs, torch.Tensor, torch.Tensor, torch.Tensor, dict, torch.Tensor | None, torch.Tensor | None]
 """The environment signals processed at the end of each step.
 
 The tuple contains batched information for each sub-environment. The information is stored in the following order:
@@ -99,6 +99,8 @@ The tuple contains batched information for each sub-environment. The information
 3. **Terminated Dones**: Whether the environment reached a terminal state, such as task success or robot falling etc.
 4. **Timeout Dones**: Whether the environment reached a timeout state, such as end of max episode length.
 5. **Extras**: A dictionary containing additional information from the environment.
+7. **ResetEnvIds**: Optional, for AMP
+7. **AmpStates**: Optional, for AMP
 """
 
 AgentID = TypeVar("AgentID")

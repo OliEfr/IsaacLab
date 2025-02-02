@@ -105,7 +105,7 @@ def main():
 
     print(f"[INFO]: Loading model checkpoint from: {resume_path}")
     # load previously trained model
-    ppo_runner = AMPOnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
+    ppo_runner =  agent_cfg.runner_class(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device) # OnPolicyRunner, AMPOnPolicyRunner
     ppo_runner.load(resume_path)
 
     # obtain the trained policy for inference
@@ -178,7 +178,9 @@ def main():
             # Agent steppinp
             actions = policy(obs_history)
             # Environment stepping
-            obs, _, dones, _, _, _ = env.step(actions)
+            obs, _, dones, _, *optional_values = env.step(actions)
+            assert len(optional_values) == 2 or len(optional_values) == 0, "Too many optional values returned by the environment"
+            
             if dones.any():
                 obs_history_storage.reset(dones)
             obs_history_storage.add(obs)

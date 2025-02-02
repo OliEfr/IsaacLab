@@ -133,7 +133,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env = RslRlVecEnvWrapper(env)
 
     # create runner from rsl-rl
-    runner = AMPOnPolicyRunner(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device)
+    runner = agent_cfg.runner_class(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device) # OnPolicyRunner, AMPOnPolicyRunner
     # write git state to logs
     runner.add_git_repo_to_log(__file__)
     # load the checkpoint

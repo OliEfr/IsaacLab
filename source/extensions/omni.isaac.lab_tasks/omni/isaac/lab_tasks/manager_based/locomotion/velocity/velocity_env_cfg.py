@@ -152,7 +152,7 @@ class ObservationsCfg:
         )
 
         # phases
-        phases = ObsTerm(func=mdp.phases)
+        phases = None
 
 
         def __post_init__(self):
@@ -347,6 +347,8 @@ class CurriculumCfg:
 @configclass
 class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the locomotion velocity-tracking environment."""
+    
+    action_manager_class: str = "ActionManager"
 
     # Scene settings
     scene: MySceneCfg = MySceneCfg(num_envs=4096, env_spacing=2.5)

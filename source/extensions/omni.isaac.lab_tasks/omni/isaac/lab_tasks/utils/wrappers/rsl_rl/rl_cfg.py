@@ -4,9 +4,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from dataclasses import MISSING
+from pyclbr import Class
 from typing import Literal
 
 from omni.isaac.lab.utils import configclass
+
+from rsl_rl.runners import OnPolicyRunner, AMPOnPolicyRunner
 
 
 @configclass
@@ -151,8 +154,10 @@ class RslRlOnPolicyRunnerCfg:
     If regex expression, the latest (alphabetical order) matching file will be loaded.
     """
 
+    runner_class: type = OnPolicyRunner
+    
     ##
     # AMP
     ##
-
+    
     amp_replay_buffer_size: int = MISSING

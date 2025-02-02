@@ -17,8 +17,9 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-    
-
+        
+        self.is_amp_env: bool = True
+        
         # disable
         self.rewards.track_lin_vel_xy_exp.weight = 60
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22

@@ -16,6 +16,7 @@ The following example shows how to wrap an environment for RSL-RL:
 """
 
 
+from click import option
 import gymnasium as gym
 import torch
 
@@ -172,9 +173,14 @@ class RslRlVecEnvWrapper(VecEnv):
         # return observations
         return obs_dict["policy"], {"observations": obs_dict}
 
-    def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict]:
+    def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict, torch.Tensor | None, torch.Tensor | None]:
         # record step information
-        obs_dict, rew, terminated, truncated, extras, reset_env_ids, terminal_amp_states = self.env.step(actions)
+        obs_dict, rew, terminated, truncated, extras, *optional_values = self.env.step(actions)
+        # Assign optional values with defaults
+        assert len(optional_values) == 2 or len(optional_values) == 0, "Too many optional values returned by the environment"
+        if len(optional_values) == 2: # this is unclean and defining dataclass for the return values with named accessors would be better
+            reset_env_ids = optional_values[0]
+            terminal_amp_states = optional_values[1]
         # compute dones for compatibility with RSL-RL
         dones = (terminated | truncated).to(dtype=torch.long)
         # move extra observations to the extras dict
@@ -184,9 +190,13 @@ class RslRlVecEnvWrapper(VecEnv):
         # this is only needed for infinite horizon tasks
         if not self.unwrapped.cfg.is_finite_horizon:
             extras["time_outs"] = truncated
+            
+        return_values = (obs, rew, dones, extras)
+        if len(optional_values) == 2:
+            return_values += (reset_env_ids, terminal_amp_states)
 
         # return the step information
-        return obs, rew, dones, extras, reset_env_ids, terminal_amp_states
+        return return_values
 
     def close(self):  # noqa: D102
         return self.env.close()

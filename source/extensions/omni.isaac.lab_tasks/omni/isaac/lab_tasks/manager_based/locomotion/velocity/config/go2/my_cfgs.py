@@ -7,6 +7,9 @@ from omni.isaac.lab.utils import configclass
 
 from .flat_env_cfg import UnitreeGo2FlatEnvCfg
 
+import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
+from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
+
 
 @configclass
 class InterpolatedStyleUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
@@ -28,7 +31,8 @@ class InterpolatedStyleUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         # style
         self.action_manager_class = "InterpolatedStyleActionManager"
         
-        self.actions.joint_pos.scale = 1.0
+        self.observations.policy.phases = ObsTerm(func=mdp.phases)
+        
         
 
 
@@ -67,7 +71,8 @@ class FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg(InterpolatedStyleUnitreeGo2
         self.rewards.style_jpos.params["factor"] = -0.5
         self.rewards.style_jvel.params["factor"] = -0.0001
         
-        self.actions.joint_pos.scale = 1.0
+        self.observations.policy.phases = ObsTerm(func=mdp.phases)
+        
         
 
 
@@ -107,6 +112,7 @@ class LegwiseLatentActionUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         
         self.actions.joint_pos.scale = 1.0
         
+        self.observations.policy.phases = ObsTerm(func=mdp.phases)
 
 
 class LegwiseLatentActionUnitreeGo2FlatEnvCfg_PLAY(LegwiseLatentActionUnitreeGo2FlatEnvCfg):
