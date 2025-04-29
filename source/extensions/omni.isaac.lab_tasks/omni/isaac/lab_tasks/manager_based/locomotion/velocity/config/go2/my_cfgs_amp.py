@@ -9,7 +9,7 @@ from omni.isaac.lab.managers import SceneEntityCfg
 
 from .flat_env_cfg import UnitreeGo2FlatEnvCfg
 
-MOTION_FILES = glob.glob("datasets/mocap_motions/*")
+MOTION_FILES = glob.glob("datasets/fromVision_motions/*")
 
 
 @configclass
@@ -67,5 +67,12 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         # remove random pushing event
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+        
+        # self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
+        # self.commands.base_velocity.ranges.lin_vel_y = (0.0,0.0)
+        # self.commands.base_velocity.ranges.ang_vel_z = (0.0,0.0)
+        
+        
+        # self.events.reset_base.params["pose_range"] = {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)}
 
 

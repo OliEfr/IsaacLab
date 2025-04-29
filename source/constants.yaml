@@ -29,3 +29,4 @@ DEFAULT_JOINT_POS_ISAAC_LAB:
     -1.5000,
     -1.5000,
   ]
+QUAT_PYBULLET_TO_ISAAC_LAB_MAPPING: [3,0,1,2] # isaac lab uses wxyz, whereas pybullet uses xyzw | https://isaac-sim.github.io/IsaacLab/main/source/migration/migrating_from_isaacgymenvs.html and 

@@ -85,6 +85,14 @@ class reference_state_initialization(ManagerTermBase):
         joint_pos_min = joint_pos_limits[..., 0]
         joint_pos_max = joint_pos_limits[..., 1]
         joint_pos_limit_reached = (joint_pos <= joint_pos_min) | (joint_pos >= joint_pos_max)
+        if joint_pos_limit_reached.any():
+            violated_indices = torch.nonzero(joint_pos_limit_reached, as_tuple=False)
+            for idx in violated_indices:
+                env_idx, joint_idx = idx[0].item(), idx[1].item()
+                pos_value = joint_pos[env_idx, joint_idx].item()
+                min_limit = joint_pos_min[env_idx, joint_idx].item()
+                max_limit = joint_pos_max[env_idx, joint_idx].item()
+                print(f"Violation at env {env_idx}, joint {joint_idx}: pos = {pos_value:.6f}, min = {min_limit:.6f}, max = {max_limit:.6f}")
         assert not joint_pos_limit_reached.any(), "Joint position limits reached in init."
         
         # clamp joint pos to limits
