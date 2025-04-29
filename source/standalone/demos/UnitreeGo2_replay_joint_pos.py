@@ -149,7 +149,7 @@ def main():
     
     
     # Recorded jpos path
-    recording_path = "datasets/fromVision_motions/fromVision_amp_until_130.txt" # "datasets/fromVision_motions/fromVision_amp_until_130.txt" || datasets/mocap_motions/trot2_amp.txt
+    recording_path = "datasets/fromVision_motions/fromVision_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
     with open(recording_path, "r") as f:
         motion_json = json.load(f)
         motion_data = np.array(motion_json["Frames"])
@@ -157,9 +157,15 @@ def main():
     jpos = AMPLoader.get_joint_pose_batch(motion_data)
     root_pos = AMPLoader.get_root_pos_batch(motion_data)
     root_rot = AMPLoader.get_root_rot_batch(motion_data)
+    lin_vel = AMPLoader.get_linear_vel_batch(motion_data)
+    
     jpos = torch.tensor(jpos, device=sim.device)
     root_pos = torch.tensor(root_pos, device=sim.device)
     root_rot = torch.tensor(root_rot, device=sim.device)
+    lin_vel = torch.tensor(lin_vel, device=sim.device)
+    
+    mean_speed = torch.norm(lin_vel, dim=1).mean().item()
+    print(f"[INFO]: Mean speed of the robot: {mean_speed:.2f} m/s")
     
     recording_dt = float(motion_json["FrameDuration"])
     
