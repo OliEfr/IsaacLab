@@ -9,17 +9,15 @@ from omni.isaac.lab.managers import SceneEntityCfg
 
 from .flat_env_cfg import UnitreeGo2FlatEnvCfg
 
-MOTION_FILES = glob.glob("datasets/fromVision_motions/*")
-
 
 @configclass
 class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
+
         self.is_amp_env: bool = True
-        
+
         # disable
         self.rewards.track_lin_vel_xy_exp.weight = 60
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
@@ -38,7 +36,8 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         # style
         self.action_manager_class = "ActionManager"  # Default action manager
 
-        self.amp_motion_files = MOTION_FILES
+        self.amp_motion_folder = "datasets/fromVision_motions/*"
+        self.amp_motion_files = glob.glob(self.amp_motion_folder)
 
         # use reference state initialization
         self.events.reset_robot_joints = None
@@ -49,16 +48,23 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
                 "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
                 "device": self.sim.device,
                 "time_between_frames": self.decimation * self.sim.dt,
-                "motion_files": MOTION_FILES,
+                "motion_files": self.amp_motion_files,
             },
         )
-        
+
+    def update_motion_files(self):
+        motion_files = glob.glob(self.amp_motion_folder)
+
+        self.amp_motion_files = motion_files
+        self.events.reference_state_initialization.params["motion_files"] = motion_files
+
+
 @configclass
 class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
+
         # make a smaller scene for play
         self.scene.num_envs = 50
         self.scene.env_spacing = 2.5
@@ -67,12 +73,9 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         # remove random pushing event
         self.events.base_external_force_torque = None
         self.events.push_robot = None
-        
+
         # self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
         # self.commands.base_velocity.ranges.lin_vel_y = (0.0,0.0)
         # self.commands.base_velocity.ranges.ang_vel_z = (0.0,0.0)
-        
-        
+
         # self.events.reset_base.params["pose_range"] = {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)}
-
-

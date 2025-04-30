@@ -15,7 +15,6 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import (
 from rsl_rl.runners import OnPolicyRunner, AMPOnPolicyRunner
 
 
-MOTION_FILES = glob.glob('datasets/mocap_motions/*')
 
 @configclass
 class UnitreeGo2RoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
@@ -66,7 +65,9 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.max_iterations = 25_000 # number of policy updates
 
         self.amp_reward_coef = 2.0
-        self.amp_motion_files = MOTION_FILES
+        
+        self.amp_motion_folder = 'datasets/fromVision_motions/*'
+        self.amp_motion_files = glob.glob(self.amp_motion_folder)
         self.amp_num_preload_transitions = 2_000_000
         self.amp_task_reward_lerp = 0.3 # weighting factor of task reward (style reward is 1-task_reward_lerp)
         self.amp_discr_hidden_dims = [1024, 512]
@@ -80,3 +81,9 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.algorithm.num_mini_batches = 6 # 4?
         
         self.runner_class = AMPOnPolicyRunner
+        
+    def update_motion_files(self):
+        motion_files = glob.glob(self.amp_motion_folder)
+
+        self.amp_motion_files = motion_files
+        

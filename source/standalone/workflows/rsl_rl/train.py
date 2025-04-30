@@ -80,6 +80,16 @@ torch.backends.cudnn.benchmark = False
 @hydra_task_config(args_cli.task, "rsl_rl_cfg_entry_point")
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: RslRlOnPolicyRunnerCfg):
     """Train with RSL-RL agent."""
+    
+    # Update motion files, and check if they are equal in env and agent config
+    if env_cfg.is_amp_env:
+        env_cfg.update_motion_files()
+        # agent_cfg.update_motion_files()
+        
+        assert env_cfg.amp_motion_files == agent_cfg.amp_motion_files, "Motion files in env and agent config should be the same."
+        
+        print(f"Using the following AMP motion files: {env_cfg.amp_motion_files}")
+    
     # override configurations with non-hydra CLI arguments
     agent_cfg = cli_args.update_rsl_rl_cfg(agent_cfg, args_cli)
     env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
