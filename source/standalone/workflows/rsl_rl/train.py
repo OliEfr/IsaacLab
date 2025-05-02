@@ -84,9 +84,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # Update motion files, and check if they are equal in env and agent config
     if env_cfg.is_amp_env:
         env_cfg.update_motion_files()
-        # agent_cfg.update_motion_files()
+        agent_cfg.update_motion_files()
         
-        assert env_cfg.amp_motion_files == agent_cfg.amp_motion_files, "Motion files in env and agent config should be the same."
+        assert env_cfg.amp_motion_files == agent_cfg.amp_motion_files, f"Motion files in env and agent config should be the same, but got {env_cfg.amp_motion_files} and {agent_cfg.amp_motion_files}."
         
         print(f"Using the following AMP motion files: {env_cfg.amp_motion_files}")
     
