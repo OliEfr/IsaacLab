@@ -143,7 +143,10 @@ class UniformVelocityCommand(CommandTerm):
         speed = torch.norm(self.robot.data.root_lin_vel_b[:, :2], dim=-1)
         
         self.metrics["mean_power"] += power / max_command_step
-        self.metrics["mean_mechanical_cot"] += (power / (9.81 * speed * self.mass + 1e-6)) / max_command_step
+        mechanical_cot = (power / (9.81 * speed * self.mass + 1e-6)) / max_command_step
+        # NOTE there is a bug that the metrics get computed also upon first reset. However, the speed is zero at that time. This here is just a workaround; should be fixed in the future.
+        mechanical_cot[mechanical_cot > 1000] = 0.0
+        self.metrics["mean_mechanical_cot"] += mechanical_cot / max_command_step
         
         self.metrics["mean_vel_x"] += self.robot.data.root_lin_vel_b[:, 0] / max_command_step
         self.metrics["mean_vel_y"] += self.robot.data.root_lin_vel_b[:, 1] / max_command_step

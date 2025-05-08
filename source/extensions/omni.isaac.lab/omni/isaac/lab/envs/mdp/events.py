@@ -80,7 +80,7 @@ class reference_state_initialization(ManagerTermBase):
         joint_pos = AMPLoader.get_joint_pose_batch(frames)
         joint_vel = AMPLoader.get_joint_vel_batch(frames)
         
-        # # check if joint position limits are reached
+        # check if joint position limits are reached
         joint_pos_limits = self.asset.data.soft_joint_pos_limits[env_ids]
         joint_pos_min = joint_pos_limits[..., 0]
         joint_pos_max = joint_pos_limits[..., 1]
