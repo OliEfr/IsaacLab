@@ -112,6 +112,9 @@ class ManagerBasedEnv:
 
         # counter for simulation steps
         self._sim_step_counter = 0
+        
+        # allocate dictionary to store metrics
+        self.extras = {}
 
         # generate scene
         with Timer("[INFO]: Time taken for scene creation", "scene_creation"):
@@ -150,8 +153,7 @@ class ManagerBasedEnv:
             # if no window, then we don't need to store the window
             self._window = None
 
-        # allocate dictionary to store metrics
-        self.extras = {}
+
 
     def __del__(self):
         """Cleanup for the environment."""

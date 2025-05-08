@@ -23,6 +23,7 @@ parser.add_argument(
 )
 parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
+parser.add_argument("--evaluate",action="store_true", default=None, help="Use this to log evaluation metrics. It also set some parameters to setup logging")
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -31,6 +32,10 @@ args_cli = parser.parse_args()
 # always enable cameras to record video
 if args_cli.video:
     args_cli.enable_cameras = True
+    
+# headless for evaluation
+if args_cli.evaluate:
+    args_cli.headless = True
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -68,7 +73,26 @@ def main():
     env_cfg = parse_env_cfg(
         args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
     )
+    
+    # for correct metrics calculation
+    if args_cli.evaluate:
+        PLAY_EPISODE_LENGTH = 10.0
+        env_cfg.commands.base_velocity.rel_standing_envs = 0.0
+        env_cfg.commands.base_velocity.resampling_time_range = (PLAY_EPISODE_LENGTH,PLAY_EPISODE_LENGTH)
+        env_cfg.episode_length_s = PLAY_EPISODE_LENGTH
+    
+    
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
+    
+    
+    # AMP motion files are not needed for PLAY, but there needs to be some files otherwise an error is thrown
+    if env_cfg.is_amp_env:
+        env_cfg.update_motion_files()
+        agent_cfg.update_motion_files()
+        
+        assert env_cfg.amp_motion_files == agent_cfg.amp_motion_files, f"Motion files in env and agent config should be the same, but got {env_cfg.amp_motion_files} and {agent_cfg.amp_motion_files}."
+        
+        print(f"Using the following AMP motion files: {env_cfg.amp_motion_files}")
 
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
@@ -136,6 +160,9 @@ def main():
     obs_history = obs_history_storage.get()
 
     simulated_step_time = env.unwrapped.step_dt  
+    if args_cli.evaluate:
+        NUM_EVAL_STEPS = 2*env.env.num_envs*PLAY_EPISODE_LENGTH/env.unwrapped.step_dt
+    
 
     ###### Debug correspondance of target speeds with freq ######
     if hasattr(policy.actor, "actor_freq"):
@@ -166,8 +193,13 @@ def main():
             print(f"y speed {x_speed:+.4f}: {frequency:+.4f} Hz")
         print("######")
     ###### ###################### ######
+    
+    if args_cli.evaluate:
+        metrics = dict()
+        metrics["num_eval_steps"] = NUM_EVAL_STEPS
 
     timestep = 0
+    total_num_steps = 0
     # simulate environment
     while simulation_app.is_running():
         # Record the start time of the current loop
@@ -178,13 +210,23 @@ def main():
             # Agent steppinp
             actions = policy(obs_history)
             # Environment stepping
-            obs, _, dones, _, *optional_values = env.step(actions)
+            obs, _, dones, extras, *optional_values = env.step(actions)
+            total_num_steps += env.env.num_envs
             assert len(optional_values) == 2 or len(optional_values) == 0, "Too many optional values returned by the environment"
             
             if dones.any():
+                if args_cli.evaluate:
+                    # get metrics like that
+                    for key, value in extras["log"].items():
+                        if "Metrics/base_velocity" in key:
+                            metrics.setdefault(key, []).append(value)
+                        
                 obs_history_storage.reset(dones)
+                
             obs_history_storage.add(obs)
             obs_history = obs_history_storage.get()
+            
+
 
         if args_cli.video:
             timestep += 1
@@ -199,7 +241,21 @@ def main():
         sleep_time = simulated_step_time - elapsed_real_time
         if sleep_time > 0:
             time.sleep(sleep_time)
+            
+        if args_cli.evaluate:
+            if total_num_steps >= NUM_EVAL_STEPS:
+                break
+        
+    # store the metrics
+    if args_cli.evaluate:
+        for key, value in metrics.items():
+            metrics[key] = torch.mean(torch.tensor(value)).item()
+        
+        with open(os.path.join(log_dir, "metrics.yaml"), "w") as f:
+            yaml.dump(metrics, f)
+        print(f"Metrics: {metrics}")
 
+                
     # close the simulator
     env.close()
 

@@ -66,7 +66,7 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
 
         self.amp_reward_coef = 2.0
         
-        self.amp_motion_folder = 'datasets/fromVision_motions/*'
+        self.amp_motion_folder = 'datasets/dummy/*'
         self.amp_motion_files = glob.glob(self.amp_motion_folder)
         self.amp_num_preload_transitions = 2_000_000
         self.amp_task_reward_lerp = 0.3 # weighting factor of task reward (style reward is 1-task_reward_lerp)

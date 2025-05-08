@@ -95,7 +95,7 @@ class CommandsCfg:
 
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
-        resampling_time_range=(10.0, 10.0),
+        resampling_time_range=(10.0, 10.0), # Always keep that exactly 10.0, otherwise metric computation will be wrong. (It is wrong anyways if episodes terminate prematurely!)
         rel_standing_envs=0.02,
         rel_heading_envs=1.0,
         heading_command=True,
@@ -107,7 +107,10 @@ class CommandsCfg:
         # ),
         # https://arxiv.org/pdf/2203.15103 (AMP make good substitutes for reward function) uses (-1,2), (-0.3, 0.3), (-1.57, + 1.57)
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 1.0), lin_vel_y=(-0.2, 0.2), ang_vel_z=(-1.0, 1.0), heading=(0, 0)
+            lin_vel_x=(-0.5, 1.0),
+            lin_vel_y=(-0.2, 0.2),
+            ang_vel_z=(-1.0, 1.0),
+            heading=(-math.pi, math.pi),
         ),
     )
 

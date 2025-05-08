@@ -36,7 +36,7 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         # style
         self.action_manager_class = "ActionManager"  # Default action manager
 
-        self.amp_motion_folder = "datasets/fromVision_motions/*"
+        self.amp_motion_folder = "datasets/fromVision_motions_3/*"
         self.amp_motion_files = glob.glob(self.amp_motion_folder)
 
         # use reference state initialization
@@ -73,9 +73,13 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         # remove random pushing event
         self.events.base_external_force_torque = None
         self.events.push_robot = None
+        
+        self.amp_motion_folder = "datasets/dummy/*" # required otherwise it wont start
+        
 
-        # self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
-        # self.commands.base_velocity.ranges.lin_vel_y = (0.0,0.0)
-        # self.commands.base_velocity.ranges.ang_vel_z = (0.0,0.0)
+        self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
+        self.commands.base_velocity.ranges.lin_vel_y = (0.1,0.1)
+        self.commands.base_velocity.ranges.ang_vel_z = (1.0,1.0)
 
         # self.events.reset_base.params["pose_range"] = {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)}
+        

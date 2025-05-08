@@ -1,0 +1,6 @@
+- Data correspondes mostly to AMP_for_hardware paper
+- AMP_for_hardware
+    - has much larger dataset size for pace0 (500! frames)
+    - has slightly different dataset for right turn, but dataset size should be similar
+    - has different FrameDuration of 0.021
+    - has weighting factors of 0.5 for some datasets
