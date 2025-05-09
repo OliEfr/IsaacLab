@@ -197,6 +197,7 @@ def main():
     if args_cli.evaluate:
         metrics = dict()
         metrics["num_eval_steps"] = NUM_EVAL_STEPS
+        metrics["num_envs"] = env.env.num_envs
 
     timestep = 0
     total_num_steps = 0
@@ -218,7 +219,7 @@ def main():
                 if args_cli.evaluate:
                     # get metrics like that
                     for key, value in extras["log"].items():
-                        if "Metrics/base_velocity" in key:
+                        if "Metrics/base_velocity" in key or "episode_length" in key:
                             metrics.setdefault(key, []).append(value)
                         
                 obs_history_storage.reset(dones)
@@ -249,7 +250,8 @@ def main():
     # store the metrics
     if args_cli.evaluate:
         for key, value in metrics.items():
-            metrics[key] = torch.mean(torch.tensor(value)).item()
+            if key not in ["num_eval_steps", "num_envs"]:
+                metrics[key] = torch.mean(torch.tensor(value)).item()
         
         with open(os.path.join(log_dir, "metrics.yaml"), "w") as f:
             yaml.dump(metrics, f)
