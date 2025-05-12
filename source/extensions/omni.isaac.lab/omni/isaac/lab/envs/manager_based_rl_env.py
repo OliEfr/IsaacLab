@@ -384,7 +384,5 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
         info = self.termination_manager.reset(env_ids)
         self.extras["log"].update(info)
         
-        self.extras["log"].update({"episode_length": torch.mean(self.episode_length_buf[env_ids].float()).item()})
-
         # reset the episode length buffer
         self.episode_length_buf[env_ids] = 0

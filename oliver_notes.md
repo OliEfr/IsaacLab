@@ -8,6 +8,11 @@
 - AMP working: 2025-01-29_15-02-15 (4 mocap files) // 2025-01-30_14-11-46 (one mocap file) 258b2bb000626753543722ad734a1e7a01a859f2
 - AMP from vision: logs/rsl_rl/unitree_go2_AMPflat/2025-04-30_09-13-56 | AMP from mocap (trot data): logs/rsl_rl/unitree_go2_AMPflat/2025-04-30_15-13-27. Commit: 20015c4aae1b13d2e491a672f41215ba4570a10c
 
+- AMP from generated (all data): 2025-05-11_16-37-05 (commit 61e7a2c4794663c50e001a453af1ecf2e1ac902d) 
+- AMP from mocap (all data (like AMP for hardware)): 2025-05-07_10-12-47
+- AMP from vision (all data): 2025-05-07_02-52-57
+- Standard, only task reward: 2025-05-11_22-47-37
+
 # TODO
 - Add standing pose
 - Add data-augmentation

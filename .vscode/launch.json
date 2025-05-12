@@ -32,6 +32,8 @@
                 "--task",
                 "Isaac-Velocity-AMPFlat-Unitree-Go2-v0",
                 "--headless",
+                "--seed",
+                "42",
             ],
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/train.py",
             "console": "integratedTerminal",
@@ -46,8 +48,23 @@
                 "Isaac-Velocity-AMPFlat-Unitree-Go2-PLAY-v0",
                 "--num_envs",
                 "25",
-                "--load_run", "2025-05-07_10-12-47",
+                "--load_run", "2025-05-11_16-37-05",
                 // "--evaluate",
+            ], // load last checkpoint from specific run like such: ["--load_run", "2025-04-30_09-13-56"]
+            "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Evaluate Environment",
+            "type": "python",
+            "request": "launch",
+            "args": [
+                "--task",
+                "Isaac-Velocity-Flat-Unitree-Go2-v0",
+                "--num_envs",
+                "4096",
+                "--load_run", "2025-05-11_22-47-37",
+                "--evaluate",
             ], // load last checkpoint from specific run like such: ["--load_run", "2025-04-30_09-13-56"]
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
             "console": "integratedTerminal"

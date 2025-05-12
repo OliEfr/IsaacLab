@@ -22,7 +22,7 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         self.rewards.track_lin_vel_xy_exp.weight = 60
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
         self.rewards.track_ang_vel_z_exp.weight = 20
-        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
+        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22 # TODO should this be ang_vel?
         self.rewards.dof_torques_l2.weight = 0.0
         self.rewards.dof_acc_l2.weight = 0.0
         self.rewards.residual_action_l2.weight = 0.0
@@ -77,9 +77,10 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         self.amp_motion_folder = "datasets/dummy/*" # required otherwise it wont start
         
 
-        self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
-        self.commands.base_velocity.ranges.lin_vel_y = (0.1,0.1)
-        self.commands.base_velocity.ranges.ang_vel_z = (1.0,1.0)
+
 
         # self.events.reset_base.params["pose_range"] = {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)}
+        # self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
+        # self.commands.base_velocity.ranges.lin_vel_y = (0.0,0.0)
+        # self.commands.base_velocity.ranges.ang_vel_z = (0.0,0.0)
         

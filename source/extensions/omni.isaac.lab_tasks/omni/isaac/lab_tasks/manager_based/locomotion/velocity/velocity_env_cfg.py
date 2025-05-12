@@ -364,6 +364,7 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
+    is_eval_env: bool = False
 
     def __post_init__(self):
         """Post initialization."""

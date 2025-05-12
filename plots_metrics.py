@@ -5,10 +5,13 @@ import os
 import re
 from collections import defaultdict
 
-name_map={
-    "2025-05-07_10-12-47": "MoCap",
-    "2025-05-07_02-52-57": "fromVision-4",
-    "2025-05-06_20-48-13": "fromVision-3",
+NAME_MAP={
+    "2025-05-07_10-12-47": "AMP, MoCap",
+    "2025-05-07_02-52-57": "AMP Vision (all data)",
+    "2025-05-06_20-48-13": "fromVision (subset data)",
+    "2025-05-11_22-47-37": "DRL, only task reward",
+    "2025-05-11_16-37-05": "AMP, manual data",
+    
 }
 
 def load_yaml_files(file_paths):
@@ -30,7 +33,7 @@ def load_yaml_files(file_paths):
 def organize_metrics(yaml_data):
     """Organize metrics by category for plotting."""
     
-    global name_map
+    global NAME_MAP
     
     organized_metrics = defaultdict(list)
     
@@ -52,7 +55,8 @@ def organize_metrics(yaml_data):
                     paired_value = data[paired_key]
                 
                 if metric_type == 'mean':
-                    organized_metrics[base_key].append((name_map[experiment_name], value, paired_value))
+                    assert experiment_name in NAME_MAP.keys(), f"Please specify a display name for {experiment_name}"
+                    organized_metrics[base_key].append((NAME_MAP[experiment_name], value, paired_value))
                 else:
                     # Skip adding std entries directly as they are paired with means
                     continue
@@ -163,10 +167,10 @@ def plot_metrics(organized_metrics):
 
 def main():
     file_paths = [
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-11_16-37-05/metrics.yaml",
         "logs/rsl_rl/unitree_go2_AMPflat/2025-05-07_10-12-47/metrics.yaml",
-        # Removed duplicate path
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-06_20-48-13/metrics.yaml",
         "logs/rsl_rl/unitree_go2_AMPflat/2025-05-07_02-52-57/metrics.yaml",
+        "logs/rsl_rl/unitree_go2_flat/2025-05-11_22-47-37/metrics.yaml",
     ]
     
     # Load the YAML files
