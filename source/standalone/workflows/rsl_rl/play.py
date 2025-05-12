@@ -307,22 +307,19 @@ def main():
 
     # store the metrics
     if args_cli.evaluate:
+        total_episodes_real = len(
+            eval_episode_metrics["episode_lengths"]
+        ) # can use any metric here - len should be similar for all
+
         for key, value in eval_episode_metrics.items():
             eval_episode_metrics[key] = torch.mean(torch.tensor(value)).item()
         # other stats
         eval_episode_metrics["num_eval_steps"] = NUM_EVAL_STEPS
         eval_episode_metrics["num_envs"] = env.env.num_envs
         eval_episode_metrics["episodes_per_env"] = PLAY_EPISODES_PER_ENV
-        eval_episode_metrics["total_episodes_(num_envs*episodes per env)(target)"] = (
-            env.env.num_envs * PLAY_EPISODES_PER_ENV
-        )
-        eval_episode_metrics["total_episodes (real)"] = len(
-            eval_episode_metrics["episode_lengths"]
-        ) # can use any metric here - should be similar for all
+        eval_episode_metrics["total_episodes (real)"] = total_episodes_real
+
         eval_episode_metrics["episode length in s (target)"] = PLAY_EPISODE_LENGTH
-        eval_episode_metrics["episode length in s (mean real)"] = sum(
-            eval_episode_metrics["episode_lengths"]
-        ) / len(eval_episode_metrics["episode_lengths"])
 
         with open(os.path.join(log_dir, "metrics.yaml"), "w") as f:
             yaml.dump(eval_episode_metrics, f)
