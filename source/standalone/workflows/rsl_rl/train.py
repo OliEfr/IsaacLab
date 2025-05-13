@@ -69,7 +69,7 @@ from omni.isaac.lab_tasks.utils.wrappers.rsl_rl import RslRlOnPolicyRunnerCfg, R
 
 from actionManagerLatentActorMapping import get_vel_dependent_actor_latent_dim_for_action_manager_class
 
-from utils import TensorTracker, setup_tensor_tracking
+# from utils import TensorTracker, setup_tensor_tracking
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
