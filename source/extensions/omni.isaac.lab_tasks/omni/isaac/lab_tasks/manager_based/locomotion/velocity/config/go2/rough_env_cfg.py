@@ -30,7 +30,7 @@ class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.actions.joint_pos.scale = 0.25
 
         # event
-        # self.events.push_robot = None
+        self.events.push_robot = None
         self.events.add_base_mass.params["mass_distribution_params"] = (-2.0, 2.0)
         self.events.add_base_mass.params["asset_cfg"].body_names = "base"
         self.events.base_external_force_torque.params["asset_cfg"].body_names = "base"
@@ -49,6 +49,9 @@ class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         # rewards
         self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot"
+        self.rewards.undesired_contacts_thigh.params["sensor_cfg"].body_names = ".*thigh"
+        self.rewards.undesired_contacts_calf.params["sensor_cfg"].body_names = ".*calf"
+        self.rewards.contact_forces.params["sensor_cfg"].body_names = ".*foot"
         # self.rewards.feet_air_time.weight = 0.01
         # self.rewards.undesired_contacts = None
         # self.rewards.dof_torques_l2.weight = -0.0002 
