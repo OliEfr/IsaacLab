@@ -6,6 +6,8 @@ from omni.isaac.lab.managers import EventTermCfg as EventTerm
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.managers import SceneEntityCfg
 
+from dataclasses import fields
+
 
 from .flat_env_cfg import UnitreeGo2FlatEnvCfg
 
@@ -18,18 +20,17 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
 
         self.is_amp_env: bool = True
 
-        # disable
+        # disable rewards
+        for field in fields(self.rewards):
+            reward_obj = getattr(self.rewards, field.name)
+            reward_obj.weight = 0.0
+        
+        # set only task reward
         self.rewards.track_lin_vel_xy_exp.weight = 60
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
         self.rewards.track_ang_vel_z_exp.weight = 20
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22 # TODO should this be ang_vel?
-        self.rewards.dof_torques_l2.weight = 0.0
-        self.rewards.dof_acc_l2.weight = 0.0
-        self.rewards.residual_action_l2.weight = 0.0
-        self.rewards.style_jpos.weight = 0.0
-        self.rewards.style_jvel.weight = 0.0
 
-        self.observations.policy.phases = None
 
         self.scene.num_envs = 5480
 
@@ -75,12 +76,4 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         self.events.push_robot = None
         
         self.amp_motion_folder = "datasets/dummy/*" # required otherwise it wont start
-        
-
-
-
-        # self.events.reset_base.params["pose_range"] = {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)}
-        # self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
-        # self.commands.base_velocity.ranges.lin_vel_y = (0.0,0.0)
-        # self.commands.base_velocity.ranges.ang_vel_z = (0.0,0.0)
         

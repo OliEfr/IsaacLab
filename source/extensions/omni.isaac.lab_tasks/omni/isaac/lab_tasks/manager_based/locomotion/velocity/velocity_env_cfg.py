@@ -6,7 +6,7 @@
 import math
 from dataclasses import MISSING
 
-from omni.isaac.lab.envs.mdp.rewards import joint_deviation_l1, joint_pos_limits
+from omni.isaac.lab.envs.mdp.rewards import joint_deviation_l1, joint_pos_limits, applied_torque_limits
 from omni.isaac.lab.envs.mdp.terminations import bad_orientation, root_height_below_minimum
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg
@@ -106,10 +106,11 @@ class CommandsCfg:
         #     lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
         # ),
         # https://arxiv.org/pdf/2203.15103 (AMP make good substitutes for reward function) uses (-1,2), (-0.3, 0.3), (-1.57, + 1.57)
+        # NOTE below target values are from AMP for hardware
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 1.0),
-            lin_vel_y=(-0.2, 0.2),
-            ang_vel_z=(-1.0, 1.0),
+            lin_vel_x=(-1.0, 1.0), # AMP for hardware has here (-1.0, 2.0)
+            lin_vel_y=(-0.3, 0.3),
+            ang_vel_z=(-1.57, 1.57),
             heading=(-math.pi, math.pi),
         ),
     )
@@ -179,8 +180,11 @@ class EventCfg:
             # "static_friction_range": (0.4, 1.0),
             # "dynamic_friction_range": (0.2, 0.8),
             # "restitution_range": (0.0, 0.1),
-            "static_friction_range": (2.0, 2.0),
-            "dynamic_friction_range": (1.0, 1.0),
+            # "static_friction_range": (2.0, 2.0),
+            # "dynamic_friction_range": (1.0, 1.0),
+            # "restitution_range": (0.0, 0.0),
+            "static_friction_range": (0.8, 0.8),
+            "dynamic_friction_range": (0.6, 0.6),
             "restitution_range": (0.0, 0.0),
             "num_buckets": 64,
         },
@@ -244,51 +248,62 @@ class EventCfg:
 @configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
-
+    
+    # NOTE all rewards are deactivated here and need to be activated in inheriting confings
+    
     # -- task
     track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_lin_vel_xy_exp, weight=0.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
     )
     # -- penalties
-    # lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
-    # ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7)
-    # action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
-    # feet_air_time = RewTerm(
-    #     func=mdp.feet_air_time,
-    #     weight=0.125,
-    #     params={
-    #         "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"),
-    #         "command_name": "base_velocity",
-    #         "threshold": 0.5,
-    #     },
-    # )
-    # undesired_contacts = RewTerm(
-    #     func=mdp.undesired_contacts,
-    #     weight=-1.0,
-    #     params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 1.0},
-    # )
-    # # -- optional penalties
-    # flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
-    # dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
+    lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-0.0)
+    ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.0)
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-0.0)
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-0.0)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.0)
+    feet_air_time = RewTerm(
+        func=mdp.feet_air_time,
+        weight=0.0,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"),
+            "command_name": "base_velocity",
+            "threshold": 0.5,
+        },
+    )
+    undesired_contacts = RewTerm(
+        func=mdp.undesired_contacts,
+        weight=-0.0,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 1.0},
+    )
+    contact_forces = RewTerm(
+        func=mdp.contact_forces,
+        weight=-0.0,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 100.0},
+    )
+    # -- optional penalties
+    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-0.0)
 
     # joint_deviation_l1 = RewTerm(
     #     func=joint_deviation_l1,
     #     weight=-100.0,
     # )
-    # joint_pos_limits = RewTerm(
-    #     func=joint_pos_limits,
-    #     weight=-100.0,
-    # )
-
-    residual_action_l2 = RewTerm(
-        func=mdp.residual_action_l2,
-        weight=0.0,#-0.04,
+    joint_pos_limits = RewTerm(
+        func=joint_pos_limits,
+        weight=-0.0,
     )
+    
+    torque_limits = RewTerm(
+        func=applied_torque_limits,
+        weight=-0.0,
+    )
+
+    # residual_action_l2 = RewTerm(
+    #     func=mdp.residual_action_l2,
+    #     weight=0.0,#-0.04,
+    # )
     # feet_slide = RewTerm(
     #     func=mdp.feet_slide,
     #     weight=-0.25,
@@ -309,8 +324,8 @@ class RewardsCfg:
     # add power penalty: "We define the mechanical COT as: Power / Weight×Velocity. P, where τ is the joint torque, ˙θ is the motor velocity.
 
     # styles
-    style_jpos = RewTerm(func=mdp.style_jpos, weight=0.0, params={"factor": -2.0})
-    style_jvel = RewTerm(func=mdp.style_jvel, weight=0.0, params={"factor": -0.1})
+    # style_jpos = RewTerm(func=mdp.style_jpos, weight=0.0, params={"factor": -2.0})
+    # style_jvel = RewTerm(func=mdp.style_jvel, weight=0.0, params={"factor": -0.1})
     # TODO add foot z-height style penalty
 
 @configclass
