@@ -273,15 +273,21 @@ class RewardsCfg:
             "threshold": 0.5,
         },
     )
-    undesired_contacts = RewTerm(
+    undesired_contacts_thigh = RewTerm(
         func=mdp.undesired_contacts,
         weight=-0.0,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 1.0},
     )
+    undesired_contacts_calf = RewTerm(
+        func=mdp.undesired_contacts,
+        weight=-0.0,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*CALF"), "threshold": 1.0},
+    )
+    
     contact_forces = RewTerm(
         func=mdp.contact_forces,
         weight=-0.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*THIGH"), "threshold": 100.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"), "threshold": 100.0},
     )
     # -- optional penalties
     flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-0.0)

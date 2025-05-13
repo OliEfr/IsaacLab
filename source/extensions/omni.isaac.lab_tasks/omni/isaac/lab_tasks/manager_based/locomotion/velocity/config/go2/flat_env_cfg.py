@@ -84,19 +84,20 @@ class UnitreeGo2FlatEnvCfgComplexReward(UnitreeGo2FlatEnvCfg):
             reward_obj.weight = 0.0
 
         # set task reward: from AMP for hardware baseline
-        self.rewards.track_lin_vel_xy_exp.weight = 1.0
-        self.rewards.track_ang_vel_z_exp.weight = 0.5
+        self.rewards.track_lin_vel_xy_exp.weight = 1.5
+        self.rewards.track_ang_vel_z_exp.weight = 0.75
         self.rewards.lin_vel_z_l2.weight = -2.0
         self.rewards.ang_vel_xy_l2.weight = -0.05
-        self.rewards.dof_torques_l2.weight = -1.0e-5
+        self.rewards.dof_torques_l2.weight =  -0.0002
         self.rewards.dof_acc_l2.weight = -2.5e-7
         self.rewards.action_rate_l2.weight = -0.01
-        self.rewards.feet_air_time.weight = 1.0
-        self.rewards.undesired_contacts.weight = -1.0
+        self.rewards.feet_air_time.weight = 10.0
+        self.rewards.undesired_contacts_thigh.weight = -1.0
+        self.rewards.undesired_contacts_calf.weight = -1.0
         self.rewards.contact_forces.weight = -1.0
         self.rewards.flat_orientation_l2.weight = -0.01
         self.rewards.joint_pos_limits.weight = -10.0
-        self.rewards.torque_limits.weight = -0.0002
+        self.rewards.torque_limits.weight = -1.0e-5
 
 
 @configclass
