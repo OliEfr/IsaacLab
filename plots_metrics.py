@@ -31,36 +31,13 @@ def load_yaml_files(file_paths):
     return yaml_data
 
 def organize_metrics(yaml_data):
-    """Organize metrics by category for plotting."""
-    
+    """Organize metrics by category for plotting. All metrics are already the mean."""
     global NAME_MAP
-    
     organized_metrics = defaultdict(list)
-    
     for experiment_name, data in yaml_data:
-        # Group metrics by their base name (before 'mean' or 'std')
         for key, value in data.items():
-            if key.endswith('mean') or key.endswith('std'):
-                # Extract base metric name
-                base_key = key[:-4]  # Remove 'mean' or 'std' suffix
-                metric_type = key[-4:]  # Either 'mean' or 'std'
-                
-                if base_key not in organized_metrics:
-                    organized_metrics[base_key] = []
-                
-                # Find the corresponding std if this is a mean (or vice versa)
-                paired_value = None
-                paired_key = base_key + ('std' if metric_type == 'mean' else 'mean')
-                if paired_key in data:
-                    paired_value = data[paired_key]
-                
-                if metric_type == 'mean':
-                    assert experiment_name in NAME_MAP.keys(), f"Please specify a display name for {experiment_name}"
-                    organized_metrics[base_key].append((NAME_MAP[experiment_name], value, paired_value))
-                else:
-                    # Skip adding std entries directly as they are paired with means
-                    continue
-
+            assert experiment_name in NAME_MAP.keys(), f"Please specify a display name for {experiment_name}"
+            organized_metrics[key].append((NAME_MAP[experiment_name], value))
     return organized_metrics
 
 def plot_metrics(organized_metrics):
@@ -116,12 +93,11 @@ def plot_metrics(organized_metrics):
         # Extract experiment names and values
         experiments = [v[0] for v in values]
         means = [v[1] for v in values]
-        stds = [v[2] if v[2] is not None else 0 for v in values]
         
-        # Plot the bar chart with error bars
+        # Plot the bar chart (no error bars)
         x_pos = np.arange(len(experiments))
-        bars = ax.bar(x_pos, means, yerr=stds, align='center', alpha=0.7, 
-                    capsize=5, color=[color_map[exp] for exp in experiments])
+        bars = ax.bar(x_pos, means, align='center', alpha=0.7, 
+                    color=[color_map[exp] for exp in experiments])
         
         # Use shorter display names for x-tick labels
         if len(experiments) > 5:
@@ -140,10 +116,9 @@ def plot_metrics(organized_metrics):
         ax.grid(axis='y', linestyle='--', alpha=0.7)
         
         # Adjust y-limits to make small values more visible
-        if abs(np.mean(means)) < 0.1 and np.mean(stds) < 0.3:
+        if abs(np.mean(means)) < 0.1:
             # For values close to zero, set appropriate y limits
-            std_max = max(stds) if stds else 0.1
-            y_range = max(0.2, std_max * 3)
+            y_range = 0.2
             mean_center = np.mean(means)
             ax.set_ylim(mean_center - y_range, mean_center + y_range)
         
