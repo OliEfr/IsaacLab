@@ -96,6 +96,8 @@ class UniformVelocityCommand(CommandTerm):
         self.metrics["target_velocity_y"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["target_speed"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["target_yaw"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["heading_target"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["heading_error"] = torch.zeros(self.num_envs, device=self.device)
 
         self.mass = torch.zeros(self.num_envs, device=self.device) 
         self.mass = torch.sum(torch.tensor(self.robot.data.default_mass, device=self.device), dim=-1)
@@ -166,6 +168,8 @@ class UniformVelocityCommand(CommandTerm):
         self.metrics["target_velocity_y"] += self.vel_command_b[:, 1] / max_command_step
         self.metrics["target_speed"] += torch.norm(self.vel_command_b[:, :2], dim=-1) / max_command_step
         self.metrics["target_yaw"] += self.vel_command_b[:, 2] / max_command_step
+        self.metrics["heading_target"] += self.heading_target / max_command_step
+        self.metrics["heading_error"] += math_utils.wrap_to_pi(self.heading_target[:] - self.robot.data.heading_w[:]) / max_command_step
 
     def _resample_command(self, env_ids: Sequence[int]):
         # sample velocity commands

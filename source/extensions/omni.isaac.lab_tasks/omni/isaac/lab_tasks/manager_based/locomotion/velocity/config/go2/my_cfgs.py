@@ -10,7 +10,7 @@ from .flat_env_cfg import UnitreeGo2FlatEnvCfg
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
 
-raise ValueError("Set Actuator stiffness of UnitreeGo2 to 70 in unitree.py")
+raise ValueError("Set Actuator stiffness of UnitreeGo2 to 70 in unitree.py. Do so with self.scene.robot.actuators['base_legs'].stiffness")
 
 
 @configclass

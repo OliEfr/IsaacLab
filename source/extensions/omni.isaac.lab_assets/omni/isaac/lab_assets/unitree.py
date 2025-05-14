@@ -207,7 +207,7 @@ UNITREE_GO2_CFG = ArticulationCfg(
             effort_limit=23.5,
             saturation_effort=23.5,
             velocity_limit=30.0,
-            stiffness=25.0, # was 70 for previous exp (latent action priors) and also for previous AMP experiments
+            stiffness=25.0, # was 70 for previous exp (latent action priors), and also for previous AMP experiments. Is 25.0 by default
             damping=0.5,
             friction=0.0,
         ),

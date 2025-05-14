@@ -28,6 +28,7 @@ class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
         # no height scan
         self.scene.height_scanner = None
         self.observations.policy.height_scan = None
+        
 
         # self.commands.base_velocity.ranges.lin_vel_x = (0.5,0.5)
         # self.commands.base_velocity.ranges.lin_vel_y = (0.0,0.0)

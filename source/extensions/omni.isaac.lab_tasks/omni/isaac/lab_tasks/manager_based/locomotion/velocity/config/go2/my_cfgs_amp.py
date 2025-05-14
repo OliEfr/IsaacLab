@@ -55,9 +55,10 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
 
     def update_motion_files(self):
         motion_files = glob.glob(self.amp_motion_folder)
-
         self.amp_motion_files = motion_files
-        self.events.reference_state_initialization.params["motion_files"] = motion_files
+
+        if self.events.reference_state_initialization is not None:
+            self.events.reference_state_initialization.params["motion_files"] = motion_files
 
 
 @configclass
@@ -65,6 +66,8 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
+        
+        # self.events.reference_state_initialization = None # disable for testing, but this is not a requirement. Could leave it on.
 
         # make a smaller scene for play
         self.scene.num_envs = 50
