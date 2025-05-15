@@ -6,13 +6,32 @@ import re
 from collections import defaultdict
 
 NAME_MAP={
-    "2025-05-07_10-12-47": "AMP, MoCap",
-    "2025-05-07_02-52-57": "AMP Vision (all data)",
-    "2025-05-06_20-48-13": "fromVision (subset data)",
-    "2025-05-11_22-47-37": "DRL, only task reward",
-    "2025-05-11_16-37-05": "AMP, manual data",
+    "2025-05-15_01-35-47": "AMP, MoCap",
+    "2025-05-14_19-13-20": "AMP, Video",
+    "2025-05-15_08-31-45": "DRL, simple reward",
+    "2025-05-14_12-38-41": "AMP, manual data",
+    "2025-05-15_08-40-09": "DRL, complex reward"
     
 }
+
+DEBUG_METRICS = [
+    "episode length in s (target)",
+    "episode_lengths",
+    "episodes_per_env",
+    "heading_target",
+    "num_envs",
+    "num_eval_steps",
+    "target_speed",
+    "target_velocity_x",
+    "target_velocity_y",
+    "target_yaw",
+    "total_episodes (real)",
+    "mean_speed",
+    "mean_vel_x",
+    "mean_vel_y",
+    "mean_yaw",
+    "mean_power"
+]
 
 def load_yaml_files(file_paths):
     """Load multiple YAML files and return their contents as a list of dictionaries."""
@@ -48,6 +67,8 @@ def plot_metrics(organized_metrics):
         print("No metrics found to plot")
         return
     
+    metric_names = [base_metric.split('/')[-1] for base_metric in organized_metrics] # Get the last part of the metric path]
+    
     # Calculate grid dimensions: try to make it somewhat square but ensure no empty spaces
     cols = int(np.ceil(np.sqrt(n_metrics)))
     rows = int(np.ceil(n_metrics / cols))
@@ -82,6 +103,11 @@ def plot_metrics(organized_metrics):
     for i, (base_metric, values) in enumerate(sorted_metrics):
         if not values:
             continue
+    
+        
+        if metric_names[i] in DEBUG_METRICS:
+            print(f"Skipping debug metric: {metric_names[i]}")
+            continue
         
         # Calculate row and column position (0-indexed)
         row = i // cols
@@ -110,18 +136,11 @@ def plot_metrics(organized_metrics):
                              rotation=45, ha='right', fontsize=8)
         
         # Make the plot prettier
-        metric_name = base_metric.split('/')[-1]  # Get the last part of the metric path
-        ax.set_title(metric_name, fontsize=10)
-        ax.set_ylabel(metric_name, fontsize=8)
+        ax.set_title(metric_names[i], fontsize=10)
+        ax.set_ylabel(metric_names[i], fontsize=8)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
         
-        # Adjust y-limits to make small values more visible
-        if abs(np.mean(means)) < 0.1:
-            # For values close to zero, set appropriate y limits
-            y_range = 0.2
-            mean_center = np.mean(means)
-            ax.set_ylim(mean_center - y_range, mean_center + y_range)
-        
+                
         # Remove x-label to save space
         ax.set_xlabel('')
         
@@ -142,10 +161,11 @@ def plot_metrics(organized_metrics):
 
 def main():
     file_paths = [
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-11_16-37-05/metrics.yaml",
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-07_10-12-47/metrics.yaml",
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-07_02-52-57/metrics.yaml",
-        "logs/rsl_rl/unitree_go2_flat/2025-05-11_22-47-37/metrics.yaml",
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-14_12-38-41/metrics.yaml",
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-14_19-13-20/metrics.yaml",
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-15_01-35-47/metrics.yaml",
+        "logs/rsl_rl/unitree_go2_flat/2025-05-15_08-40-09/metrics.yaml",
+        "logs/rsl_rl/unitree_go2_flat/2025-05-15_08-31-45/metrics.yaml",
     ]
     
     # Load the YAML files

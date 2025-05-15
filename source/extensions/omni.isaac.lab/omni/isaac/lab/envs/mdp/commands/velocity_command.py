@@ -169,7 +169,7 @@ class UniformVelocityCommand(CommandTerm):
         self.metrics["target_speed"] += torch.norm(self.vel_command_b[:, :2], dim=-1) / max_command_step
         self.metrics["target_yaw"] += self.vel_command_b[:, 2] / max_command_step
         self.metrics["heading_target"] += self.heading_target / max_command_step
-        self.metrics["heading_error"] += math_utils.wrap_to_pi(self.heading_target[:] - self.robot.data.heading_w[:]) / max_command_step
+        self.metrics["heading_error"] += torch.abs(math_utils.wrap_to_pi(self.heading_target[:] - self.robot.data.heading_w[:])) / max_command_step
 
     def _resample_command(self, env_ids: Sequence[int]):
         # sample velocity commands
