@@ -25,6 +25,7 @@ parser.add_argument("--num_envs", type=int, default=None, help="Number of enviro
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--log_dir", type=str, required=True, help="Name of log dir. Should be YYYY-MM-DD_HH-MM-SS to stay consistent with default IsaacLab. You can run expriments with multiple seeds by setting the same log_dir for them. The seed will then automatically be appended to the log dir name.")
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -111,7 +112,12 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     log_root_path = os.path.abspath(log_root_path)
     print(f"[INFO] Logging experiment in directory: {log_root_path}")
     # specify directory for logging runs: {time-stamp}_{run_name}
-    log_dir = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_dir = (
+        args_cli.log_dir
+        if not "debug" in args_cli.log_dir.lower()
+        else f"{args_cli.log_dir}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    )
+    log_dir += f"_SEED_{agent_cfg.seed}" # for commend see cli args docs above
     if agent_cfg.run_name:
         log_dir += f"_{agent_cfg.run_name}"
     log_dir = os.path.join(log_root_path, log_dir)
