@@ -36,16 +36,17 @@ Our [documentation page](https://isaac-sim.github.io/IsaacLab) provides everythi
 - [Available environments](https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html)
 
 ### Installation Instructions
-From the project root
+Compact installation instruction for this version of IsaacLab. From the project root run
 ```bash
+# Skip this part if you already have an environment
 conda create -n env_isaaclab python=3.10 -y
 conda activate env_isaaclab
-git clone git@github.com:OliEfr/rsl_rl.git
+git clone git@github.com:OliEfr/rsl_rl.git rsl_rl
 
 pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cu121
 pip install isaacsim==4.2.0.2 isaacsim-extscache-physics==4.2.0.2 isaacsim-extscache-kit==4.2.0.2 isaacsim-extscache-kit-sdk==4.2.0.2 --extra-index-url https://pypi.nvidia.com/
 pip install pybullet
-pip install -e rsl_rl
+pip install -e rsl_rl # modify, if the rsl_rl repo is elsewhere
 ./isaaclab.sh --install
 ```
 
