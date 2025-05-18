@@ -33,7 +33,7 @@ gym.register(
     },
 )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
 
 gym.register(
     id="Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0",
@@ -57,7 +57,7 @@ gym.register(
     },
 )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
 
 
 gym.register(
@@ -82,7 +82,7 @@ gym.register(
     },
 )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
 
 
 gym.register(
@@ -105,7 +105,7 @@ gym.register(
     },
 )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
 
 gym.register(
     id="Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-v0",
@@ -127,7 +127,7 @@ gym.register(
     },
 )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
 
 gym.register(
     id="Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-v0",
@@ -150,7 +150,7 @@ gym.register(
 )
 
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
 
 gym.register(
     id="Isaac-Velocity-AMPFlat-Unitree-Go2-v0",
@@ -173,3 +173,24 @@ gym.register(
 )
 
 
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
+
+gym.register(
+    id="Isaac-Velocity-Stairs-ComplexReward-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-Stairs-ComplexReward-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsEnvCfgComplexReward_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+    },
+)
