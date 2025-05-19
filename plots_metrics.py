@@ -4,7 +4,7 @@ import numpy as np
 import os
 from collections import defaultdict
 
-metrics_to_plot = ["mean_mechanical_cot", "heading_error", "error_vel_yaw", "error_vel_xy", "mean_power", "mean_speed"]
+metrics_to_plot = ["mean_mechanical_cot", "heading_error", "error_vel_yaw", "error_vel_xy"]
 
 
 def load_yaml_file(file_path):
@@ -93,8 +93,8 @@ def plot_metrics(metrics):
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.1 + 0.02 * (len(all_run_names) // 5))
-    plt.savefig("selected_metrics_comparison.png", dpi=300, bbox_inches='tight')
-    print(f"Saved figure with selected metrics as 'selected_metrics_comparison.png'")
+    plt.savefig("selected_metrics_comparison.pdf", bbox_inches='tight')
+    print(f"Saved figure with selected metrics as 'selected_metrics_comparison.pdf'")
     plt.close()
 
 def main():

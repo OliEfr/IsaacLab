@@ -41,19 +41,38 @@ parser.add_argument(
     help="Number of environments to simulate.",
 )
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
-parser.add_argument(
-    "--evaluate",
-    action="store_true",
-    default=None,
-    help="Use this to log evaluation metrics. It also set some parameters to setup logging",
-)
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 
 # Olivers additional args
-parser.add_argument("--amp_motion_folder", type=str, default=None, help="Folder to load motion files from. Required for AMP environments.")
+parser.add_argument(
+    "--evaluate",
+    action="store_true",
+    default=None,
+    help="Use this to log evaluation metrics.",
+)
+parser.add_argument("--eval_config", type=str, default="DefaultEvalConfig", help="Here you can specify the name of a dataclass in eval_configurator.py to set some parameters of the evaluation (mostly impacts file saving for now).")
 
-
+# Oliver additional args to overwrite env_cfg and agent_cfg
+parser.add_argument("--amp_motion_folder", type=str, default=None, help="Folder to load motion files from. Required for AMP environments. Should be the same as used for training, otherwise results might be different due to RSI.")
+parser.add_argument(
+    "--x_speed",
+    type=float,
+    default=None,
+    help="Target x speed for evaluation.",
+)
+parser.add_argument(
+    "--y_speed",
+    type=float,
+    default=None,
+    help="Target y speed for evaluation.",
+)
+parser.add_argument(
+    "--heading",
+    type=float,
+    default=None,
+    help="Target heading for evaluation.",
+)
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -65,6 +84,7 @@ if args_cli.video:
 # headless for evaluation
 if args_cli.evaluate:
     args_cli.headless = True
+    args_cli.num_envs = 10_000
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -98,6 +118,9 @@ from actionManagerLatentActorMapping import (
     get_vel_dependent_actor_latent_dim_for_action_manager_class,
 )
 
+import eval_configurator
+
+
 
 def main():
     """Play with RSL-RL agent."""
@@ -108,6 +131,7 @@ def main():
         num_envs=args_cli.num_envs,
         use_fabric=not args_cli.disable_fabric,
     )
+
 
     # for correct metrics calculation
     if args_cli.evaluate:
@@ -120,15 +144,28 @@ def main():
         )
         env_cfg.episode_length_s = PLAY_EPISODE_LENGTH
         env_cfg.is_eval_env = True  # enables additional logging
+        
+        # run some checks
+        if (args_cli.x_speed is not None or args_cli.y_speed is not None or args_cli.heading is not None) and args_cli.eval_config not in ["TargetXYDistribution", "TargetXHeadingDistribution"]:
+            raise ValueError("You most likely want to use target speed and heading values with TargetSpeedDistribution eval_config.")
+            
 
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(
         args_cli.task, args_cli
     )
-
+    
+    # Overwrite env_cfg and agent_cfg with args_cli
+    if args_cli.x_speed is not None:
+        env_cfg.commands.base_velocity.ranges.lin_vel_x = [args_cli.x_speed, args_cli.x_speed]
+    if args_cli.y_speed is not None:
+        env_cfg.commands.base_velocity.ranges.lin_vel_y = [args_cli.y_speed, args_cli.y_speed]
+    if args_cli.heading is not None:
+        env_cfg.commands.base_velocity.ranges.heading = [args_cli.heading, args_cli.heading]
+    
     # AMP motion files are not needed for PLAY, but there needs to be some files otherwise an error is thrown
     # Also, RSI might have impact on performance, so its better to use same motion files as were used for training
     if env_cfg.is_amp_env:
-        assert args_cli.amp_motion_folder is not None, "Please use the same motion folder as used for training, otherwise performance might be worse."
+        assert args_cli.amp_motion_folder is not None, "Please use the same motion folder as used for training, otherwise performance might be worse due to RSI."
         
         print(f"Using the following AMP motion folder: {args_cli.amp_motion_folder}")
         env_cfg.amp_motion_folder = args_cli.amp_motion_folder
@@ -161,6 +198,16 @@ def main():
             env_cfg.action_manager_class
         )
     )
+    
+    if args_cli.evaluate:
+        # Load eval configuration.
+        # NOTE it would be more clean to create separate environment configs, but this many additional environments, all of which would share same configurations.
+        eval_config_class = getattr(eval_configurator, args_cli.eval_config)
+        eval_config = eval_config_class()
+        eval_config.run_checks(env_cfg=env_cfg, args_cli=args_cli)
+        
+        eval_metric_folder = os.path.join(log_dir, eval_config.eval_metric_subfolder)
+        os.makedirs(eval_metric_folder, exist_ok=True)
 
     # create isaac environment
     env = gym.make(
@@ -313,6 +360,8 @@ def main():
         sleep_time = simulated_step_time - elapsed_real_time
         if sleep_time > 0:
             time.sleep(sleep_time)
+        else:
+            print(f"WARNING: Simulation slower than real time for {sleep_time}s!")
 
         if args_cli.evaluate:
             if total_num_steps >= NUM_EVAL_STEPS:
@@ -333,8 +382,12 @@ def main():
         eval_episode_metrics["total_episodes (real)"] = total_episodes_real
 
         eval_episode_metrics["episode length in s (target)"] = PLAY_EPISODE_LENGTH
+        
+        if env_cfg.is_amp_env:
+            eval_episode_metrics["amp_motion_folder"] = args_cli.amp_motion_folder
 
-        with open(os.path.join(log_dir, "metrics.yaml"), "w") as f:
+        eval_metric_file_name = eval(eval_config.eval_metric_filename) # eval: allows for dynamic file naming which is convenient for logging
+        with open(os.path.join(eval_metric_folder, eval_metric_file_name), "w") as f:
             yaml.dump(eval_episode_metrics, f)
         print(f"Metrics: {eval_episode_metrics}")
 
