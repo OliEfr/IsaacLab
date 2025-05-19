@@ -5,6 +5,10 @@ from dataclasses import dataclass
 class DefaultEvalConfig:
     eval_metric_subfolder: str = ""  # empty for not using a subfolder
     eval_metric_filename: str = "metrics.yaml"  # this expression will be EVALUATED, ie you can use python code here
+    num_envs = 10_000
+    play_episode_length = 10.0 # s
+    play_episodes_per_env = int(2)
+    rel_standing_envs = 0.0
 
     # run checks on env or agent cfg
     def run_checks(self, **kwargs):
@@ -12,8 +16,12 @@ class DefaultEvalConfig:
 
 # This is meant as an abstract base class. Others should inherit.
 @dataclass
-class TargetDistribution:
+class TargetDistribution(DefaultEvalConfig):
     eval_metric_filename: str = "f'x_{env_cfg.commands.base_velocity.ranges.lin_vel_x[0]}_y_{env_cfg.commands.base_velocity.ranges.lin_vel_y[0]}_heading_{env_cfg.commands.base_velocity.ranges.heading[0]}.yaml'"
+    
+    # require less evaluation because target velocities and headings are fixed.
+    play_episodes_per_env = int(1)
+    num_envs = 5000
     
     def run_checks(self, **kwargs):
         assert (

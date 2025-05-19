@@ -14,6 +14,8 @@ from omni.isaac.lab.app import AppLauncher
 # local imports
 import cli_args  # isort: skip
 
+import eval_configurator
+
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
 parser.add_argument(
@@ -49,7 +51,7 @@ parser.add_argument(
     "--evaluate",
     action="store_true",
     default=None,
-    help="Use this to log evaluation metrics.",
+    help="Use this to log evaluation metrics. It also enables additional logging and sets further flags programmatically below.",
 )
 parser.add_argument("--eval_config", type=str, default="DefaultEvalConfig", help="Here you can specify the name of a dataclass in eval_configurator.py to set some parameters of the evaluation (mostly impacts file saving for now).")
 
@@ -83,8 +85,12 @@ if args_cli.video:
 
 # headless for evaluation
 if args_cli.evaluate:
+    # NOTE it would be more clean to create separate environment configs, but this many additional environments, all of which would share same configurations.
+    eval_config_class = getattr(eval_configurator, args_cli.eval_config)
+    eval_config = eval_config_class()
+    
     args_cli.headless = True
-    args_cli.num_envs = 10_000
+    args_cli.num_envs = eval_config.num_envs
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -118,7 +124,6 @@ from actionManagerLatentActorMapping import (
     get_vel_dependent_actor_latent_dim_for_action_manager_class,
 )
 
-import eval_configurator
 
 
 
@@ -135,14 +140,14 @@ def main():
 
     # for correct metrics calculation
     if args_cli.evaluate:
-        PLAY_EPISODE_LENGTH = 10.0  # s
-        PLAY_EPISODES_PER_ENV = int(2)
-        env_cfg.commands.base_velocity.rel_standing_envs = 0.0
+        PLAY_EPISODE_LENGTH = eval_config.play_episode_length  # s
+        PLAY_EPISODES_PER_ENV = eval_config.play_episodes_per_env # int
+        env_cfg.commands.base_velocity.rel_standing_envs = eval_config.rel_standing_envs
         env_cfg.commands.base_velocity.resampling_time_range = (
-            PLAY_EPISODE_LENGTH,
-            PLAY_EPISODE_LENGTH,
+            eval_config.play_episode_length,
+            eval_config.play_episode_length,
         )
-        env_cfg.episode_length_s = PLAY_EPISODE_LENGTH
+        env_cfg.episode_length_s = eval_config.play_episode_length
         env_cfg.is_eval_env = True  # enables additional logging
         
         # run some checks
@@ -200,10 +205,6 @@ def main():
     )
     
     if args_cli.evaluate:
-        # Load eval configuration.
-        # NOTE it would be more clean to create separate environment configs, but this many additional environments, all of which would share same configurations.
-        eval_config_class = getattr(eval_configurator, args_cli.eval_config)
-        eval_config = eval_config_class()
         eval_config.run_checks(env_cfg=env_cfg, args_cli=args_cli)
         
         eval_metric_folder = os.path.join(log_dir, eval_config.eval_metric_subfolder)
@@ -360,8 +361,8 @@ def main():
         sleep_time = simulated_step_time - elapsed_real_time
         if sleep_time > 0:
             time.sleep(sleep_time)
-        else:
-            print(f"WARNING: Simulation slower than real time for {sleep_time}s!")
+        # else:
+        #     print(f"WARNING: Simulation slower than real time for {sleep_time}s!")
 
         if args_cli.evaluate:
             if total_num_steps >= NUM_EVAL_STEPS:
