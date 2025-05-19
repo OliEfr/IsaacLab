@@ -78,5 +78,5 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         self.events.base_external_force_torque = None
         self.events.push_robot = None
         
-        self.amp_motion_folder = "datasets/dummy/*" # required otherwise it wont start
+        self.amp_motion_folder = "datasets/dummy/*" # required otherwise it wont start; it is recomended to use same motion files as used for training
         

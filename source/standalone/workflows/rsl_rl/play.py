@@ -49,6 +49,12 @@ parser.add_argument(
 )
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
+
+# Olivers additional args
+parser.add_argument("--amp_motion_folder", type=str, default=None, help="Folder to load motion files from. Required for AMP environments.")
+
+
+
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
@@ -120,7 +126,14 @@ def main():
     )
 
     # AMP motion files are not needed for PLAY, but there needs to be some files otherwise an error is thrown
+    # Also, RSI might have impact on performance, so its better to use same motion files as were used for training
     if env_cfg.is_amp_env:
+        assert args_cli.amp_motion_folder is not None, "Please use the same motion folder as used for training, otherwise performance might be worse."
+        
+        print(f"Using the following AMP motion folder: {args_cli.amp_motion_folder}")
+        env_cfg.amp_motion_folder = args_cli.amp_motion_folder
+        agent_cfg.amp_motion_folder = args_cli.amp_motion_folder
+        
         env_cfg.update_motion_files()
         agent_cfg.update_motion_files()
 

@@ -33,5 +33,6 @@
  - different command ranges
  - they use some empirical normalization
  - different sim dt
+ - Different PD gains?
 
 
