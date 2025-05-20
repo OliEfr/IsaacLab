@@ -6,10 +6,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 from collections import defaultdict
+from matplotlib.ticker import FuncFormatter
 
 # ===== CONFIGURATION =====
 # Base directory containing the experiment results
 base_dir = Path("logs/rsl_rl/unitree_go2_AMPflat")
+experiment_dir = "2025-05-16_21-23-07_manuallyGenerated_SEED_*" # * searches for all seeds
 
 # Directory name containing the evaluation results (relative to seed directory)
 eval_dir_name = "TargetXYDistributionEvaluation"
@@ -17,7 +19,7 @@ eval_dir_name = "TargetXYDistributionEvaluation"
 # Field names in the YAML files
 x_field = 'target_velocity_x'
 y_field = 'target_velocity_y'
-metric_field = 'mean_mechanical_cot' # mean_mechanical_cot, error_vel_xy
+metric_field = 'agent_expert_distances' # mean_mechanical_cot, error_vel_xy, agent_expert_distances
 
 # Plot settings
 plot_title = metric_field
@@ -32,7 +34,7 @@ output_filename = f"heatmap_{metric_field}.pdf"
 # =========================
 
 # Find all seed directories
-seed_dirs = sorted(base_dir.glob("2025-05-16_21-23-07_manuallyGenerated_SEED_*"))
+seed_dirs = sorted(base_dir.glob(f"{experiment_dir}"))
 
 # Dictionary to store data from all seeds
 data = defaultdict(list)
@@ -49,6 +51,8 @@ for seed_dir in seed_dirs:
         with open(yaml_file, 'r') as f:
             try:
                 yaml_data = yaml.safe_load(f)
+                if not metric_field in yaml_data:
+                    continue
                 # Extract and round relevant data
                 x = round(yaml_data[x_field], 1)
                 y = round(yaml_data[y_field], 1)
@@ -128,7 +132,7 @@ if use_log_scale:
     df_mean_log = np.log10(df_mean + 1e-10)
     heatmap_kwargs['data'] = df_mean_log
     # Update colorbar label to indicate log scale
-    heatmap_kwargs['cbar_kws']['label'] = f'log10({cbar_label})'
+    heatmap_kwargs['cbar_kws']['label'] = f'{cbar_label}'
     
     # Update annotations to show original values but plot uses log scale
     for i in range(len(df)):
@@ -138,7 +142,11 @@ if use_log_scale:
         range_val = df.iloc[i]['error_range']
         if not np.isnan(mean_val) and not np.isnan(range_val):
             annot.loc[y, x] = f"{mean_val:.4f}\n({range_val:.4f})"
-
+    
+    # keep original values in legend (not log)
+    formatter = FuncFormatter(lambda x, _: f'{10**x:.2f}' if x > 0 else '0')
+    heatmap_kwargs['cbar_kws']['format'] = formatter
+    
 # Create the heatmap
 sns.heatmap(**heatmap_kwargs)
 

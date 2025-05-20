@@ -56,7 +56,7 @@ parser.add_argument(
 parser.add_argument("--eval_config", type=str, default="DefaultEvalConfig", help="Here you can specify the name of a dataclass in eval_configurator.py to set some parameters of the evaluation (mostly impacts file saving for now).")
 
 # Oliver additional args to overwrite env_cfg and agent_cfg
-parser.add_argument("--amp_motion_folder", type=str, default=None, help="Folder to load motion files from. Required for AMP environments. Should be the same as used for training, otherwise results might be different due to RSI.")
+parser.add_argument("--amp_motion_folder", type=str, default=None, help="Folder to load motion files from. Required for AMP environments. Must be the same as used for training, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly.")
 parser.add_argument(
     "--x_speed",
     type=float,
@@ -124,6 +124,7 @@ from actionManagerLatentActorMapping import (
     get_vel_dependent_actor_latent_dim_for_action_manager_class,
 )
 
+from utils import interpolate_trajectory
 
 
 
@@ -170,7 +171,7 @@ def main():
     # AMP motion files are not needed for PLAY, but there needs to be some files otherwise an error is thrown
     # Also, RSI might have impact on performance, so its better to use same motion files as were used for training
     if env_cfg.is_amp_env:
-        assert args_cli.amp_motion_folder is not None, "Please use the same motion folder as used for training, otherwise performance might be worse due to RSI."
+        assert args_cli.amp_motion_folder is not None, "Please use the same motion folder as used for training, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly."
         
         print(f"Using the following AMP motion folder: {args_cli.amp_motion_folder}")
         env_cfg.amp_motion_folder = args_cli.amp_motion_folder
@@ -269,6 +270,29 @@ def main():
         device=env.unwrapped.device,
     )
 
+    if env_cfg.is_amp_env:
+        
+        # Expert trajectories are required to compute agent_expert_distances metrics
+        expert_trajectories = env.unwrapped.event_manager.get_term_cfg("reference_state_initialization").func.amp_loader.trajectories # this is a list of trajectories: [(n_frames, n_amp_obs),...]
+        
+        # interpolate trajectories to calculate distances more precisely
+        interpolated_expert_trajectories = []
+        num_interpolations = 10
+        for trajectory in expert_trajectories:
+            interpolated_expert_trajectories.append(
+                interpolate_trajectory(trajectory, num_interpolations)
+            )
+
+        interpolated_expert_trajectories = torch.cat(
+            interpolated_expert_trajectories, dim=0
+        )
+            
+        # amp_obs = env.unwrapped.get_amp_observations().to(env.unwrapped.device)
+        # amp_rewards_buffer = torch.zeros(env.unwrapped.num_envs, device=env.unwrapped.device)
+        agent_expert_distances = torch.zeros(env.unwrapped.num_envs, device=env.unwrapped.device)
+        
+    # It is very unclean to use a second episode_length_buf besides the one in the environment. However, the one in the environment gets reset to 0 before I can calculate the metrics in this script. So I need to keep track of the episode lengths myself. In the future I'd like to find a way to avoid introducing a second episode_length_buf here.
+    episode_length_buf = torch.zeros(env.unwrapped.num_envs, device=env.unwrapped.device)
     obs_history_storage.add(obs)
     obs_history = obs_history_storage.get()
 
@@ -327,7 +351,24 @@ def main():
             actions = policy(obs_history)
             # Environment stepping
             obs, _, dones, extras, *optional_values = env.step(actions)
+            if env_cfg.is_amp_env:
+                
+                amp_observations = env.unwrapped.get_amp_observations()
+                agent_expert_distances += torch.cdist(amp_observations, interpolated_expert_trajectories).min(dim=1).values
+
+                # NOTE using the discriminator output to calculate style imitation is suboptimal. Its better to introduce the agent_expert_distances metric.
+                # next_amp_obs_with_term = torch.clone(next_amp_obs)
+                # next_amp_obs_with_term[rest_env_ids] = terminal_amp_states
+                
+                # rewards, _, amp_rewards_logging = ppo_runner.alg.discriminator.predict_amp_reward(
+                #     amp_obs, next_amp_obs_with_term, rewards, normalizer=None)#ppo_runner.alg.amp_normalizer)
+
+                # amp_obs = torch.clone(next_amp_obs)
+                # amp_rewards_buffer += amp_rewards_logging
+                
             total_num_steps += env.env.num_envs
+            episode_length_buf += 1
+            
             assert (
                 len(optional_values) == 2 or len(optional_values) == 0
             ), "Too many optional values returned by the environment"
@@ -342,6 +383,30 @@ def main():
                         "base_velocity"
                     ].episode_metrics.items():
                         eval_episode_metrics.setdefault(metric_name, []).extend(metric_value[dones==1.0].cpu().tolist())
+                    # amp rewards
+                    # eval_episode_metrics.setdefault("amp_rewards", []).extend(
+                    #     (
+                    #         amp_rewards_buffer[dones == 1.0]
+                    #         / episode_length_buf[dones == 1.0]
+                    #     )
+                    #     .cpu()
+                    #     .tolist()
+                    # )
+                    # amp_rewards_buffer[dones == 1.0] = 0.0
+                    # episode_length_buf[dones == 1.0] = 0
+                    # agent expert distances
+                    if env_cfg.is_amp_env:
+                        eval_episode_metrics.setdefault(
+                            "agent_expert_distances", []
+                        ).extend(
+                            (
+                                agent_expert_distances[dones == 1.0]
+                                / episode_length_buf[dones == 1.0]
+                            )
+                            .cpu()
+                            .tolist()
+                        )
+                        agent_expert_distances[dones == 1.0] = 0.0
 
                 obs_history_storage.reset(dones)
 

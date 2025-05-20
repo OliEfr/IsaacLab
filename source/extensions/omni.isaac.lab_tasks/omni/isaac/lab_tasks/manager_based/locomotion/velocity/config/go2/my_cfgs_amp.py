@@ -57,8 +57,8 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         motion_files = glob.glob(self.amp_motion_folder)
         self.amp_motion_files = motion_files
 
-        if self.events.reference_state_initialization is not None:
-            self.events.reference_state_initialization.params["motion_files"] = motion_files
+        assert  self.events.reference_state_initialization is not None, "Always expecting RSI. For evaluation, please use the same motion files as used for training."
+        self.events.reference_state_initialization.params["motion_files"] = motion_files
 
 
 @configclass
@@ -67,7 +67,6 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         # post init of parent
         super().__post_init__()
         
-        # self.events.reference_state_initialization = None # disable for testing, but this is not a requirement. Could leave it on.
 
         # make a smaller scene for play
         self.scene.num_envs = 50

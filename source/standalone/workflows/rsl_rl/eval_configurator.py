@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class DefaultEvalConfig:
     eval_metric_subfolder: str = ""  # empty for not using a subfolder
-    eval_metric_filename: str = "metrics.yaml"  # this expression will be EVALUATED eval(...) during runtime, ie you can use python code here
+    eval_metric_filename: str = "f'metrics.yaml'"  # this expression will be EVALUATED eval(...) during runtime, ie you can use python code here
     num_envs = 10_000
     play_episode_length = 10.0 # s
     play_episodes_per_env = int(2)
@@ -12,7 +12,10 @@ class DefaultEvalConfig:
 
     # run checks on env or agent cfg
     def run_checks(self, **kwargs):
-        pass
+        try:
+            eval(self.eval_metric_filename)
+        except: 
+            raise ValueError("eval_metric_filename must be an evaluatable string.")
 
 # This is meant as an abstract base class. Others should inherit.
 @dataclass
@@ -24,6 +27,8 @@ class TargetDistribution(DefaultEvalConfig):
     num_envs = 5000
     
     def run_checks(self, **kwargs):
+        super().run_checks(**kwargs)
+        
         assert (
             kwargs["env_cfg"].commands.base_velocity.ranges.lin_vel_x[0]
             == kwargs["env_cfg"].commands.base_velocity.ranges.lin_vel_x[1]
