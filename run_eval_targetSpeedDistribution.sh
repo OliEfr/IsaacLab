@@ -1,10 +1,10 @@
 #!/bin/bash
-LC_NUMERIC=en_US.UTF-8 # required fix for correct float representation with "." and not ","
+LC_NUMERIC=en_US.UTF-8 # required fix for correct float representation using "." instead of ","
 
-seeds=(1 2)
+seeds=(1 2 3)
 
 # XY TARGET SPEEDS
-target_x_speeds=($(seq -1.0 0.2 1.0))
+target_x_speeds=($(seq -1.0 0.1 1.0))
 target_y_speeds=($(seq -0.3 0.1 0.3))
 
 echo "Executing experiments for: \n"
@@ -35,8 +35,8 @@ for seed in "${seeds[@]}"; do
 done
 
 # Heading TARGET SPEEDS
-target_x_speeds=($(seq -1.0 0.2 1.0))
-target_headings=($(seq -3.0 0.5 3.0))
+target_x_speeds=($(seq -1.0 0.1 1.0))
+target_headings=($(seq -3.0 0.25 3.0))
 
 echo "Executing experiments for: \n"
 echo "Target X Speeds: ${target_x_speeds[@]}"

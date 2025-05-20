@@ -102,26 +102,32 @@ def main():
         "AMP, Manual Trajectory": [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_2",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_3",
         ],
         "AMP, MoCap": [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_2",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_3",
         ],
         "AMP, Video (Depth Cam)": [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_2",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_3",
         ],
         "AMP, Video (Depth Model)": [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_2",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_3",
         ],
         "DRL, Simple Reward": [
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_simpleReward_SEED_1",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_simpleReward_SEED_2",
+            "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_simpleReward_SEED_3",
         ],
         "DRL, Complex Reward": [
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_1",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_2",
+            "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_3",
         ],
     }
 

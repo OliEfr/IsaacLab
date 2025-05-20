@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class DefaultEvalConfig:
     eval_metric_subfolder: str = ""  # empty for not using a subfolder
-    eval_metric_filename: str = "f'metrics.yaml'"  # this expression will be EVALUATED eval(...) during runtime, ie you can use python code here
+    eval_metric_filename: str = "f'metrics.yaml'"  # this expression will be EVALUATED eval(...) during runtime, ie you can use python code here and it must be an evaluatable string
     num_envs = 10_000
     play_episode_length = 10.0 # s
     play_episodes_per_env = int(2)
@@ -12,6 +12,7 @@ class DefaultEvalConfig:
 
     # run checks on env or agent cfg
     def run_checks(self, **kwargs):
+        env_cfg = kwargs["env_cfg"]
         try:
             eval(self.eval_metric_filename)
         except: 

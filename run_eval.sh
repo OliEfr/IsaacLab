@@ -1,9 +1,13 @@
 #!/bin/bash
 
-seeds=(1 2)
+seeds=(1 2 3)
 
 for seed in "${seeds[@]}"; do
-    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py --amp_motion_folder 'datasets/manuallyGenerated/*'  --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 --load_run 2025-05-16_21-23-07_manuallyGenerated_SEED_${seed} --evaluate
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py \
+    --amp_motion_folder 'datasets/manuallyGenerated/*' \
+    --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 \
+    --load_run 2025-05-16_21-23-07_manuallyGenerated_SEED_${seed} \
+    --evaluate
 
     ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py --amp_motion_folder 'datasets/mocap_AMP_for_hardware/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 --load_run 2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_${seed} --evaluate
 
