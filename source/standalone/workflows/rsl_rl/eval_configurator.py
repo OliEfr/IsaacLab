@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class DefaultEvalConfig:
     eval_metric_subfolder: str = ""  # empty for not using a subfolder
-    eval_metric_filename: str = "metrics.yaml"  # this expression will be EVALUATED, ie you can use python code here
+    eval_metric_filename: str = "metrics.yaml"  # this expression will be EVALUATED eval(...) during runtime, ie you can use python code here
     num_envs = 10_000
     play_episode_length = 10.0 # s
     play_episodes_per_env = int(2)

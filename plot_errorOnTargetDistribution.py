@@ -1,3 +1,4 @@
+import os
 import yaml
 import numpy as np
 import pandas as pd
@@ -16,7 +17,7 @@ eval_dir_name = "TargetXYDistributionEvaluation"
 # Field names in the YAML files
 x_field = 'target_velocity_x'
 y_field = 'target_velocity_y'
-metric_field = 'error_vel_xy'
+metric_field = 'mean_mechanical_cot' # mean_mechanical_cot, error_vel_xy
 
 # Plot settings
 plot_title = metric_field
@@ -26,8 +27,8 @@ cbar_label = metric_field
 use_log_scale = True  # log scale for colorbar
 
 # Output settings
-output_dir = Path("plots")
-output_filename = "heatmap.pdf"
+output_dir = Path(os.path.join("plots", base_dir, eval_dir_name))
+output_filename = f"heatmap_{metric_field}.pdf"
 # =========================
 
 # Find all seed directories
