@@ -93,8 +93,8 @@ def plot_metrics(metrics):
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.1 + 0.02 * (len(all_run_names) // 5))
-    plt.savefig("selected_metrics_comparison.pdf", bbox_inches='tight')
-    print(f"Saved figure with selected metrics as 'selected_metrics_comparison.pdf'")
+    plt.savefig("plots/selected_metrics_comparison.pdf", bbox_inches='tight')
+    print(f"Saved figure with selected metrics as 'plots/selected_metrics_comparison.pdf'")
     plt.close()
 
 def main():
