@@ -22,7 +22,6 @@ for seed in "${seeds[@]}"; do
         for target_y_speed in "${target_y_speeds[@]}"; do
             echo "Target X Speed: ${target_x_speed}, Target Y Speed: ${target_y_speed}, Seed: ${seed}"
             ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py \
-                --amp_motion_folder 'datasets/manuallyGenerated/*' \
                 --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 \
                 --load_run "2025-05-16_21-23-07_manuallyGenerated_SEED_${seed}" \
                 --x_speed=${target_x_speed} \
@@ -30,6 +29,7 @@ for seed in "${seeds[@]}"; do
                 --heading=0.0 \
                 --eval_config TargetXYDistribution \
                 --evaluate
+            sleep 10 # prevent crashes
         done
     done
 done
@@ -52,7 +52,6 @@ for seed in "${seeds[@]}"; do
     for target_x_speed in "${target_x_speeds[@]}"; do
         for target_heading in "${target_headings[@]}"; do
             ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py \
-                --amp_motion_folder 'datasets/manuallyGenerated/*' \
                 --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 \
                 --load_run "2025-05-16_21-23-07_manuallyGenerated_SEED_${seed}" \
                 --x_speed=${target_x_speed} \
@@ -60,6 +59,7 @@ for seed in "${seeds[@]}"; do
                 --heading=${target_heading} \
                 --eval_config TargetXHeadingDistribution \
                 --evaluate
+                sleep 10 # prevent crashes
         done
     done
 done

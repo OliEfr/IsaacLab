@@ -55,8 +55,6 @@ parser.add_argument(
 )
 parser.add_argument("--eval_config", type=str, default="DefaultEvalConfig", help="Here you can specify the name of a dataclass in eval_configurator.py to set some parameters of the evaluation (mostly impacts file saving for now).")
 
-# Oliver additional args to overwrite env_cfg and agent_cfg
-parser.add_argument("--amp_motion_folder", type=str, default=None, help="Folder to load motion files from. Required for AMP environments. Must be the same as used for training, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly.")
 parser.add_argument(
     "--x_speed",
     type=float,
@@ -160,6 +158,14 @@ def main():
         args_cli.task, args_cli
     )
     
+    log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
+    log_root_path = os.path.abspath(log_root_path)
+    print(f"[INFO] Loading experiment from directory: {log_root_path}")
+    resume_path = get_checkpoint_path(
+        log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint
+    )
+    log_dir = os.path.dirname(resume_path)
+    
     # Overwrite env_cfg and agent_cfg with args_cli
     if args_cli.x_speed is not None:
         env_cfg.commands.base_velocity.ranges.lin_vel_x = [args_cli.x_speed, args_cli.x_speed]
@@ -168,36 +174,30 @@ def main():
     if args_cli.heading is not None:
         env_cfg.commands.base_velocity.ranges.heading = [args_cli.heading, args_cli.heading]
     
-    # AMP motion files are not needed for PLAY, but there needs to be some files otherwise an error is thrown
-    # Also, RSI might have impact on performance, so its better to use same motion files as were used for training
     if env_cfg.is_amp_env:
-        assert args_cli.amp_motion_folder is not None, "Please use the same motion folder as used for training, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly."
+        # Load same motion files that were used during training. This is required, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly.
+        with open(os.path.join(log_dir, "params", "env.yaml")) as f:
+            loaded_env_cfg = yaml.safe_load(f)
+            amp_motion_folder = loaded_env_cfg["amp_motion_folder"]
+            env_cfg.amp_motion_folder = amp_motion_folder
+            agent_cfg.amp_motion_folder = amp_motion_folder
+            print(f"Using the following AMP motion folder: {amp_motion_folder}")
         
-        print(f"Using the following AMP motion folder: {args_cli.amp_motion_folder}")
-        env_cfg.amp_motion_folder = args_cli.amp_motion_folder
-        agent_cfg.amp_motion_folder = args_cli.amp_motion_folder
         
         env_cfg.update_motion_files()
         agent_cfg.update_motion_files()
+        
+        print(
+            f"Loaded the following AMP motion files: {env_cfg.amp_motion_files}"
+        )
 
         assert (
             env_cfg.amp_motion_files == agent_cfg.amp_motion_files
         ), f"Motion files in env and agent config should be the same, but got {env_cfg.amp_motion_files} and {agent_cfg.amp_motion_files}."
 
-        print(
-            f"Using the following AMP motion files: {env_cfg.amp_motion_files}"
-        )
 
     # specify directory for logging experiments
     env_cfg.seed = agent_cfg.seed
-
-    log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
-    log_root_path = os.path.abspath(log_root_path)
-    print(f"[INFO] Loading experiment from directory: {log_root_path}")
-    resume_path = get_checkpoint_path(
-        log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint
-    )
-    log_dir = os.path.dirname(resume_path)
 
     agent_cfg.policy.vel_dependent_actor_latent_dim = (
         get_vel_dependent_actor_latent_dim_for_action_manager_class(

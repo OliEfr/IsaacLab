@@ -14,12 +14,12 @@ base_dir = Path("logs/rsl_rl/unitree_go2_AMPflat")
 experiment_dir = "2025-05-16_21-23-07_manuallyGenerated_SEED_*" # * searches for all seeds
 
 # Directory name containing the evaluation results (relative to seed directory)
-eval_dir_name = "TargetXYDistributionEvaluation"
+eval_dir_name = "TargetXHeadingDistributionEvaluation" # TargetXYDistributionEvaluation, TargetXHeadingDistributionEvaluation
 
 # Field names in the YAML files
 x_field = 'target_velocity_x'
-y_field = 'target_velocity_y'
-metric_field = 'agent_expert_distances' # mean_mechanical_cot, error_vel_xy, agent_expert_distances
+y_field = 'heading_target' # target_velocity_y, heading_target
+metric_field = 'heading_error' # mean_mechanical_cot, error_vel_xy, agent_expert_distances, heading_error
 
 # Plot settings
 use_log_scale = True  # log scale for colorbar
@@ -34,7 +34,9 @@ output_filename = f"heatmap_{metric_field}.pdf"
 metric_field_plot_title_mapping = {
     "mean_mechanical_cot": "Cost of Transport [1]",
     "error_vel_xy": "Tracking Error [m/s]",
-    "agent_expert_distances": "Imitation score ↓"
+    "agent_expert_distances": "Imitation score ↓",
+    "heading_error": "Heading Error [rad]",
+    "error_vel_yaw": "Tracking Error Yaw [rad]"
 }
 
 xy_field_xy_label_mapping = {
