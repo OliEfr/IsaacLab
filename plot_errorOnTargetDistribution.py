@@ -22,16 +22,31 @@ y_field = 'target_velocity_y'
 metric_field = 'agent_expert_distances' # mean_mechanical_cot, error_vel_xy, agent_expert_distances
 
 # Plot settings
-plot_title = metric_field
-x_label = x_field
-y_label = y_field
-cbar_label = metric_field
 use_log_scale = True  # log scale for colorbar
+plot_values_in_cells = False  # whether to show values in cells
+plot_colobar_label = False
 
 # Output settings
 output_dir = Path(os.path.join("plots", base_dir, eval_dir_name))
 output_filename = f"heatmap_{metric_field}.pdf"
 # =========================
+
+metric_field_plot_title_mapping = {
+    "mean_mechanical_cot": "Cost of Transport [1]",
+    "error_vel_xy": "Tracking Error [m/s]",
+    "agent_expert_distances": "Imitation score ↓"
+}
+
+xy_field_xy_label_mapping = {
+    "target_velocity_x": "Target Vel. X [m/s]",
+    "target_velocity_y": "Target Vel. Y [m/s]",
+    "heading_target": "Target Heading [rad]"
+}
+
+plot_title = metric_field_plot_title_mapping[metric_field]
+x_label = xy_field_xy_label_mapping[x_field]
+y_label = xy_field_xy_label_mapping[y_field]
+cbar_label = metric_field_plot_title_mapping[metric_field]
 
 # Find all seed directories
 seed_dirs = sorted(base_dir.glob(f"{experiment_dir}"))
@@ -102,12 +117,12 @@ for i in range(len(df)):
 
 # Set font sizes
 plt.rcParams.update({
-    'font.size': 20,           # Default font size
-    'axes.titlesize': 24,      # Title font size
-    'axes.labelsize': 20,      # Axes labels font size
-    'xtick.labelsize': 18,     # X-tick label size
-    'ytick.labelsize': 18,     # Y-tick label size
-    'legend.fontsize': 18,     # Legend font size
+    'font.size': 40,           # Default font size
+    'axes.titlesize': 48,      # Title font size
+    'axes.labelsize': 40,      # Axes labels font size
+    'xtick.labelsize': 36,     # X-tick label size
+    'ytick.labelsize': 36,     # Y-tick label size
+    'legend.fontsize': 36,     # Legend font size
 })
 
 # Create figure and axis with larger size
@@ -132,7 +147,6 @@ if use_log_scale:
     df_mean_log = np.log10(df_mean + 1e-10)
     heatmap_kwargs['data'] = df_mean_log
     # Update colorbar label to indicate log scale
-    heatmap_kwargs['cbar_kws']['label'] = f'{cbar_label}'
     
     # Update annotations to show original values but plot uses log scale
     for i in range(len(df)):
@@ -146,6 +160,15 @@ if use_log_scale:
     # keep original values in legend (not log)
     formatter = FuncFormatter(lambda x, _: f'{10**x:.2f}' if x > 0 else '0')
     heatmap_kwargs['cbar_kws']['format'] = formatter
+    
+    
+
+heatmap_kwargs['annot'] = False if not plot_values_in_cells else heatmap_kwargs['annot']
+heatmap_kwargs["cbar_kws"]["shrink"] = 0.3#
+
+
+heatmap_kwargs['cbar_kws']['label'] = f'{cbar_label}' if plot_colobar_label else ""
+
     
 # Create the heatmap
 sns.heatmap(**heatmap_kwargs)
@@ -173,4 +196,4 @@ print(df.sort_values([x_field, y_field]).to_string())
 
 # Save detailed statistics to CSV
 df_sorted = df.sort_values([x_field, y_field])
-print(f"Detailed statistics saved to {output_dir / stats_filename}")
+print(f"Detailed statistics saved to {output_dir / output_filename}")

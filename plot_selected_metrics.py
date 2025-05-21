@@ -4,6 +4,16 @@ import numpy as np
 import os
 from collections import defaultdict
 
+# Set global plot styling
+plt.rcParams.update({
+    'font.size': 24,           # Default font size
+    'axes.titlesize': 24,      # Title font size
+    'axes.labelsize': 24,      # Axes labels font size
+    'xtick.labelsize': 18,     # X-tick label size
+    'ytick.labelsize': 18,     # Y-tick label size
+    'legend.fontsize': 16,     # Legend font size
+})
+
 metrics_to_plot = ["mean_mechanical_cot", "heading_error", "error_vel_yaw", "error_vel_xy"]
 
 
@@ -35,6 +45,9 @@ def collect_metrics_per_run(runs_dict):
                 all_metrics_per_seed[key].append(value)
 
         for key, values in all_metrics_per_seed.items():
+            if type(values[0]) == str:
+                print(f"Metric '{key}' is a string. Skipping.")
+                continue
             arr = np.array(values)
             mean_val = np.mean(arr)
             min_val = np.min(arr)
@@ -53,7 +66,7 @@ def plot_metrics(metrics):
     rows = int(np.ceil(n_metrics / cols))
 
     fig = plt.figure(figsize=(5 * cols, 4 * rows))
-    fig.suptitle("Mean and Range of Selected Metrics per Run", fontsize=16, y=0.995)
+    fig.suptitle("Mean and Range Between Seeds", fontsize=16, y=0.995)
 
     all_run_names = sorted({run for v in metrics.values() for run, _, _, _ in v})
     cmap = plt.cm.get_cmap('tab10', len(all_run_names))
@@ -82,19 +95,22 @@ def plot_metrics(metrics):
 
         ax.set_xticks(x_pos)
         ax.set_xticklabels(run_names, rotation=45, ha='right', fontsize=8)
-        ax.set_title(metric.replace('_', ' '), fontsize=10)
-        ax.set_ylabel(metric.replace('_', ' '), fontsize=8)
+        ax.set_xticklabels([])
+        ax.set_xticks([])
+        
+        ax.set_title(metric.replace('_', ' '), fontsize=16)
+        ax.set_ylabel(metric.replace('_', ' '), fontsize=16)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
 
     handles = [plt.Rectangle((0,0),1,1, color=color_map[run]) for run in all_run_names]
     fig.legend(handles, all_run_names,
-               loc='lower center', bbox_to_anchor=(0.5, 0.0),
-               ncol=min(5, len(all_run_names)))
+               loc='right', bbox_to_anchor=(1.4, 0.5),
+               ncol=1)
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.1 + 0.02 * (len(all_run_names) // 5))
-    plt.savefig("plots/selected_metrics_comparison.pdf", bbox_inches='tight')
-    print(f"Saved figure with selected metrics as 'plots/selected_metrics_comparison.pdf'")
+    plt.savefig("plots/selected_metrics.pdf", bbox_inches='tight')
+    print(f"Saved figure with selected metrics as 'plots/selected_metrics.pdf'")
     plt.close()
 
 def main():
