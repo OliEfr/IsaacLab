@@ -122,7 +122,7 @@ from actionManagerLatentActorMapping import (
     get_vel_dependent_actor_latent_dim_for_action_manager_class,
 )
 
-from utils import interpolate_trajectory
+from rsl_rl_utils import interpolate_trajectory
 
 
 
