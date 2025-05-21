@@ -176,9 +176,9 @@ def main():
     
     if env_cfg.is_amp_env:
         # Load same motion files that were used during training. This is required, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly.
-        with open(os.path.join(log_dir, "params", "env.yaml")) as f:
-            loaded_env_cfg = yaml.safe_load(f)
-            amp_motion_folder = loaded_env_cfg["amp_motion_folder"]
+        with open(os.path.join(log_dir, "params", "agent.yaml")) as f:
+            loaded_agent_cfg = yaml.load(f, Loader=yaml.FullLoader)
+            amp_motion_folder = loaded_agent_cfg["amp_motion_folder"]
             env_cfg.amp_motion_folder = amp_motion_folder
             agent_cfg.amp_motion_folder = amp_motion_folder
             print(f"Using the following AMP motion folder: {amp_motion_folder}")
