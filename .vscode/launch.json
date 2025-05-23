@@ -9,6 +9,15 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: container.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/docker/container.py",
+            "console": "integratedTerminal",
+            "args": ["enter"],
+            "justMyCode": false
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
