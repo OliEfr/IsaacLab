@@ -450,7 +450,7 @@ def main():
         eval_episode_metrics["episode length in s (target)"] = PLAY_EPISODE_LENGTH
         
         if env_cfg.is_amp_env:
-            eval_episode_metrics["amp_motion_folder"] = args_cli.amp_motion_folder
+            eval_episode_metrics["amp_motion_folder"] = env_cfg.amp_motion_folder
 
         eval_metric_file_name = eval(eval_config.eval_metric_filename) # eval: allows for dynamic file naming which is convenient for logging
         with open(os.path.join(eval_metric_folder, eval_metric_file_name), "w") as f:
