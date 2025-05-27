@@ -11,6 +11,19 @@ from .rough_env_cfg import UnitreeGo2RoughEnvCfg
 
 @configclass
 class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
+    # terrain_type: str = "plane"
+
+    def __init_terrain__(self):
+        if self.terrain_type == "plane":
+            print("Remove terrain generator")
+            self.scene.terrain.terrain_type = "plane"  # comment out for rough terrain
+            self.scene.terrain.terrain_generator = None  # comment out for rough terrain
+            self.curriculum.terrain_levels = None  # comment out for rough terrain
+            # no height scan
+            self.scene.height_scanner = None
+            self.observations.policy.height_scan = None
+
+
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
@@ -22,9 +35,11 @@ class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
         # self.rewards.feet_air_time.weight = 0.25
 
         # change terrain to flat
-        self.scene.terrain.terrain_type = "plane"  # comment out for rough terrain
-        self.scene.terrain.terrain_generator = None  # comment out for rough terrain
-        self.curriculum.terrain_levels = None  # comment out for rough terrain
+        # if self.terrain_type == "plane":
+        #     print("Remove terrain generator")
+        #     self.scene.terrain.terrain_type = "plane"  # comment out for rough terrain
+        #     self.scene.terrain.terrain_generator = None  # comment out for rough terrain
+        #     self.curriculum.terrain_levels = None  # comment out for rough terrain
         # no height scan
         self.scene.height_scanner = None
         self.observations.policy.height_scan = None

@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import math
-from dataclasses import MISSING
+from omegaconf import MISSING
+from dataclasses import MISSING as DMISSING
 
 from omni.isaac.lab.envs.mdp.rewards import (
     joint_deviation_l1,
@@ -43,7 +44,7 @@ import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as vel_mdp
 from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
 from ... import mdp
 
-from ...terrain import STAIRS_TERRAINS_CFG
+from ...terrain import STAIRS_TERRAINS_CFG, convert_to_play
 
 from .rough_env_cfg import UnitreeGo2RoughEnvCfg
 
@@ -135,106 +136,6 @@ from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 
-def base_pos(
-    env: ManagerBasedEnv,
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    sinusoidal_encoding=None,
-    use_env_frame=True,
-) -> torch.Tensor:
-    """Root position and yaw in the asset's root frame."""
-    # extract the used quantities (to enable type-hinting)
-    asset: RigidObject = env.scene[asset_cfg.name]
-    root_pos = asset.data.root_pos_w
-    if use_env_frame:
-        env_pos = root_pos - env.scene.terrain.env_origins
-    else:
-        env_pos = root_pos
-    root_rot = asset.data.root_quat_w
-
-    # Extract yaw from the rotation quaternion
-    yaw = math_utils.euler_xyz_from_quat(root_rot)[2].unsqueeze(-1)
-    encoded_yaw = torch.cat([torch.sin(yaw), torch.cos(yaw)], dim=-1)
-
-    if sinusoidal_encoding:
-        # Sinusoidal positional encoding
-        se = torch.tensor(sinusoidal_encoding, device=root_pos.device).view(3)
-        encoded_pos = mdp.sinusodial_encoding_3d(env_pos, se)
-        return torch.cat([encoded_pos, encoded_yaw], dim=-1)
-
-    return torch.cat([env_pos, encoded_yaw], dim=-1)
-
-
-@configclass
-class ObservationsCfg:  # (vel_cfg.ObservationsCfg):
-    """Observation specifications for the MDP."""
-
-    @configclass
-    class PolicyCfg(ObsGroup):
-        """Observations for policy group."""
-
-        # observation terms (order preserved)
-        base_lin_vel = ObsTerm(
-            func=vel_mdp.base_lin_vel, noise=Unoise(n_min=-0.1, n_max=0.1)
-        )
-        base_ang_vel = ObsTerm(
-            func=vel_mdp.base_ang_vel, noise=Unoise(n_min=-0.2, n_max=0.2)
-        )
-        projected_gravity = ObsTerm(
-            func=vel_mdp.projected_gravity,
-            noise=Unoise(n_min=-0.05, n_max=0.05),
-        )
-        velocity_commands = ObsTerm(
-            func=vel_mdp.generated_commands, params={"command_name": "base_velocity"}
-        )
-        joint_pos = ObsTerm(
-            func=vel_mdp.joint_pos_rel, noise=Unoise(n_min=-0.01, n_max=0.01)
-        )
-        joint_vel = ObsTerm(
-            func=vel_mdp.joint_vel_rel, noise=Unoise(n_min=-1.5, n_max=1.5)
-        )
-        actions = ObsTerm(func=vel_mdp.last_action)
-        height_scan = ObsTerm(
-            func=vel_mdp.height_scan,
-            params={"sensor_cfg": SceneEntityCfg("height_scanner")},
-            noise=Unoise(n_min=-0.01, n_max=0.01),
-            clip=(-1.0, 1.0),
-        )
-        world_pos = ObsTerm(
-            func=base_pos,
-            params={"sinusoidal_encoding": (1, 0, 1)},
-            noise=Unoise(n_min=-0.01, n_max=0.01),
-            clip=(-1.0, 1.0),
-        )
-
-        def __post_init__(self):
-            self.enable_corruption = True
-            self.concatenate_terms = True
-
-    # observation groups
-    policy: PolicyCfg = PolicyCfg()
-
-
-@configclass
-class EventCfg(vel_cfg.EventCfg):
-    """Configuration for events."""
-
-    pass
-
-
-@configclass
-class RewardsCfg(vel_cfg.RewardsCfg):
-    """Reward terms for the MDP."""
-
-    pass
-
-
-@configclass
-class TerminationsCfg(vel_cfg.TerminationsCfg):
-    """Termination terms for the MDP."""
-
-    pass
-
-
 @configclass
 class TopOfStairsCommandsCfg:
     """Command that tries to reach the ."""
@@ -282,22 +183,40 @@ class UniformVelocityCommandsCfg:
 ##
 import omni.isaac.lab.sim as sim_utils
 from pxr import PhysxSchema
+import typing as tp
 
+from .my_cfgs_amp import AMPUnitreeGo2FlatEnvCfg, AMPUnitreeGo2FlatEnvCfg_PLAY
+
+# class EnvCfgWithStairs:
+#     step_height: float | None = 1.0
+#     step_width: float | None = 1.0
+#
+#     def update_stairs(self, step_height, step_width):
+#         assert not self.step_width == 0.0 or self.step_height == 0.0, "Step width can only be zero with a step height of zero"
+#         self.step_height = step_height
+#         self.step_width = step_width
+#         self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
+#             self.step_width
+#         )
+#         self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
+#             self.step_height
+#         )
+#
+#         self.observations.policy.world_pos = ObsTerm(
+#             func=vel_mdp.base_pos,
+#             params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
+#             noise=Unoise(n_min=-0.01, n_max=0.01),
+#             clip=(-1.0, 1.0),
+#         )
 
 @configclass
-class UnitreeGo2StairsEnvCfg(UnitreeGo2RoughEnvCfg):
+class AMPUnitreeGo2StairsEnvCfg(AMPUnitreeGo2FlatEnvCfg):
     scene: StairsSceneCfg = StairsSceneCfg(num_envs=4096, env_spacing=4.0)
 
-    observations: ObservationsCfg = ObservationsCfg()
-    commands = TopOfStairsCommandsCfg()
-    curriculum = None
+    step_height: float = 0.0
+    step_width: float = 0.0
 
-    step_height: float = 1
-    step_width: float = 1
-
-    def update_stairs(self, step_height, step_width):
-        self.step_height = step_height
-        self.step_width = step_width
+    def _update_stairs(self, step_height, step_width):
         self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
             self.step_width
         )
@@ -306,101 +225,90 @@ class UnitreeGo2StairsEnvCfg(UnitreeGo2RoughEnvCfg):
         )
 
         self.observations.policy.world_pos = ObsTerm(
-            func=base_pos,
+            func=vel_mdp.base_pos,
             params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
             noise=Unoise(n_min=-0.01, n_max=0.01),
             clip=(-1.0, 1.0),
         )
+    # def update_stairs(self, step_height, step_width):
+    #     assert not self.step_width == 0.0 or self.step_height == 0.0, "Step width can only be zero with a step height of zero"
+    #     self.step_height = step_height
+    #     self.step_width = step_width
+    #     self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
+    #         self.step_width
+    #     )
+    #     self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
+    #         self.step_height
+    #     )
+    #
+    #     self.observations.policy.world_pos = ObsTerm(
+    #         func=vel_mdp.base_pos,
+    #         params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
+    #         noise=Unoise(n_min=-0.01, n_max=0.01),
+    #         clip=(-1.0, 1.0),
+    #     )
+
+    def __init_terrain__(self):
+        if self.terrain_type == "stairs":
+            self._update_stairs(self.step_height, self.step_width)
+            # self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
+            #     self.step_width
+            # )
+            # self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
+            #     self.step_height
+            # )
+
+            # Override spawn
+            self.events.reset_base.func = mdp.reset_root_state_from_terrain
+            self.events.reset_base.params = {
+                "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-0, 0)},
+                "velocity_range": {
+                    "x": (0.0, 0.0),
+                    "y": (0.0, 0.0),
+                    "z": (0.0, 0.0),
+                    "roll": (0.0, 0.0),
+                    "pitch": (0.0, 0.0),
+                    "yaw": (0.0, 0.0),
+                },
+            }
+        else:
+            super().__init_terrain__()
+
+    def __init_reward__(self):
+        super().__init_reward__()
+        # override rewards
+        self.rewards.flat_orientation_l2.weight = -2.5
+        self.rewards.feet_air_time.weight = 0.25
 
     def __post_init__(self):
         # post init of parent
-        self.update_stairs(self.step_height, self.step_width)
         super().__post_init__()
+        # self.update_stairs(self.step_height, self.step_width)
+
+        assert not self.step_width == 0.0 or self.step_height == 0.0, "Step width can only be zero with a step height of zero"
 
         # Increase buffer to prevent overflow. Values are arbitrary
         # C.f. https://github.com/isaac-sim/IsaacLab/issues/931
         # https://isaac-sim.github.io/IsaacLab/main/source/api/lab/isaaclab.sim.html
         self.sim.physx.gpu_max_rigid_patch_count = 2048 * 4096 * 1
         self.sim.physx.gpu_collision_stack_size = 2**27
-        # self.sim.physx. = 2048 * 4096
-        # from pxr import PhysxSchema
 
-        # physxSceneAPI = PhysxSchema.PhysxSceneAPI.Apply(physics_scene_prim)
-        # physxSceneAPI.CreateGpuTempBufferCapacityAttr(16 * 1024 * 1024 * 2)
-        # physxSceneAPI.CreateGpuHeapCapacityAttr(64 * 1024 * 1024 * 2)
-
-        self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
-            self.step_width
-        )
-        self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
-            self.step_height
-        )
-
-        # self.update_stairs(self.step_height, self.step_width)
-
-        # Override spawn
-        self.events.reset_base.func = mdp.reset_root_state_from_terrain
-        self.events.reset_base.params = {
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-0, 0)},
-            "velocity_range": {
-                "x": (0.0, 0.0),
-                "y": (0.0, 0.0),
-                "z": (0.0, 0.0),
-                "roll": (0.0, 0.0),
-                "pitch": (0.0, 0.0),
-                "yaw": (0.0, 0.0),
-            },
-        }
-
-        # override rewards
-        if True:
-            self.rewards.flat_orientation_l2.weight = -2.5
-            self.rewards.feet_air_time.weight = 0.25
-
-        # change terrain to flat
-        self.scene.terrain.terrain_type = "generator"
-        # self.scene.terrain.terrain_generator = None
         # no height scan
         self.scene.height_scanner = None
         self.observations.policy.height_scan = None
         # no terrain curriculum
-        # self.curriculum.terrain_levels = None
+        self.curriculum.terrain_levels = None
         self.scene.terrain.terrain_generator.curriculum = False
 
-
-class UnitreeGo2StairsEnvCfg_PLAY(UnitreeGo2StairsEnvCfg):
+@configclass
+class AMPUnitreeGo2StairsEnvCfg_PLAY(AMPUnitreeGo2StairsEnvCfg):
     scene: StairsSceneCfg = StairsSceneCfg(num_envs=1, env_spacing=4.0)
-
-    observations: ObservationsCfg = ObservationsCfg()
-    commands = TopOfStairsCommandsCfg()
-    curriculum = None
-
-    step_height: float = 0.01
-    step_width: float = 0.05
-
-    def update_stairs(self, step_height, step_width):
-        self.step_height = step_height
-        self.step_width = step_width
-        # __import__('ipdb').set_trace()
-        self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
-            self.step_width
-        )
-        self.scene.terrain.terrain_generator.sub_terrains[
-            "hf_stairs"
-        ].step_height_range = (0, self.step_height)
-
-        self.observations.policy.world_pos = ObsTerm(
-            func=base_pos,
-            params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
-            noise=Unoise(n_min=-0.01, n_max=0.01),
-            clip=(-1.0, 1.0),
-        )
 
     def __post_init__(self):
         # post init of parent
-        # self.terrain.terrain_generator = STAIRS_TERRAINS_CFG_PLAY
-        self.update_stairs(self.step_height, self.step_width)
         super().__post_init__()
+        self.terrain.terrain_generator = convert_to_play(STAIRS_TERRAINS_CFG)
+        # self.update_stairs(self.step_height, self.step_width)
 
         # make a smaller scene for play
         self.scene.num_envs = 5

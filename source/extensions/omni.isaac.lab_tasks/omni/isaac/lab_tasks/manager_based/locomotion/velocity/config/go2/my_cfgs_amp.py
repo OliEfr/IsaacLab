@@ -14,12 +14,7 @@ from .flat_env_cfg import UnitreeGo2FlatEnvCfg
 
 @configclass
 class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
-    def __post_init__(self):
-        # post init of parent
-        super().__post_init__()
-
-        self.is_amp_env: bool = True
-
+    def __init_reward(self):
         # disable rewards
         for field in fields(self.rewards):
             reward_obj = getattr(self.rewards, field.name)
@@ -31,6 +26,9 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         self.rewards.track_ang_vel_z_exp.weight = 20
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22 # TODO should this be ang_vel?
 
+    def __post_init__(self):
+        super().__post_init__()
+        self.is_amp_env: bool = True
 
         self.scene.num_envs = 5480
 

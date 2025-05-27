@@ -154,6 +154,12 @@ class ObservationsCfg:
             noise=Unoise(n_min=-0.1, n_max=0.1),
             clip=(-1.0, 1.0),
         )
+        world_pos = ObsTerm(
+            func=mdp.base_pos,
+            params={"sinusoidal_encoding": (1, 0, 1)},
+            noise=Unoise(n_min=-0.01, n_max=0.01),
+            clip=(-1.0, 1.0),
+        )
 
         # phases
         phases = None

@@ -47,12 +47,13 @@ def pyramid_stairs_terrain(
         # add the step
         hf_raw[start_x : start_x + step_width, 0:length_pixels] = current_step_height
 
-    for i in range(width_pixels):
-        hf_raw[i, 0] = 0
-        hf_raw[i, length_pixels - 1] = 0
-    for i in range(length_pixels):
-        hf_raw[0, i] = 0
-        hf_raw[width_pixels - 1, i] = 0
+    if False:
+        for i in range(width_pixels):
+            hf_raw[i, 0] = 0
+            hf_raw[i, length_pixels - 1] = 0
+        for i in range(length_pixels):
+            hf_raw[0, i] = 0
+            hf_raw[width_pixels - 1, i] = 0
 
     # round off the heights to the nearest vertical step
     return np.rint(hf_raw).astype(np.int16)
