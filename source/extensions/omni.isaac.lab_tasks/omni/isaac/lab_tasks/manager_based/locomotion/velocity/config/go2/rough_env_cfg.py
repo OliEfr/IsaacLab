@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from omegaconf import MISSING
 from omni.isaac.lab.utils import configclass
 
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
