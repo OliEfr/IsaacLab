@@ -9,6 +9,8 @@ class DefaultEvalConfig:
     play_episode_length = 10.0 # s
     play_episodes_per_env = int(2)
     rel_standing_envs = 0.0
+    
+    record_episode_jpos = False
 
     # run checks on env or agent cfg
     def run_checks(self, **kwargs):
@@ -54,7 +56,7 @@ class TargetDistribution(DefaultEvalConfig):
         assert kwargs["args_cli"].heading is not None, (
             "You most likely want to set a fixed heading for evaluation."
         )
-        
+
 @dataclass
 class TargetXYDistribution(TargetDistribution):
     eval_metric_subfolder: str = "TargetXYDistributionEvaluation"
@@ -65,15 +67,33 @@ class TargetXYDistribution(TargetDistribution):
         assert kwargs["args_cli"].heading == 0, (
             "You most likely want to set heading to 0 for evaluation."
         )
-        
+
 @dataclass
 class TargetXHeadingDistribution(TargetDistribution):
     eval_metric_subfolder: str = "TargetXHeadingDistributionEvaluation"
 
     def run_checks(self, **kwargs):
         super().run_checks(**kwargs)
-        
+
         assert kwargs["args_cli"].y_speed == 0, (
             "You most likely want to set heading to 0 for evaluation."
         )
-            
+
+
+@dataclass
+class RecordJposEpisodeTargetVelocity(TargetDistribution):
+    eval_metric_subfolder: str = "RecordJposEpisodeTargetVelocityEvaluation"
+    record_episode_jpos = True
+
+    play_episodes_per_env = int(1)
+    num_envs = 20
+    jpos_log_filename: str = (
+        "f'x_{env_cfg.commands.base_velocity.ranges.lin_vel_x[0]}_y_{env_cfg.commands.base_velocity.ranges.lin_vel_y[0]}_heading_{env_cfg.commands.base_velocity.ranges.heading[0]}.th'"
+    )
+
+    def run_checks(self, **kwargs):
+        super().run_checks(**kwargs)
+
+        assert kwargs["args_cli"].heading == 0, (
+            "You most likely want to set heading to 0 for evaluation."
+        )

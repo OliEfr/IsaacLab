@@ -125,7 +125,6 @@ from actionManagerLatentActorMapping import (
 from rsl_rl_utils import interpolate_trajectory
 
 
-
 def main():
     """Play with RSL-RL agent."""
     # parse configuration
@@ -135,7 +134,6 @@ def main():
         num_envs=args_cli.num_envs,
         use_fabric=not args_cli.disable_fabric,
     )
-
 
     # for correct metrics calculation
     if args_cli.evaluate:
@@ -148,16 +146,23 @@ def main():
         )
         env_cfg.episode_length_s = eval_config.play_episode_length
         env_cfg.is_eval_env = True  # enables additional logging
-        
+
         # run some checks
-        if (args_cli.x_speed is not None or args_cli.y_speed is not None or args_cli.heading is not None) and args_cli.eval_config not in ["TargetXYDistribution", "TargetXHeadingDistribution"]:
+        if (
+            args_cli.x_speed is not None
+            or args_cli.y_speed is not None
+            or args_cli.heading is not None
+        ) and not args_cli.eval_config in [
+            "TargetXYDistribution",
+            "TargetXHeadingDistribution",
+            "RecordJposEpisodeTargetVelocity",
+        ]:
             raise ValueError("You most likely want to use target speed and heading values with TargetSpeedDistribution eval_config.")
-            
 
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(
         args_cli.task, args_cli
     )
-    
+
     log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
     log_root_path = os.path.abspath(log_root_path)
     print(f"[INFO] Loading experiment from directory: {log_root_path}")
@@ -165,7 +170,7 @@ def main():
         log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint
     )
     log_dir = os.path.dirname(resume_path)
-    
+
     # Overwrite env_cfg and agent_cfg with args_cli
     if args_cli.x_speed is not None:
         env_cfg.commands.base_velocity.ranges.lin_vel_x = [args_cli.x_speed, args_cli.x_speed]
@@ -173,7 +178,7 @@ def main():
         env_cfg.commands.base_velocity.ranges.lin_vel_y = [args_cli.y_speed, args_cli.y_speed]
     if args_cli.heading is not None:
         env_cfg.commands.base_velocity.ranges.heading = [args_cli.heading, args_cli.heading]
-    
+
     if env_cfg.is_amp_env:
         # Load same motion files that were used during training. This is required, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly.
         with open(os.path.join(log_dir, "params", "agent.yaml")) as f:
@@ -182,11 +187,10 @@ def main():
             env_cfg.amp_motion_folder = amp_motion_folder
             agent_cfg.amp_motion_folder = amp_motion_folder
             print(f"Using the following AMP motion folder: {amp_motion_folder}")
-        
-        
+
         env_cfg.update_motion_files()
         agent_cfg.update_motion_files()
-        
+
         print(
             f"Loaded the following AMP motion files: {env_cfg.amp_motion_files}"
         )
@@ -194,7 +198,6 @@ def main():
         assert (
             env_cfg.amp_motion_files == agent_cfg.amp_motion_files
         ), f"Motion files in env and agent config should be the same, but got {env_cfg.amp_motion_files} and {agent_cfg.amp_motion_files}."
-
 
     # specify directory for logging experiments
     env_cfg.seed = agent_cfg.seed
@@ -204,10 +207,10 @@ def main():
             env_cfg.action_manager_class
         )
     )
-    
+
     if args_cli.evaluate:
         eval_config.run_checks(env_cfg=env_cfg, args_cli=args_cli)
-        
+
         eval_metric_folder = os.path.join(log_dir, eval_config.eval_metric_subfolder)
         os.makedirs(eval_metric_folder, exist_ok=True)
 
@@ -271,10 +274,10 @@ def main():
     )
 
     if env_cfg.is_amp_env:
-        
+
         # Expert trajectories are required to compute agent_expert_distances metrics
         expert_trajectories = env.unwrapped.event_manager.get_term_cfg("reference_state_initialization").func.amp_loader.trajectories # this is a list of trajectories: [(n_frames, n_amp_obs),...]
-        
+
         # interpolate trajectories to calculate distances more precisely
         interpolated_expert_trajectories = []
         num_interpolations = 10
@@ -286,11 +289,11 @@ def main():
         interpolated_expert_trajectories = torch.cat(
             interpolated_expert_trajectories, dim=0
         )
-            
+
         # amp_obs = env.unwrapped.get_amp_observations().to(env.unwrapped.device)
         # amp_rewards_buffer = torch.zeros(env.unwrapped.num_envs, device=env.unwrapped.device)
         agent_expert_distances = torch.zeros(env.unwrapped.num_envs, device=env.unwrapped.device)
-        
+
     # It is very unclean to use a second episode_length_buf besides the one in the environment. However, the one in the environment gets reset to 0 before I can calculate the metrics in this script. So I need to keep track of the episode lengths myself. In the future I'd like to find a way to avoid introducing a second episode_length_buf here.
     episode_length_buf = torch.zeros(env.unwrapped.num_envs, device=env.unwrapped.device)
     obs_history_storage.add(obs)
@@ -337,6 +340,15 @@ def main():
             * PLAY_EPISODE_LENGTH
             / env.unwrapped.step_dt
         )
+        
+        if args_cli.evaluate:
+            jpos_log = torch.zeros(
+                (
+                    int(PLAY_EPISODE_LENGTH / env.unwrapped.step_dt),
+                    int(env.env.num_envs),
+                    12,
+                )
+            )
 
     timestep = 0
     total_num_steps = 0
@@ -352,23 +364,28 @@ def main():
             # Environment stepping
             obs, _, dones, extras, *optional_values = env.step(actions)
             if env_cfg.is_amp_env:
-                
+
                 amp_observations = env.unwrapped.get_amp_observations()
                 agent_expert_distances += torch.cdist(amp_observations, interpolated_expert_trajectories).min(dim=1).values
 
                 # NOTE using the discriminator output to calculate style imitation is suboptimal. Its better to introduce the agent_expert_distances metric.
                 # next_amp_obs_with_term = torch.clone(next_amp_obs)
                 # next_amp_obs_with_term[rest_env_ids] = terminal_amp_states
-                
+
                 # rewards, _, amp_rewards_logging = ppo_runner.alg.discriminator.predict_amp_reward(
                 #     amp_obs, next_amp_obs_with_term, rewards, normalizer=None)#ppo_runner.alg.amp_normalizer)
 
                 # amp_obs = torch.clone(next_amp_obs)
                 # amp_rewards_buffer += amp_rewards_logging
-                
+
+            if args_cli.evaluate and eval_config.record_episode_jpos:
+                jpos_log[total_num_steps // env.env.num_envs] = (
+                    env.unwrapped.scene["robot"].data.joint_pos
+                )
+
             total_num_steps += env.env.num_envs
             episode_length_buf += 1
-            
+
             assert (
                 len(optional_values) == 2 or len(optional_values) == 0
             ), "Too many optional values returned by the environment"
@@ -448,7 +465,7 @@ def main():
         eval_episode_metrics["total_episodes (real)"] = total_episodes_real
 
         eval_episode_metrics["episode length in s (target)"] = PLAY_EPISODE_LENGTH
-        
+
         if env_cfg.is_amp_env:
             eval_episode_metrics["amp_motion_folder"] = env_cfg.amp_motion_folder
 
@@ -456,6 +473,11 @@ def main():
         with open(os.path.join(eval_metric_folder, eval_metric_file_name), "w") as f:
             yaml.dump(eval_episode_metrics, f)
         print(f"Metrics: {eval_episode_metrics}")
+
+        if eval_config.record_episode_jpos:
+            jpos_log_path = os.path.join(eval_metric_folder, eval(eval_config.jpos_log_filename))
+            torch.save(jpos_log, jpos_log_path)
+            print(f"Joints positions log saved to: {jpos_log_path}")
 
     # close the simulator
     env.close()
