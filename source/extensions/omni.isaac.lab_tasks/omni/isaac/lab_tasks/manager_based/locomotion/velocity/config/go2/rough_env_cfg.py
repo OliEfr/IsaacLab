@@ -165,14 +165,19 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
                 "yaw": (0.0, 0.0),
             },
         }
-        self.events.reference_state_initialization = EventTerm(
-            func=vel_mdp.reference_state_initialization,
-            mode="reset",
-            params={
-                "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
-                "device": self.sim.device,
-            },
-        )
+
+        # rewards
+        self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot"
+        self.rewards.undesired_contacts_thigh.params["sensor_cfg"].body_names = ".*thigh"
+        self.rewards.undesired_contacts_calf.params["sensor_cfg"].body_names = ".*calf"
+        self.rewards.contact_forces.params["sensor_cfg"].body_names = ".*foot"
+        # self.rewards.feet_air_time.weight = 0.01
+        # self.rewards.undesired_contacts = None
+        # self.rewards.dof_torques_l2.weight = -0.0002 
+        # self.rewards.track_lin_vel_xy_exp.weight = 1.5
+        # self.rewards.track_ang_vel_z_exp.weight = 0.75
+        # self.rewards.dof_acc_l2.weight = -2.5e-7 
+        # self.rewards.residual_action_l2.weight = 0.0 # -0.04
 
         # terminations
         self.terminations.base_contact.params["sensor_cfg"].body_names = "base"
