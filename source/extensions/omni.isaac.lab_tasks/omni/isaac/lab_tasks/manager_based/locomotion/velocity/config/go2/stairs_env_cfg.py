@@ -185,120 +185,18 @@ import omni.isaac.lab.sim as sim_utils
 from pxr import PhysxSchema
 import typing as tp
 
-from .my_cfgs_amp import AMPUnitreeGo2FlatEnvCfg, AMPUnitreeGo2FlatEnvCfg_PLAY
+# Import base configs
+from .my_cfgs_amp import AMPUnitreeGo2FlatEnvCfg
+from .flat_env_cfg import (
+    UnitreeGo2FlatEnvCfgComplexReward,
+    UnitreeGo2FlatEnvCfgSimpleReward,
+)
 
-# class EnvCfgWithStairs:
-#     step_height: float | None = 1.0
-#     step_width: float | None = 1.0
-#
-#     def update_stairs(self, step_height, step_width):
-#         assert not self.step_width == 0.0 or self.step_height == 0.0, "Step width can only be zero with a step height of zero"
-#         self.step_height = step_height
-#         self.step_width = step_width
-#         self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
-#             self.step_width
-#         )
-#         self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
-#             self.step_height
-#         )
-#
-#         self.observations.policy.world_pos = ObsTerm(
-#             func=vel_mdp.base_pos,
-#             params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
-#             noise=Unoise(n_min=-0.01, n_max=0.01),
-#             clip=(-1.0, 1.0),
-#         )
 
 @configclass
 class AMPUnitreeGo2StairsEnvCfg(AMPUnitreeGo2FlatEnvCfg):
-    scene: StairsSceneCfg = StairsSceneCfg(num_envs=4096, env_spacing=4.0)
+    terrain_type: str = "stairs"
 
-    step_height: float = 0.0
-    step_width: float = 0.0
-
-    def _update_stairs(self, step_height, step_width):
-        self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
-            self.step_width
-        )
-        self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
-            self.step_height
-        )
-
-        self.observations.policy.world_pos = ObsTerm(
-            func=vel_mdp.base_pos,
-            params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
-            noise=Unoise(n_min=-0.01, n_max=0.01),
-            clip=(-1.0, 1.0),
-        )
-    # def update_stairs(self, step_height, step_width):
-    #     assert not self.step_width == 0.0 or self.step_height == 0.0, "Step width can only be zero with a step height of zero"
-    #     self.step_height = step_height
-    #     self.step_width = step_width
-    #     self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
-    #         self.step_width
-    #     )
-    #     self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
-    #         self.step_height
-    #     )
-    #
-    #     self.observations.policy.world_pos = ObsTerm(
-    #         func=vel_mdp.base_pos,
-    #         params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
-    #         noise=Unoise(n_min=-0.01, n_max=0.01),
-    #         clip=(-1.0, 1.0),
-    #     )
-
-    def __init_terrain__(self):
-        if self.terrain_type == "stairs":
-            self._update_stairs(self.step_height, self.step_width)
-            # self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
-            #     self.step_width
-            # )
-            # self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
-            #     self.step_height
-            # )
-
-            # Override spawn
-            self.events.reset_base.func = mdp.reset_root_state_from_terrain
-            self.events.reset_base.params = {
-                "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-0, 0)},
-                "velocity_range": {
-                    "x": (0.0, 0.0),
-                    "y": (0.0, 0.0),
-                    "z": (0.0, 0.0),
-                    "roll": (0.0, 0.0),
-                    "pitch": (0.0, 0.0),
-                    "yaw": (0.0, 0.0),
-                },
-            }
-        else:
-            super().__init_terrain__()
-
-    def __init_reward__(self):
-        super().__init_reward__()
-        # override rewards
-        self.rewards.flat_orientation_l2.weight = -2.5
-        self.rewards.feet_air_time.weight = 0.25
-
-    def __post_init__(self):
-        # post init of parent
-        super().__post_init__()
-        # self.update_stairs(self.step_height, self.step_width)
-
-        assert not self.step_width == 0.0 or self.step_height == 0.0, "Step width can only be zero with a step height of zero"
-
-        # Increase buffer to prevent overflow. Values are arbitrary
-        # C.f. https://github.com/isaac-sim/IsaacLab/issues/931
-        # https://isaac-sim.github.io/IsaacLab/main/source/api/lab/isaaclab.sim.html
-        self.sim.physx.gpu_max_rigid_patch_count = 2048 * 4096 * 1
-        self.sim.physx.gpu_collision_stack_size = 2**27
-
-        # no height scan
-        self.scene.height_scanner = None
-        self.observations.policy.height_scan = None
-        # no terrain curriculum
-        self.curriculum.terrain_levels = None
-        self.scene.terrain.terrain_generator.curriculum = False
 
 @configclass
 class AMPUnitreeGo2StairsEnvCfg_PLAY(AMPUnitreeGo2StairsEnvCfg):
@@ -307,8 +205,7 @@ class AMPUnitreeGo2StairsEnvCfg_PLAY(AMPUnitreeGo2StairsEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        self.terrain.terrain_generator = convert_to_play(STAIRS_TERRAINS_CFG)
-        # self.update_stairs(self.step_height, self.step_width)
+        self.scene.terrain.terrain_generator = convert_to_play(STAIRS_TERRAINS_CFG)
 
         # make a smaller scene for play
         self.scene.num_envs = 5
@@ -316,10 +213,71 @@ class AMPUnitreeGo2StairsEnvCfg_PLAY(AMPUnitreeGo2StairsEnvCfg):
         # spawn the robot randomly in the grid (instead of their terrain levels)
         self.scene.terrain.max_init_terrain_level = None
         # reduce the number of terrains to save memory
-        if self.scene.terrain.terrain_generator is not None:
-            self.scene.terrain.terrain_generator.num_rows = 1
-            self.scene.terrain.terrain_generator.num_cols = 1
-            self.scene.terrain.terrain_generator.curriculum = False
+        self.scene.terrain.terrain_generator.num_rows = 1
+        self.scene.terrain.terrain_generator.num_cols = 1
+        self.scene.terrain.terrain_generator.curriculum = False
+
+        # disable randomization for play
+        self.observations.policy.enable_corruption = False
+        # remove random pushing event
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
+
+
+@configclass
+class UnitreeGo2StairsComplexRewardEnvCfg(UnitreeGo2FlatEnvCfgComplexReward):
+    terrain_type: str = "stairs"
+
+
+@configclass
+class UnitreeGo2StairsComplexRewardEnvCfg_PLAY(UnitreeGo2StairsComplexRewardEnvCfg):
+    scene: StairsSceneCfg = StairsSceneCfg(num_envs=1, env_spacing=4.0)
+
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+        self.scene.terrain.terrain_generator = convert_to_play(STAIRS_TERRAINS_CFG)
+
+        # make a smaller scene for play
+        self.scene.num_envs = 5
+        self.scene.env_spacing = 2.5
+        # spawn the robot randomly in the grid (instead of their terrain levels)
+        self.scene.terrain.max_init_terrain_level = None
+        # reduce the number of terrains to save memory
+        self.scene.terrain.terrain_generator.num_rows = 1
+        self.scene.terrain.terrain_generator.num_cols = 1
+        self.scene.terrain.terrain_generator.curriculum = False
+
+        # disable randomization for play
+        self.observations.policy.enable_corruption = False
+        # remove random pushing event
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None
+
+
+@configclass
+class UnitreeGo2StairsSimpleRewardEnvCfg(UnitreeGo2FlatEnvCfgSimpleReward):
+    terrain_type: str = "stairs"
+
+
+@configclass
+class UnitreeGo2StairsSimpleRewardEnvCfg_PLAY(UnitreeGo2StairsSimpleRewardEnvCfg):
+    scene: StairsSceneCfg = StairsSceneCfg(num_envs=1, env_spacing=4.0)
+
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+        self.scene.terrain.terrain_generator = convert_to_play(STAIRS_TERRAINS_CFG)
+
+        # make a smaller scene for play
+        self.scene.num_envs = 5
+        self.scene.env_spacing = 2.5
+        # spawn the robot randomly in the grid (instead of their terrain levels)
+        self.scene.terrain.max_init_terrain_level = None
+        # reduce the number of terrains to save memory
+        self.scene.terrain.terrain_generator.num_rows = 1
+        self.scene.terrain.terrain_generator.num_cols = 1
+        self.scene.terrain.terrain_generator.curriculum = False
 
         # disable randomization for play
         self.observations.policy.enable_corruption = False
