@@ -35,8 +35,16 @@ Our [documentation page](https://isaac-sim.github.io/IsaacLab) provides everythi
 - [Tutorials](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/index.html)
 - [Available environments](https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html)
 
+## Docker / SLURM / LRZ-AI Instructions
+- You can use ./docker/container.py start to build your image (as per [IsaacLab Instructions](https://isaac-sim.github.io/IsaacLab/v1.3.0/source/deployment/run_docker_example.html))
+    - Tag this image, and push to docker hub. Then, use enroot to import the image to LRZ AI Cluster (see LRZ AI Instructions or ask me for a convinience script.).
+    - Important: we could only get to run IsaacSim on the cluster ~30% speed compared to workstation. We believe its because cluster GPUs are not well supported.
+
 ### Installation Instructions
 Compact installation instruction for this version of IsaacLab. From the project root run
+Using IsaacLab V. 1.3.0.
+
+From the project root
 ```bash
 # Skip this part if you already have an environment
 conda create -n env_isaaclab python=3.10 -y

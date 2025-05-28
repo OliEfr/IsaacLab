@@ -1,0 +1,99 @@
+from dataclasses import dataclass
+
+
+@dataclass
+class DefaultEvalConfig:
+    eval_metric_subfolder: str = ""  # empty for not using a subfolder
+    eval_metric_filename: str = "f'metrics.yaml'"  # this expression will be EVALUATED eval(...) during runtime, ie you can use python code here and it must be an evaluatable string
+    num_envs = 10_000
+    play_episode_length = 10.0 # s
+    play_episodes_per_env = int(2)
+    rel_standing_envs = 0.0
+    
+    record_episode_jpos = False
+
+    # run checks on env or agent cfg
+    def run_checks(self, **kwargs):
+        env_cfg = kwargs["env_cfg"]
+        try:
+            eval(self.eval_metric_filename)
+        except: 
+            raise ValueError("eval_metric_filename must be an evaluatable string.")
+
+# This is meant as an abstract base class. Others should inherit.
+@dataclass
+class TargetDistribution(DefaultEvalConfig):
+    eval_metric_filename: str = "f'x_{env_cfg.commands.base_velocity.ranges.lin_vel_x[0]}_y_{env_cfg.commands.base_velocity.ranges.lin_vel_y[0]}_heading_{env_cfg.commands.base_velocity.ranges.heading[0]}.yaml'"
+    
+    # require less evaluation because target velocities and headings are fixed.
+    play_episodes_per_env = int(1)
+    num_envs = 5000
+    
+    def run_checks(self, **kwargs):
+        super().run_checks(**kwargs)
+        
+        assert (
+            kwargs["env_cfg"].commands.base_velocity.ranges.lin_vel_x[0]
+            == kwargs["env_cfg"].commands.base_velocity.ranges.lin_vel_x[1]
+        ), "Expected constant target speed."
+
+        assert (
+            kwargs["env_cfg"].commands.base_velocity.ranges.lin_vel_y[0]
+            == kwargs["env_cfg"].commands.base_velocity.ranges.lin_vel_y[1]
+        ), "Expected constant target speed for TargetSpeedDistributionEvaluation."
+
+        assert (
+            kwargs["env_cfg"].commands.base_velocity.ranges.heading[0]
+            == kwargs["env_cfg"].commands.base_velocity.ranges.heading[1]
+        ), "Expected constant target speed for TargetSpeedDistributionEvaluation."
+
+        assert kwargs["args_cli"].x_speed is not None, (
+            "You most likely want to set a fixed speed for evaluation."
+        )
+        assert kwargs["args_cli"].y_speed is not None, (
+            "You most likely want to set a fixed speed for evaluation."
+        )
+        assert kwargs["args_cli"].heading is not None, (
+            "You most likely want to set a fixed heading for evaluation."
+        )
+
+@dataclass
+class TargetXYDistribution(TargetDistribution):
+    eval_metric_subfolder: str = "TargetXYDistributionEvaluation"
+
+    def run_checks(self, **kwargs):
+        super().run_checks(**kwargs)
+        
+        assert kwargs["args_cli"].heading == 0, (
+            "You most likely want to set heading to 0 for evaluation."
+        )
+
+@dataclass
+class TargetXHeadingDistribution(TargetDistribution):
+    eval_metric_subfolder: str = "TargetXHeadingDistributionEvaluation"
+
+    def run_checks(self, **kwargs):
+        super().run_checks(**kwargs)
+
+        assert kwargs["args_cli"].y_speed == 0, (
+            "You most likely want to set heading to 0 for evaluation."
+        )
+
+
+@dataclass
+class RecordJposEpisodeTargetVelocity(TargetDistribution):
+    eval_metric_subfolder: str = "RecordJposEpisodeTargetVelocityEvaluation"
+    record_episode_jpos = True
+
+    play_episodes_per_env = int(1)
+    num_envs = 20
+    jpos_log_filename: str = (
+        "f'x_{env_cfg.commands.base_velocity.ranges.lin_vel_x[0]}_y_{env_cfg.commands.base_velocity.ranges.lin_vel_y[0]}_heading_{env_cfg.commands.base_velocity.ranges.heading[0]}.th'"
+    )
+
+    def run_checks(self, **kwargs):
+        super().run_checks(**kwargs)
+
+        assert kwargs["args_cli"].heading == 0, (
+            "You most likely want to set heading to 0 for evaluation."
+        )

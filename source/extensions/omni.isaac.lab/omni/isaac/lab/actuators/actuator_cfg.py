@@ -167,6 +167,18 @@ class DelayedPDActuatorCfg(IdealPDActuatorCfg):
 
     max_delay: int = 0
     """Maximum number of physics time-steps with which the actuator command may be delayed. Defaults to 0."""
+    
+@configclass
+class DelayedDCMotorCfg(DCMotorCfg):
+    """Configuration for a delayed DC motor actuator."""
+    
+    class_type: type = actuator_pd.DelayedDCMotor
+    
+    min_delay: int = MISSING
+    """Minimum number of physics time-steps with which the actuator command may be delayed. Defaults to 0."""
+    
+    max_delay: int = MISSING
+    """Maximum number of physics time-steps with which the actuator command may be delayed. Defaults to 0."""
 
 
 @configclass

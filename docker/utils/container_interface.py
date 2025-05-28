@@ -110,6 +110,8 @@ class ContainerInterface:
                 "--env-file",
                 ".env.base",
                 "build",
+                "--progress",
+                "plain",
                 "isaac-lab-base",
             ],
             check=False,

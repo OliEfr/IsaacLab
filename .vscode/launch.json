@@ -9,6 +9,15 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: container.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/docker/container.py",
+            "console": "integratedTerminal",
+            "args": ["enter"],
+            "justMyCode": false
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
@@ -34,6 +43,8 @@
                 "--headless",
                 "--seed",
                 "42",
+                "--log_dir",
+                "debug"
             ],
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/train.py",
             "console": "integratedTerminal",
@@ -45,10 +56,14 @@
             "request": "launch",
             "args": [
                 "--task",
-                "Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0",
+                "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0",
                 "--num_envs",
                 "25",
-                // "--load_run", "2025-05-11_16-37-05",
+                "--load_run", "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_1",
+                "--amp_motion_folder", "datasets/mocap_AMP_for_hardware/*",
+                "--x_speed", "0.5",
+                "--y_speed", "0.5",
+                "--heading", "0",
             ], // load last checkpoint from specific run like such: ["--load_run", "2025-04-30_09-13-56"]
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
             "console": "integratedTerminal"
@@ -59,11 +74,14 @@
             "request": "launch",
             "args": [
                 "--task",
-                "Isaac-Velocity-Flat-Unitree-Go2-v0",
-                "--num_envs",
-                "4096",
-                "--load_run", "2025-05-11_22-47-37",
+                "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0",
+                "--load_run", "2025-05-16_21-23-07_manuallyGenerated_SEED_2",
+                "--amp_motion_folder", "datasets/manuallyGenerated/*",
+                "--x_speed", "0.5",
+                "--y_speed", "0.0",
+                "--heading", "0.5",
                 "--evaluate",
+                "--eval_config", "TargetXHeadingDistribution",
             ], // load last checkpoint from specific run like such: ["--load_run", "2025-04-30_09-13-56"]
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
             "console": "integratedTerminal"
@@ -75,7 +93,9 @@
             "args": [
                 "--task",
                 "Isaac-Velocity-Rough-Unitree-Go2-v0",
-                "--headless"
+                "--headless",
+                "--log_dir",
+                "debug"
             ],
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/train.py",
             "console": "integratedTerminal",

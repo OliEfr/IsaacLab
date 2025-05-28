@@ -14,6 +14,7 @@ JOINT_ISAAC_LAB_TO_UNITREE_MAPPING: [
     6,
     10,
   ] # VERIFIED IN SIMULATION
+# IsaacLab: breadth-first ordering for the joints in a given kinematic tree
 DEFAULT_JOINT_POS_ISAAC_LAB:
   [
     0.1000,

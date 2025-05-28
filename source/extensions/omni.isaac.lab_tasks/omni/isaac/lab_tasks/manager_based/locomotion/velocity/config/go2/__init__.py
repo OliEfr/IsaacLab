@@ -163,7 +163,7 @@ gym.register(
 )
 
 gym.register(
-    id="Isaac-Velocity-AMPFlat-Unitree-Go2-PLAY-v0",
+    id="Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0",
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
