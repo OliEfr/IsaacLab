@@ -24,7 +24,7 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     }
     
     # Get the colorbar limits for the current combination, or use None for automatic scaling
-    vmin, vmax = colorbar_limits.get(metric_field)
+    vmin, vmax = colorbar_limits.get(metric_field, (None, None))
 
     output_dir = Path(os.path.join("plots", base_dir, experiment_dir, eval_dir_name))
     output_filename = f"heatmap_{metric_field}.pdf"
@@ -35,6 +35,9 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     elif eval_dir_name == "TargetXHeadingDistributionEvaluation":
         x_field = "target_velocity_x"
         y_field = "heading_target"
+    elif eval_dir_name == "TargetXYawDistributionEvaluation":
+        x_field = "target_velocity_x"
+        y_field = "target_yaw"
     else:
         raise ValueError(f"Unknown evaluation directory name: {eval_dir_name}")
 
@@ -50,6 +53,7 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
         "target_velocity_x": "Target Vel. X [m/s]",
         "target_velocity_y": "Target Vel. Y [m/s]",
         "heading_target": "Target Heading [rad]",
+        "target_yaw": "Target Ang. Vel. z [rad]",
     }
 
     plot_title = metric_field_plot_title_mapping[metric_field]
@@ -156,7 +160,7 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
         "linecolor": "white",  # Color of grid lines
         "vmin": vmin,
         "vmax": vmax,
-        "center":(vmin+vmax)/2,
+        "center":(vmin+vmax)/2 if vmin is not None and vmax is not None else None,
     }
     
 
@@ -207,8 +211,9 @@ def main():
     ] # * searches for all seeds
 
     eval_dir_names = [
-        "TargetXYDistributionEvaluation",
-        "TargetXHeadingDistributionEvaluation",
+        # "TargetXYDistributionEvaluation",
+        # "TargetXHeadingDistributionEvaluation",
+        "TargetXYawDistributionEvaluation",
     ]  # Directory name containing the evaluation results (relative to seed directory)
 
     metric_fields = [
@@ -216,6 +221,7 @@ def main():
         "mean_mechanical_cot",
         "error_vel_xy",
         "agent_expert_distances",
+        "error_vel_yaw",
     ]  # metrics for which the plots are created
 
     for experiment_dir in experiment_dirs:
