@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from collections import defaultdict
+import plot_DEFINITIONS
 
 # Set global plot styling
 plt.rcParams.update({
@@ -14,7 +15,13 @@ plt.rcParams.update({
     'legend.fontsize': 16,     # Legend font size
 })
 
-metrics_to_plot = ["mean_mechanical_cot", "heading_error", "error_vel_yaw", "error_vel_xy"]
+metrics_to_plot = [
+    "mean_mechanical_cot",
+    "heading_error",
+    # "error_vel_yaw",
+    "error_vel_xy",
+    "agent_expert_distances",
+]
 
 
 def load_yaml_file(file_path):
@@ -46,7 +53,7 @@ def collect_metrics_per_run(runs_dict):
 
         for key, values in all_metrics_per_seed.items():
             if type(values[0]) == str:
-                print(f"Metric '{key}' is a string. Skipping.")
+                print(f"Metric '{key}' is a string. Skipping. This is is only an info message: no action required.")
                 continue
             arr = np.array(values)
             mean_val = np.mean(arr)
@@ -98,13 +105,13 @@ def plot_metrics(metrics):
         ax.set_xticklabels([])
         ax.set_xticks([])
         
-        ax.set_title(metric.replace('_', ' '), fontsize=16)
-        ax.set_ylabel(metric.replace('_', ' '), fontsize=16)
+        ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
+        ax.set_ylabel(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
 
     handles = [plt.Rectangle((0,0),1,1, color=color_map[run]) for run in all_run_names]
     fig.legend(handles, all_run_names,
-               loc='right', bbox_to_anchor=(1.4, 0.5),
+               loc='right', bbox_to_anchor=(1.6, 0.5),
                ncol=1)
 
     plt.tight_layout()
@@ -115,32 +122,37 @@ def plot_metrics(metrics):
 
 def main():
     runs = {
-        "AMP, Manual Trajectory": [
+        plot_DEFINITIONS.ExperimentNames.manual_trajectory: [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_2",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_3",
         ],
-        "AMP, MoCap": [
+        plot_DEFINITIONS.ExperimentNames.mocap: [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_2",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_3",
         ],
-        "AMP, Video (Depth Cam)": [
+        plot_DEFINITIONS.ExperimentNames.video_depth_cam: [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_2",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_3",
         ],
-        "AMP, Video (Depth Model)": [
+        plot_DEFINITIONS.ExperimentNames.video_depth_cam_extended: [
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_1",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_2",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_3",
+        ],
+        plot_DEFINITIONS.ExperimentNames.video_depth_model: [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_2",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_3",
         ],
-        "DRL, Simple Reward": [
+        plot_DEFINITIONS.ExperimentNames.drl_simple_reward: [
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_simpleReward_SEED_1",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_simpleReward_SEED_2",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_simpleReward_SEED_3",
         ],
-        "DRL, Complex Reward": [
+        plot_DEFINITIONS.ExperimentNames.drl_complex_reward: [
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_1",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_2",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_3",

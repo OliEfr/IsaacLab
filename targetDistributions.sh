@@ -66,7 +66,7 @@ echo ""
 
 # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py \
 #     --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 \
-#     --load_run "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_1" \
+#     --load_run "2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_1" \
 #     --x_speed=0.0 \
 #     --y_speed=0.0 \
 #     --yaw=0.0 \

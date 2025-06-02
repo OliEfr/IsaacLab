@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
+import plot_DEFINITIONS
 
 
 ISAAC_LAB_ENV_DT = 0.02
@@ -18,27 +19,17 @@ class LocomotionData:
     jpos_leg4: torch.Tensor
     recording_dt: float
     
-@dataclass
-class ExperimentNames:
-    manual_trajectory = "Manual Trajectory"
-    video_depth_cam = "Video (Depth Cam)"
-    video_depth_model = "Video (Depth Model)"
-    mocap = "MoCap"
-    mocap2 = "MoCap2"
-    mocap3 = "MoCap3"
-    mocap4 = "MoCap4"
-
     
 @dataclass
 class amp_expert_data:
     recording_path_name_mapping = {
-        "datasets/manuallyGenerated/slow_amp.txt": ExperimentNames.manual_trajectory,
-        "datasets/fromVision_motions_DepthCam/slow_1313807000_amp.txt": ExperimentNames.video_depth_cam,
-        "datasets/fromVision_motions_AlignedDepthAnything/slow_1313807000_amp.txt": ExperimentNames.video_depth_model,
-        "datasets/mocap_AMP_for_hardware/trot_amp.txt": ExperimentNames.mocap,
-        "datasets/mocap_AMP_for_hardware/trot2_amp.txt": ExperimentNames.mocap2,
-        "datasets/mocap_AMP_for_hardware/pace_amp.txt": ExperimentNames.mocap3,
-        "datasets/mocap_AMP_for_hardware/canter_amp.txt": ExperimentNames.mocap4,
+        "datasets/manuallyGenerated/slow_amp.txt": plot_DEFINITIONS.DataSourceNames.manual_trajectory,
+        "datasets/fromVision_motions_DepthCam/slow_1313807000_amp.txt": plot_DEFINITIONS.DataSourceNames.video_depth_cam,
+        "datasets/fromVision_motions_AlignedDepthAnything/slow_1313807000_amp.txt": plot_DEFINITIONS.DataSourceNames.video_depth_model,
+        "datasets/mocap_AMP_for_hardware/trot_amp.txt": plot_DEFINITIONS.DataSourceNames.mocap,
+        "datasets/mocap_AMP_for_hardware/trot2_amp.txt": plot_DEFINITIONS.DataSourceNames.mocap2,
+        "datasets/mocap_AMP_for_hardware/pace_amp.txt": plot_DEFINITIONS.DataSourceNames.mocap3,
+        "datasets/mocap_AMP_for_hardware/canter_amp.txt": plot_DEFINITIONS.DataSourceNames.mocap4,
     }
     
     recording_paths = [
@@ -83,10 +74,10 @@ class data_after_training:
     ]
     
     recording_path_name_mapping = {
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": ExperimentNames.mocap + " (AMP)",
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": ExperimentNames.manual_trajectory + " (AMP)",
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": ExperimentNames.video_depth_cam + " (AMP)",
-        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": ExperimentNames.video_depth_model + " (AMP)",
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": plot_DEFINITIONS.ExperimentNames.mocap,
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_manuallyGenerated_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": plot_DEFINITIONS.ExperimentNames.manual_trajectory,
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": plot_DEFINITIONS.ExperimentNames.video_depth_cam,
+        "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": plot_DEFINITIONS.ExperimentNames.video_depth_model,
     }
     
     plot_title="Joint pos. (front-left leg) after AMP training"
@@ -96,7 +87,7 @@ class data_after_training:
         locomotion_data = LocomotionData(
             *get_legwise_jpos_for_breadth_first_joint_ordering(jpos), ISAAC_LAB_ENV_DT
         )
-        return locomotion_data    
+        return locomotion_data
     
 
 def get_legwise_jpos_for_breadth_first_joint_ordering(jpos, n_env=0):
