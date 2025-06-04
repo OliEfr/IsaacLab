@@ -22,6 +22,7 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
         'error_vel_xy': (0.00, 0.1),
         'agent_expert_distances': (2.0, 4.0),
         'heading_error': (0.5, 1.5),  # ~pi/2
+        'error_vel_yaw': (0.0, 0.4),
     }
 
     # Get the colorbar limits for the current combination, or use None for automatic scaling
@@ -183,23 +184,24 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     # Save detailed statistics to CSV
     # df_sorted = df.sort_values([x_field, y_field])
     # print(f"Detailed statistics saved to {output_dir / output_filename}")
+    plt.close()
 
 
 def main():
     base_dir = Path("logs/rsl_rl/unitree_go2_AMPflat")
 
     experiment_dirs = [
-        # "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_*",
-        # "2025-05-16_21-23-07_manuallyGenerated_SEED_*",
+        "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_*",
+        "2025-05-16_21-23-07_manuallyGenerated_SEED_*",
         "2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_*",
-        # "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_*"
-        # "2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_*",
+        "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_*",
+        "2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_*",
     ]  # * searches for all seeds
 
     eval_dir_names = [
         "TargetXYDistributionEvaluation",
         # "TargetXHeadingDistributionEvaluation",
-        "TargetXYawDistributionEvaluation",
+        # "TargetXYawDistributionEvaluation",
     ]  # Directory name containing the evaluation results (relative to seed directory)
 
     metric_fields = [

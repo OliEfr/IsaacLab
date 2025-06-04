@@ -18,7 +18,7 @@ plt.rcParams.update({
 metrics_to_plot = [
     "mean_mechanical_cot",
     "heading_error",
-    # "error_vel_yaw",
+    "error_vel_yaw",
     "error_vel_xy",
     "agent_expert_distances",
 ]
