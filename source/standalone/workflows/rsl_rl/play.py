@@ -68,10 +68,10 @@ parser.add_argument(
     help="Target y speed for evaluation.",
 )
 parser.add_argument(
-    "--heading",
+    "--ang_vel_z",
     type=float,
     default=None,
-    help="Target heading for evaluation.",
+    help="Target ang_vel_z (yaw, note that this is actually yaw rate) for evaluation.",
 )
 
 # append AppLauncher cli args
@@ -139,25 +139,20 @@ def main():
     if args_cli.evaluate:
         PLAY_EPISODE_LENGTH = eval_config.play_episode_length  # s
         PLAY_EPISODES_PER_ENV = eval_config.play_episodes_per_env # int
-        env_cfg.commands.base_velocity.rel_standing_envs = eval_config.rel_standing_envs
-        env_cfg.commands.base_velocity.resampling_time_range = (
-            eval_config.play_episode_length,
-            eval_config.play_episode_length,
-        )
-        env_cfg.episode_length_s = eval_config.play_episode_length
-        env_cfg.is_eval_env = True  # enables additional logging
+       
+        env_cfg = eval_config.set_env_cfg(env_cfg)
 
         # run some checks
         if (
             args_cli.x_speed is not None
             or args_cli.y_speed is not None
-            or args_cli.heading is not None
+            or args_cli.yaw is not None
         ) and not args_cli.eval_config in [
             "TargetXYDistribution",
-            "TargetXHeadingDistribution",
+            "TargetXYawDistribution",
             "RecordJposEpisodeTargetVelocity",
         ]:
-            raise ValueError("You most likely want to use target speed and heading values with TargetSpeedDistribution eval_config.")
+            raise ValueError("You most likely want to use target speed and yaw values with TargetSpeedDistribution eval_config.")
 
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(
         args_cli.task, args_cli
@@ -176,8 +171,8 @@ def main():
         env_cfg.commands.base_velocity.ranges.lin_vel_x = [args_cli.x_speed, args_cli.x_speed]
     if args_cli.y_speed is not None:
         env_cfg.commands.base_velocity.ranges.lin_vel_y = [args_cli.y_speed, args_cli.y_speed]
-    if args_cli.heading is not None:
-        env_cfg.commands.base_velocity.ranges.heading = [args_cli.heading, args_cli.heading]
+    if args_cli.yaw is not None:
+        env_cfg.commands.base_velocity.ranges.ang_vel_z = [args_cli.yaw, args_cli.yaw]
 
     if env_cfg.is_amp_env:
         # Load same motion files that were used during training. This is required, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly.

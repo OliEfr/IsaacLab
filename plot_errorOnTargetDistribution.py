@@ -7,13 +7,14 @@ import seaborn as sns
 from pathlib import Path
 from collections import defaultdict
 from matplotlib.ticker import FuncFormatter
+import plot_DEFINITIONS
 
 
 def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     # Plot settings
     plot_values_in_cells = False  # whether to show values in cells
     plot_colorbar_label = False
-    
+
     # Define fixed colorbar limits for each metric_field
     # Format: (metric_field): (vmin, vmax)
     colorbar_limits = {
@@ -21,10 +22,11 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
         'error_vel_xy': (0.00, 0.1),
         'agent_expert_distances': (2.0, 4.0),
         'heading_error': (0.5, 1.5),  # ~pi/2
+        'error_vel_yaw': (0.0, 0.4),
     }
-    
+
     # Get the colorbar limits for the current combination, or use None for automatic scaling
-    vmin, vmax = colorbar_limits.get(metric_field)
+    vmin, vmax = colorbar_limits.get(metric_field, (None, None))
 
     output_dir = Path(os.path.join("plots", base_dir, experiment_dir, eval_dir_name))
     output_filename = f"heatmap_{metric_field}.pdf"
@@ -35,27 +37,16 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     elif eval_dir_name == "TargetXHeadingDistributionEvaluation":
         x_field = "target_velocity_x"
         y_field = "heading_target"
+    elif eval_dir_name == "TargetXYawDistributionEvaluation":
+        x_field = "target_velocity_x"
+        y_field = "target_yaw"
     else:
         raise ValueError(f"Unknown evaluation directory name: {eval_dir_name}")
 
-    metric_field_plot_title_mapping = {
-        "mean_mechanical_cot": "Cost of Transport [1]",
-        "error_vel_xy": "Tracking Error [m/s]",
-        "agent_expert_distances": "Imitation score ↓",
-        "heading_error": "Heading Error [rad]",
-        "error_vel_yaw": "Tracking Error Yaw [rad]",
-    }
-
-    xy_field_xy_label_mapping = {
-        "target_velocity_x": "Target Vel. X [m/s]",
-        "target_velocity_y": "Target Vel. Y [m/s]",
-        "heading_target": "Target Heading [rad]",
-    }
-
-    plot_title = metric_field_plot_title_mapping[metric_field]
-    x_label = xy_field_xy_label_mapping[x_field]
-    y_label = xy_field_xy_label_mapping[y_field]
-    cbar_label = metric_field_plot_title_mapping[metric_field]
+    plot_title = plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric_field]
+    x_label = plot_DEFINITIONS.XY_FIELD_XY_LABEL_MAPPING[x_field]
+    y_label = plot_DEFINITIONS.XY_FIELD_XY_LABEL_MAPPING[y_field]
+    cbar_label = plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric_field]
 
     # Find all seed directories
     seed_dirs = sorted(base_dir.glob(f"{experiment_dir}"))
@@ -156,9 +147,8 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
         "linecolor": "white",  # Color of grid lines
         "vmin": vmin,
         "vmax": vmax,
-        "center":(vmin+vmax)/2,
+        "center":(vmin+vmax)/2 if vmin is not None and vmax is not None else None,
     }
-    
 
     heatmap_kwargs["annot"] = (
         False if not plot_values_in_cells else heatmap_kwargs["annot"]
@@ -194,21 +184,24 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     # Save detailed statistics to CSV
     # df_sorted = df.sort_values([x_field, y_field])
     # print(f"Detailed statistics saved to {output_dir / output_filename}")
+    plt.close()
 
 
 def main():
     base_dir = Path("logs/rsl_rl/unitree_go2_AMPflat")
 
     experiment_dirs = [
-        "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_*",  
+        "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_*",
         "2025-05-16_21-23-07_manuallyGenerated_SEED_*",
         "2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_*",
-        "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_*"
-    ] # * searches for all seeds
+        "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_*",
+        "2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_*",
+    ]  # * searches for all seeds
 
     eval_dir_names = [
         "TargetXYDistributionEvaluation",
-        "TargetXHeadingDistributionEvaluation",
+        # "TargetXHeadingDistributionEvaluation",
+        # "TargetXYawDistributionEvaluation",
     ]  # Directory name containing the evaluation results (relative to seed directory)
 
     metric_fields = [
@@ -216,11 +209,12 @@ def main():
         "mean_mechanical_cot",
         "error_vel_xy",
         "agent_expert_distances",
+        "error_vel_yaw",
     ]  # metrics for which the plots are created
 
     for experiment_dir in experiment_dirs:
         for eval_dir_name in eval_dir_names:
             for metric_field in metric_fields:
                 create_plots(base_dir, experiment_dir, eval_dir_name, metric_field)
-            
+
 main()
