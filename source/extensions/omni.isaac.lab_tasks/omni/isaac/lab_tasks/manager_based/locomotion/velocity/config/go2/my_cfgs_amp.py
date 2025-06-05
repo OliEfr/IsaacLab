@@ -1,4 +1,5 @@
 import glob
+from typing_extensions import override
 from omni.isaac.lab.utils import configclass
 from rsl_rl.datasets.motion_loader import AMPLoader
 
@@ -14,17 +15,20 @@ from .flat_env_cfg import UnitreeGo2FlatEnvCfg
 
 @configclass
 class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
-    def __init_reward(self):
+    @override
+    def __init_reward__(self):
         # disable rewards
         for field in fields(self.rewards):
             reward_obj = getattr(self.rewards, field.name)
             reward_obj.weight = 0.0
-        
+
         # set only task reward
         self.rewards.track_lin_vel_xy_exp.weight = 60
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
         self.rewards.track_ang_vel_z_exp.weight = 20
-        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22 # TODO should this be ang_vel?
+        self.rewards.track_lin_vel_xy_exp.params["std"] = (
+            0.22  # TODO should this be ang_vel?
+        )
 
     def __post_init__(self):
         super().__post_init__()
@@ -55,7 +59,9 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         motion_files = glob.glob(self.amp_motion_folder)
         self.amp_motion_files = motion_files
 
-        assert  self.events.reference_state_initialization is not None, "Always expecting RSI. For evaluation, please use the same motion files as used for training."
+        assert (
+            self.events.reference_state_initialization is not None
+        ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
         self.events.reference_state_initialization.params["motion_files"] = motion_files
 
 
@@ -64,7 +70,6 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
 
         # make a smaller scene for play
         self.scene.num_envs = 50
@@ -74,6 +79,5 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         # remove random pushing event
         self.events.base_external_force_torque = None
         self.events.push_robot = None
-        
-        self.amp_motion_folder = "datasets/dummy/*" # required otherwise it wont start; it is recomended to use same motion files as used for training
-        
+
+        self.amp_motion_folder = "datasets/dummy/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training

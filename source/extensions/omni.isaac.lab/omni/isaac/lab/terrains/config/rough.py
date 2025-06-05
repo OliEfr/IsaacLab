@@ -8,6 +8,9 @@
 import omni.isaac.lab.terrains as terrain_gen
 
 from ..terrain_generator_cfg import TerrainGeneratorCfg
+from omni.isaac.lab_tasks.manager_based.locomotion.velocity.mesh_stairs_cfg import (
+    MeshStairsTerrainCfg,
+)
 
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(8.0, 8.0),
@@ -36,18 +39,28 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
             holes=False,
         ),
         "boxes": terrain_gen.MeshRandomGridTerrainCfg(
-            proportion=0.2, grid_width=0.45, grid_height_range=(0.005, 0.025), platform_width=2.0
+            proportion=0.2,
+            grid_width=0.45,
+            grid_height_range=(0.005, 0.025),
+            platform_width=2.0,
         ),
-        
         "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
-            proportion=0.2, noise_range=(0.005, 0.02), noise_step=0.01, border_width=0.25
+            proportion=0.2,
+            noise_range=(0.005, 0.02),
+            noise_step=0.01,
+            border_width=0.25,
         ),
-
         "hf_pyramid_slope": terrain_gen.HfPyramidSlopedTerrainCfg(
-            proportion=0.1, slope_range=(0.0, 0.25), platform_width=2.0, border_width=0.25
+            proportion=0.1,
+            slope_range=(0.0, 0.25),
+            platform_width=2.0,
+            border_width=0.25,
         ),
         "hf_pyramid_slope_inv": terrain_gen.HfInvertedPyramidSlopedTerrainCfg(
-            proportion=0.1, slope_range=(0.0, 0.25), platform_width=2.0, border_width=0.25
+            proportion=0.1,
+            slope_range=(0.0, 0.25),
+            platform_width=2.0,
+            border_width=0.25,
         ),
     },
 )

@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing_extensions import override
 from omni.isaac.lab.utils import configclass
 from dataclasses import fields
 
@@ -12,21 +13,19 @@ from .rough_env_cfg import UnitreeGo2RoughEnvCfg
 @configclass
 class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
 
+    @override
     def __init_terrain__(self):
         if self.terrain_type == "plane":
-            self.scene.terrain.terrain_type = "plane"  # comment out for rough terrain
-            self.scene.terrain.terrain_generator = None  # comment out for rough terrain
-            self.curriculum.terrain_levels = None  # comment out for rough terrain
-            # no height scan
-            self.scene.height_scanner = None
-            self.observations.policy.height_scan = None
-        else:
             super().__init_terrain__()
+        else:
+            raise NotImplementedError()
 
-    def __init__(self) -> None:
-        # TODO: This might not make a lot of sense, since it will be called first due to the super init invocations
-        if not hasattr(self, "terrain_type"):
-            self.terrain_type == "plane"
+    @override
+    def __init_reward__(self):
+        pass
+        # override rewards
+        # self.rewards.flat_orientation_l2.weight = -2.5
+        # self.rewards.feet_air_time.weight = 0.25
 
     def __post_init__(self):
         # post init of parent
@@ -34,16 +33,6 @@ class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
 
         # NOTE this class should not be used directly. All rewards are zero here. You should inherit from this class to define your rewards.
 
-        # override rewards
-        # self.rewards.flat_orientation_l2.weight = -2.5
-        # self.rewards.feet_air_time.weight = 0.25
-
-        # change terrain to flat
-        # if self.terrain_type == "plane":
-        #     print("Remove terrain generator")
-        #     self.scene.terrain.terrain_type = "plane"  # comment out for rough terrain
-        #     self.scene.terrain.terrain_generator = None  # comment out for rough terrain
-        #     self.curriculum.terrain_levels = None  # comment out for rough terrain
         # no height scan
         self.scene.height_scanner = None
         self.observations.policy.height_scan = None
@@ -69,6 +58,8 @@ class UnitreeGo2FlatEnvCfgSimpleReward(UnitreeGo2FlatEnvCfg):
             reward_obj = getattr(self.rewards, field.name)
             reward_obj.weight = 0.0
 
+    @override
+    def __init_reward__(self):
         # set task reward
         self.rewards.track_lin_vel_xy_exp.weight = 1.0
         self.rewards.track_ang_vel_z_exp.weight = 0.5
@@ -104,6 +95,8 @@ class UnitreeGo2FlatEnvCfgComplexReward(UnitreeGo2FlatEnvCfg):
             reward_obj = getattr(self.rewards, field.name)
             reward_obj.weight = 0.0
 
+    @override
+    def __init_reward__(self):
         # set task reward: from AMP for hardware baseline
         self.rewards.track_lin_vel_xy_exp.weight = 1.5
         self.rewards.track_ang_vel_z_exp.weight = 0.75

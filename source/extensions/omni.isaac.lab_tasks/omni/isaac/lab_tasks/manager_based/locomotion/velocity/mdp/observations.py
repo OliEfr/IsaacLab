@@ -19,6 +19,7 @@ from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 from .encoding import sinusodial_encoding_3d
 
+
 def base_pos(
     env: ManagerBasedEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -41,7 +42,9 @@ def base_pos(
 
     if sinusoidal_encoding:
         # Sinusoidal positional encoding
-        se = torch.tensor(sinusoidal_encoding, device=root_pos.device, dtype=env_pos.dtype).view(3)
+        se = torch.tensor(
+            sinusoidal_encoding, device=root_pos.device, dtype=env_pos.dtype
+        ).view(3)
         encoded_pos = sinusodial_encoding_3d(env_pos, se)
         return torch.cat([encoded_pos, encoded_yaw], dim=-1)
 

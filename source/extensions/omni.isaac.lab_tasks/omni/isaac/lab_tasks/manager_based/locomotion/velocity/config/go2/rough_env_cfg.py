@@ -91,24 +91,37 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
     step_width: float = 0.5
 
     def __init_terrain__(self):
-        print("Init terrain")
         if self.terrain_type == "plane":
             print("[INFO] Switch to plane terrain")
-            print("Remove terrain generator")
-            self.scene.terrain.terrain_type = "plane"  # comment out for rough terrain
-            self.scene.terrain.terrain_generator = None  # comment out for rough terrain
-            self.curriculum.terrain_levels = None  # comment out for rough terrain
+            self.scene.terrain.terrain_type = "plane"
+            self.scene.terrain.terrain_generator = None
+            self.curriculum.terrain_levels = None
             # no height scan
             self.scene.height_scanner = None
             self.observations.policy.height_scan = None
         elif self.terrain_type == "stairs":
             print("[INFO] Switch to stair terrain")
             self.scene = StairsSceneCfg(num_envs=4096, env_spacing=4.0)
+            self.scene.terrain.terrain_generator.curriculum = False
         elif self.terrain_type == "rough":
             raise NotImplementedError()
         else:
             raise ValueError(f"Unknown terrain type {self.terrain_type}")
-        # exit()
+
+    def __init_reward__(self):
+        self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot"
+        self.rewards.undesired_contacts_thigh.params["sensor_cfg"].body_names = (
+            ".*thigh"
+        )
+        self.rewards.undesired_contacts_calf.params["sensor_cfg"].body_names = ".*calf"
+        self.rewards.contact_forces.params["sensor_cfg"].body_names = ".*foot"
+        # self.rewards.feet_air_time.weight = 0.01
+        # self.rewards.undesired_contacts = None
+        # self.rewards.dof_torques_l2.weight = -0.0002
+        # self.rewards.track_lin_vel_xy_exp.weight = 1.5
+        # self.rewards.track_ang_vel_z_exp.weight = 0.75
+        # self.rewards.dof_acc_l2.weight = -2.5e-7
+        # self.rewards.residual_action_l2.weight = 0.0 # -0.04
 
     def update_stairs(self, step_height, step_width):
         if self.terrain_type != "stairs":
@@ -118,10 +131,10 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         ), "Step width can only be zero with a step height of zero"
         self.step_height = step_height
         self.step_width = step_width
-        self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_width = (
+        self.scene.terrain.terrain_generator.sub_terrains["stairs"].step_width = (
             self.step_width
         )
-        self.scene.terrain.terrain_generator.sub_terrains["hf_stairs"].step_height = (
+        self.scene.terrain.terrain_generator.sub_terrains["stairs"].step_height = (
             self.step_height
         )
 
@@ -133,6 +146,7 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         )
 
     def __post_init__(self):
+        assert self.terrain_type != MISSING
         super().__post_init__()
         self.__init_terrain__()
         self.__init_reward__()
@@ -166,21 +180,18 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
             },
         }
 
-        # rewards
-        self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot"
-        self.rewards.undesired_contacts_thigh.params["sensor_cfg"].body_names = ".*thigh"
-        self.rewards.undesired_contacts_calf.params["sensor_cfg"].body_names = ".*calf"
-        self.rewards.contact_forces.params["sensor_cfg"].body_names = ".*foot"
-        # self.rewards.feet_air_time.weight = 0.01
-        # self.rewards.undesired_contacts = None
-        # self.rewards.dof_torques_l2.weight = -0.0002 
-        # self.rewards.track_lin_vel_xy_exp.weight = 1.5
-        # self.rewards.track_ang_vel_z_exp.weight = 0.75
-        # self.rewards.dof_acc_l2.weight = -2.5e-7 
-        # self.rewards.residual_action_l2.weight = 0.0 # -0.04
-
         # terminations
         self.terminations.base_contact.params["sensor_cfg"].body_names = "base"
+
+
+# self.events.reference_state_initialization = EventTerm(
+#     func=vel_mdp.reference_state_initialization,
+#     mode="reset",
+#     params={
+#         "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
+#         "device": self.sim.device,
+#     },
+# )
 
 
 @configclass
@@ -191,13 +202,18 @@ class UnitreeGo2RoughEnvCfg(UnitreeGo2BaseEnvCfg):
         if self.terrain_type == "rough":
             self.scene.terrain.terrain_generator.sub_terrains[
                 "boxes"
-            ].grid_height_range = (0.025, 0.1)
+            ].grid_height_range = (0.025, 0.1 * 100)
             self.scene.terrain.terrain_generator.sub_terrains[
                 "random_rough"
-            ].noise_range = (0.01, 0.06)
+            ].noise_range = (0.01, 0.06 * 100)
             self.scene.terrain.terrain_generator.sub_terrains[
                 "random_rough"
-            ].noise_step = 0.01
+            ].noise_step = (0.01 * 100)
+
+            print(
+                "Rough self.scene.terrain.terrain_generator.curriculum=",
+                self.scene.terrain.terrain_generator.curriculum,
+            )
         else:
             super().__init_terrain__()
 
@@ -271,6 +287,7 @@ class UnitreeGo2RoughEnvCfg_PLAY(UnitreeGo2RoughEnvCfg):
         if self.scene.terrain.terrain_generator is not None:
             self.scene.terrain.terrain_generator.num_rows = 5
             self.scene.terrain.terrain_generator.num_cols = 5
+
             self.scene.terrain.terrain_generator.curriculum = False
 
         # disable randomization for play
@@ -281,7 +298,7 @@ class UnitreeGo2RoughEnvCfg_PLAY(UnitreeGo2RoughEnvCfg):
 
 
 def generic_play_post_init(self):
-    super().__post_init__()
+    self().__post_init__()
     # make a smaller scene for play
     self.scene.num_envs = 5
     self.scene.env_spacing = 2.5
@@ -291,7 +308,7 @@ def generic_play_post_init(self):
     if self.scene.terrain.terrain_generator is not None:
         self.scene.terrain.terrain_generator.num_rows = 1
         self.scene.terrain.terrain_generator.num_cols = 1
-        self.scene.terrain.terrain_generator.curriculum = False
+    self.scene.terrain.terrain_generator.curriculum = False
 
     # disable randomization for play
     self.observations.policy.enable_corruption = False
