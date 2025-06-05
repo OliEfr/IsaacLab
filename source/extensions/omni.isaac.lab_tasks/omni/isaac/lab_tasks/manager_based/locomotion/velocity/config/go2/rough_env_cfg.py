@@ -298,7 +298,7 @@ class UnitreeGo2RoughEnvCfg_PLAY(UnitreeGo2RoughEnvCfg):
 
 
 def generic_play_post_init(self):
-    self().__post_init__()
+    super().__post_init__()
     # make a smaller scene for play
     self.scene.num_envs = 5
     self.scene.env_spacing = 2.5
