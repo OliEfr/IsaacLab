@@ -103,18 +103,6 @@ class StairsSceneCfg(InteractiveSceneCfg):
     )
 
 
-##
-# MDP settings
-##
-
-
-@configclass
-class ActionsCfg(vel_cfg.ActionsCfg):
-    """Action specifications for the MDP."""
-
-    pass
-
-
 import omni.isaac.lab.sim as sim_utils
 import omni.isaac.lab.utils.math as math_utils
 import torch
@@ -193,6 +181,7 @@ from .flat_env_cfg import (
 @configclass
 class AMPUnitreeGo2StairsEnvCfg(AMPUnitreeGo2FlatEnvCfg):
     terrain_type: str = "stairs"
+    commands = TopOfStairsCommandsCfg()
 
 
 @configclass
@@ -224,7 +213,7 @@ class AMPUnitreeGo2StairsEnvCfg_PLAY(AMPUnitreeGo2StairsEnvCfg):
 @configclass
 class UnitreeGo2StairsComplexRewardEnvCfg(UnitreeGo2FlatEnvCfgComplexReward):
     terrain_type: str = "stairs"
-
+    commands = TopOfStairsCommandsCfg()
 
 @configclass
 class UnitreeGo2StairsComplexRewardEnvCfg_PLAY(UnitreeGo2StairsComplexRewardEnvCfg):
@@ -255,7 +244,7 @@ class UnitreeGo2StairsComplexRewardEnvCfg_PLAY(UnitreeGo2StairsComplexRewardEnvC
 @configclass
 class UnitreeGo2StairsSimpleRewardEnvCfg(UnitreeGo2FlatEnvCfgSimpleReward):
     terrain_type: str = "stairs"
-
+    commands = TopOfStairsCommandsCfg()
 
 @configclass
 class UnitreeGo2StairsSimpleRewardEnvCfg_PLAY(UnitreeGo2StairsSimpleRewardEnvCfg):
