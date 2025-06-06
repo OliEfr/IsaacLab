@@ -68,10 +68,10 @@ parser.add_argument(
     help="Target y speed for evaluation.",
 )
 parser.add_argument(
-    "--ang_vel_z",
+    "--yaw",
     type=float,
     default=None,
-    help="Target ang_vel_z (yaw, note that this is actually yaw rate) for evaluation.",
+    help="Target yaw (ang_vel_z, note that this is actually yaw rate) for evaluation.",
 )
 
 # append AppLauncher cli args
