@@ -183,12 +183,12 @@ class EventCfg:
             # "static_friction_range": (2.0, 2.0),
             # "dynamic_friction_range": (1.0, 1.0),
             # "restitution_range": (0.0, 0.0),
-            "static_friction_range": (0.6, 1.2),
-            "dynamic_friction_range": (0.6, 1.2),
-            "restitution_range": (0.0, 0.05),
-            # "static_friction_range": (0.8, 0.8),
-            # "dynamic_friction_range": (0.6, 0.6),
-            # "restitution_range": (0.0, 0.0),
+            "static_friction_range": (0.8, 0.8),
+            "dynamic_friction_range": (0.6, 0.6),
+            "restitution_range": (0.0, 0.0),
+            # "static_friction_range": (0.6, 1.2),
+            # "dynamic_friction_range": (0.6, 1.2),
+            # "restitution_range": (0.0, 0.05),
             "num_buckets": 64,
         },
     )
@@ -245,36 +245,37 @@ class EventCfg:
         func=mdp.push_by_setting_velocity,
         mode="interval",
         interval_range_s=(10.0, 15.0),
-        params={"velocity_range": {"x": (-0.2, 0.2), "y": (-0.2, 0.2)}},
+        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
+        # params={"velocity_range": {"x": (-0.2, 0.2), "y": (-0.2, 0.2)}},
     )
     
-    actuator_gains = EventTerm(
-        func=mdp.randomize_actuator_gains,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
-            "stiffness_distribution_params": (0.85, 1.15),
-            "damping_distribution_params": (0.85, 1.15),
-            "operation": "scale",
-            "distribution": "uniform",
-        },
-    )
+    # actuator_gains = EventTerm(
+    #     func=mdp.randomize_actuator_gains,
+    #     mode="reset",
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+    #         "stiffness_distribution_params": (0.85, 1.15),
+    #         "damping_distribution_params": (0.85, 1.15),
+    #         "operation": "scale",
+    #         "distribution": "uniform",
+    #     },
+    # )
     
     # Randomizing gravity using 'randomize_physics_scene_gravity': Gravity is set for all environments,and should be used with 'mode=startup"'. Thus, you most likely dont want to use randomized gravity.
 
     
-    joint_limits = EventTerm(
-        func=mdp.randomize_joint_parameters,
-        # Doing this in mode "reset" slows down training ~25%
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
-            "lower_limit_distribution_params": (0.95, 1.05),
-            "upper_limit_distribution_params": (0.95, 1.05),
-            "operation": "scale",
-            "distribution": "uniform",
-        },
-    )
+    # joint_limits = EventTerm(
+    #     func=mdp.randomize_joint_parameters,
+    #     # Doing this in mode "reset" slows down training ~25%
+    #     mode="startup",
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+    #         "lower_limit_distribution_params": (0.95, 1.05),
+    #         "upper_limit_distribution_params": (0.95, 1.05),
+    #         "operation": "scale",
+    #         "distribution": "uniform",
+    #     },
+    # )
     
     # NOTE do not use, seems buggy: https://github.com/isaac-sim/IsaacLab/issues/676
     # joint_frictions = EventTerm(
