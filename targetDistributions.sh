@@ -6,6 +6,7 @@ eval_config="$2"
 
 # target seeds, yaws, and speeds
 seeds=(1 2 3)
+
 if [ "$eval_config" = "TargetXYDistribution" ]; then
     target_x_speeds=($(seq -1.0 0.1 1.0))
     target_y_speeds=($(seq -0.3 0.1 0.3))
