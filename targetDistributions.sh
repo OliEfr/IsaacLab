@@ -1,8 +1,9 @@
 #!/bin/bash
 LC_NUMERIC=en_US.UTF-8 # required fix for correct float representation using "." instead of ","
 
-experiment="$1" # $1 refers to the first command-line argument
-eval_config="$2"
+isaac_lab_task="$1" # $1 refers to the first command-line argument
+experiment="$2" 
+eval_config="$3"
 
 # target seeds, yaws, and speeds
 seeds=(1 2 3)
@@ -24,7 +25,7 @@ else
     exit 1
 fi
 
-
+echo "Using IsaacLab task: ${isaac_lab_task}"
 echo "Executing experiments for: ${experiment}"
 echo "Eval config: ${eval_config}"
 echo "Target X Speeds: ${target_x_speeds[@]}"
@@ -44,7 +45,7 @@ for seed in "${seeds[@]}"; do
                 echo "Running exp. for: Target X Speed: ${target_x_speed}, Target Y Speed: ${target_y_speed}, Target Yaw: ${target_yaw}, Seed: ${seed}"
                 time( \
                     ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py \
-                        --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 \
+                        --task ${isaac_lab_task} \
                         --load_run "${experiment}${seed}" \
                         --x_speed=${target_x_speed} \
                         --y_speed=${target_y_speed} \

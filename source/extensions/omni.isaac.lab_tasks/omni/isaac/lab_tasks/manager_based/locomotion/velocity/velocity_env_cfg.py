@@ -246,7 +246,7 @@ class EventCfg:
         mode="interval",
         interval_range_s=(10.0, 15.0),
         params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
-        # params={"velocity_range": {"x": (-0.2, 0.2), "y": (-0.2, 0.2)}},
+        # params={"velocity_range": {"x": (-0.2, 0.2), "y": (-0.2, 0.2)}}, # if DR doesnt work, potentially increase this parameter. For AMP for hardware this is +-1.3m/s
     )
     
     # actuator_gains = EventTerm(

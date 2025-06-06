@@ -21,10 +21,13 @@ datetime="$1" # $1 refers to the first command-line argument
 
 # ./targetDistributions.sh "${datetime}_fromVision_motions_DepthCam_extended_SEED_" "TargetXYDistribution" #~500 exp
 
-# USE
-./targetDistributions.sh "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_" "TargetXYawDistribution" #~500 exp
+./targetDistributions.sh "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0" "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_" "TargetXYawDistribution" #~500 exp
 
-# USE
-./targetDistributions.sh "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_" "TargetXYDistribution" #~500 exp
+./targetDistributions.sh "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0" "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_" "TargetXYDistribution" #~500 exp
+
+# additionally for complex reward
+./targetDistributions.sh "Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0" "2025-05-16_21-23-07_complexReward_SEED_" "TargetXYawDistribution" #~500 exp
+
+./targetDistributions.sh "Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0" "2025-05-16_21-23-07_complexReward_SEED_" "TargetXYDistribution" #~500 exp
 
 
