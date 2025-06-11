@@ -2,7 +2,9 @@ from omni.isaac.lab.terrains.terrain_generator_cfg import (
     FlatPatchSamplingCfg,
     TerrainGeneratorCfg,
 )
-from omni.isaac.lab_tasks.manager_based.locomotion.velocity.mesh_stairs_cfg import MeshStairsTerrainCfg
+from omni.isaac.lab_tasks.manager_based.locomotion.velocity.mesh_stairs_cfg import (
+    MeshStairsTerrainCfg,
+)
 
 
 STAIRS_TERRAINS_CFG = TerrainGeneratorCfg(

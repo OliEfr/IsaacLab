@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing_extensions import override
 from omegaconf import MISSING
 from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
@@ -29,8 +30,6 @@ from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg imp
 from omni.isaac.lab_assets.unitree import UNITREE_GO2_CFG  # isort: skip
 
 
-# TODO: Move this to another file
-# from .stairs_env_cfg import StairsSceneCfg
 @configclass
 class StairsSceneCfg(InteractiveSceneCfg):
     """Configuration for a cart-pole scene."""
@@ -84,11 +83,7 @@ class StairsSceneCfg(InteractiveSceneCfg):
 
 @configclass
 class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
-    # TODO: Add terrain selection by flag in here!
     terrain_type: str | Any = MISSING
-
-    step_height: float = 0.1
-    step_width: float = 0.5
 
     def __init_terrain__(self):
         if self.terrain_type == "plane":
@@ -115,32 +110,29 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         )
         self.rewards.undesired_contacts_calf.params["sensor_cfg"].body_names = ".*calf"
         self.rewards.contact_forces.params["sensor_cfg"].body_names = ".*foot"
-        # self.rewards.feet_air_time.weight = 0.01
-        # self.rewards.undesired_contacts = None
-        # self.rewards.dof_torques_l2.weight = -0.0002
-        # self.rewards.track_lin_vel_xy_exp.weight = 1.5
-        # self.rewards.track_ang_vel_z_exp.weight = 0.75
-        # self.rewards.dof_acc_l2.weight = -2.5e-7
-        # self.rewards.residual_action_l2.weight = 0.0 # -0.04
 
-    def update_stairs(self, step_height, step_width):
+    def update_stairs(self, step_width, step_height):
         if self.terrain_type != "stairs":
             return
         assert (
-            not self.step_width == 0.0 or self.step_height == 0.0
+            not step_width == 0.0 or step_height == 0.0
         ), "Step width can only be zero with a step height of zero"
-        self.step_height = step_height
-        self.step_width = step_width
+        self.scene.terrain.terrain_generator.difficulty_range = (1.0, 1.0)
         self.scene.terrain.terrain_generator.sub_terrains["stairs"].step_width = (
-            self.step_width
+            step_width
         )
-        self.scene.terrain.terrain_generator.sub_terrains["stairs"].step_height = (
-            self.step_height
-        )
+        self.scene.terrain.terrain_generator.sub_terrains[
+            "stairs"
+        ].step_height_range = (step_height, step_height)
 
+    def update_base_pos_obs(self, step_width, step_height):
+        assert self.terrain_type == "stairs"
+        print(
+            f"[INFO] Updating observations in base_pos to {(step_width, 0, step_height)}"
+        )
         self.observations.policy.world_pos = ObsTerm(
             func=vel_mdp.base_pos,
-            params={"sinusoidal_encoding": (self.step_width, 0, self.step_height)},
+            params={"sinusoidal_encoding": (step_width, 0, step_height)},
             noise=Unoise(n_min=-0.01, n_max=0.01),
             clip=(-1.0, 1.0),
         )
@@ -150,6 +142,20 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         super().__post_init__()
         self.__init_terrain__()
         self.__init_reward__()
+
+        # Remap sensor names in the reward function
+        if hasattr(self.rewards, "feet_air_time"):
+            self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot"
+        if hasattr(self.rewards, "undesired_contacts_thigh"):
+            self.rewards.undesired_contacts_thigh.params["sensor_cfg"].body_names = (
+                ".*thigh"
+            )
+        if hasattr(self.rewards, "undesired_contacts_calf"):
+            self.rewards.undesired_contacts_calf.params["sensor_cfg"].body_names = (
+                ".*calf"
+            )
+        if hasattr(self.rewards, "contact_forces"):
+            self.rewards.contact_forces.params["sensor_cfg"].body_names = ".*foot"
 
         self.scene.robot = UNITREE_GO2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         if self.scene.height_scanner is not None:
@@ -183,22 +189,27 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         # terminations
         self.terminations.base_contact.params["sensor_cfg"].body_names = "base"
 
-
-# self.events.reference_state_initialization = EventTerm(
-#     func=vel_mdp.reference_state_initialization,
-#     mode="reset",
-#     params={
-#         "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
-#         "device": self.sim.device,
-#     },
-# )
+        terrain_gen = self.scene.terrain.terrain_generator
+        assert terrain_gen is not None
+        if (
+            terrain_gen.sub_terrains["stairs"].step_height_range[0]
+            == terrain_gen.sub_terrains["stairs"].step_height_range[1]
+        ):
+            print("[INFO] Fixed step height detected")
+            # assert self.scene.terrain.terrain_generator.difficulty_range[0]
+            self.update_base_pos_obs(
+                terrain_gen.sub_terrains["stairs"].step_width,
+                terrain_gen.sub_terrains["stairs"].step_height_range[0],
+            )
 
 
 @configclass
 class UnitreeGo2RoughEnvCfg(UnitreeGo2BaseEnvCfg):
     terrain_type = "rough"
 
+    @override
     def __init_terrain__(self):
+        super().__init_terrain__()
         if self.terrain_type == "rough":
             self.scene.terrain.terrain_generator.sub_terrains[
                 "boxes"
@@ -214,9 +225,8 @@ class UnitreeGo2RoughEnvCfg(UnitreeGo2BaseEnvCfg):
                 "Rough self.scene.terrain.terrain_generator.curriculum=",
                 self.scene.terrain.terrain_generator.curriculum,
             )
-        else:
-            super().__init_terrain__()
 
+    @override
     def __init_reward__(self):
         # rewards
         self.rewards.feet_air_time.params["sensor_cfg"].body_names = ".*_foot"
@@ -225,13 +235,6 @@ class UnitreeGo2RoughEnvCfg(UnitreeGo2BaseEnvCfg):
         )
         self.rewards.undesired_contacts_calf.params["sensor_cfg"].body_names = ".*calf"
         self.rewards.contact_forces.params["sensor_cfg"].body_names = ".*foot"
-        # self.rewards.feet_air_time.weight = 0.01
-        # self.rewards.undesired_contacts = None
-        # self.rewards.dof_torques_l2.weight = -0.0002
-        # self.rewards.track_lin_vel_xy_exp.weight = 1.5
-        # self.rewards.track_ang_vel_z_exp.weight = 0.75
-        # self.rewards.dof_acc_l2.weight = -2.5e-7
-        # self.rewards.residual_action_l2.weight = 0.0 # -0.04
 
         # Disable world_pos in the general
         self.observations.policy.world_pos = None
@@ -264,9 +267,6 @@ class UnitreeGo2RoughEnvCfg(UnitreeGo2BaseEnvCfg):
                 "yaw": (0.0, 0.0),
             },
         }
-
-        # self.__init_terrain__()
-        # self.__init_reward__()
 
         # terminations
         self.terminations.base_contact.params["sensor_cfg"].body_names = "base"

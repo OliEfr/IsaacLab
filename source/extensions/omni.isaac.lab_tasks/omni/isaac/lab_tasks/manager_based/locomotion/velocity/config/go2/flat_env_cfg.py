@@ -14,13 +14,6 @@ from .rough_env_cfg import UnitreeGo2RoughEnvCfg
 class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
 
     @override
-    def __init_terrain__(self):
-        if self.terrain_type == "plane":
-            super().__init_terrain__()
-        else:
-            raise NotImplementedError()
-
-    @override
     def __init_reward__(self):
         pass
         # override rewards
@@ -36,6 +29,7 @@ class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
         # no height scan
         self.scene.height_scanner = None
         self.observations.policy.height_scan = None
+
 
 ####################################################################
 
@@ -57,10 +51,14 @@ class UnitreeGo2FlatEnvCfgSimpleReward(UnitreeGo2FlatEnvCfg):
     def __init_reward__(self):
         # set task reward: from AMP for hardware baseline
         # NOTE AMP for Hardware has std=1. Can be activated by commenting out the two following lines
-        self.rewards.track_lin_vel_xy_exp.params["std"] = .5
-        self.rewards.track_ang_vel_z_exp.params["std"] = .5
-        self.rewards.track_lin_vel_xy_exp.weight = 2.5 # was 1.5 before adding actuator delay
-        self.rewards.track_ang_vel_z_exp.weight = 1.5 # was 0.75 before adding actuator delay
+        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.5
+        self.rewards.track_ang_vel_z_exp.params["std"] = 0.5
+        self.rewards.track_lin_vel_xy_exp.weight = (
+            2.5  # was 1.5 before adding actuator delay
+        )
+        self.rewards.track_ang_vel_z_exp.weight = (
+            1.5  # was 0.75 before adding actuator delay
+        )
 
 
 @configclass
@@ -96,14 +94,18 @@ class UnitreeGo2FlatEnvCfgComplexReward(UnitreeGo2FlatEnvCfgSimpleReward):
         self.rewards.dof_torques_l2.weight = -0.0002
         self.rewards.dof_acc_l2.weight = -2.5e-7
         self.rewards.action_rate_l2.weight = -0.01
-        self.rewards.feet_air_time.weight = 10 # consider reducing this to 7.5 if performance on task reward is bad
+        self.rewards.feet_air_time.weight = (
+            10  # consider reducing this to 7.5 if performance on task reward is bad
+        )
         self.rewards.undesired_contacts_thigh.weight = -1.0
         self.rewards.undesired_contacts_calf.weight = -1.0
         self.rewards.contact_forces.weight = -1.0
         self.rewards.flat_orientation_l2.weight = -0.01
         self.rewards.joint_pos_limits.weight = -10.0
         self.rewards.torque_limits.weight = -1.0e-5
-        self.rewards.joint_deviation_l1.weight = -0.75 # consider reducing this in case performance on task reward is bad
+        self.rewards.joint_deviation_l1.weight = (
+            -0.75
+        )  # consider reducing this in case performance on task reward is bad
 
 
 @configclass

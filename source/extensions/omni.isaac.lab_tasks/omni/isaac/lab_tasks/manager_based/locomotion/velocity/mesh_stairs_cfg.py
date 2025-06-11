@@ -17,7 +17,7 @@ from omni.isaac.lab.terrains.terrain_generator_cfg import SubTerrainBaseCfg
 class MeshStairsTerrainCfg(SubTerrainBaseCfg):
     """Configuration for a stair mesh terrain."""
 
-    function = mesh_stairs.flat_terrain
+    function = mesh_stairs.stairs_terrain
 
     border_width: float = 0.0
     """The width of the border around the terrain (in m). Defaults to 0.0.
