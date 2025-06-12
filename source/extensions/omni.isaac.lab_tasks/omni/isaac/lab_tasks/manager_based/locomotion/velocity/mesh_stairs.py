@@ -22,34 +22,34 @@ if TYPE_CHECKING:
 
 
 def stairs_terrain(
-    difficulty: float, cfg: mesh_terrains_cfg.MeshPyramidStairsTerrainCfg
+    difficulty: float, cfg: mesh_terrains_cfg.MeshStairsTerrainCfg
 ) -> tuple[list[trimesh.Trimesh], np.ndarray]:
     # Resolve terrain parameters
     step_height = cfg.step_height_range[0] + difficulty * (
         cfg.step_height_range[1] - cfg.step_height_range[0]
     )
-    platform_width_total = cfg.platform_width_bottom + cfg.platform_width_top
+    platform_width_total: float = cfg.platform_width_bottom + cfg.platform_width_top
 
     # Validate terrain dimensions
-    available_y = cfg.size[1] - 2 * cfg.border_width - platform_width_total
+    available_y: float = cfg.size[1] - 2 * cfg.border_width - platform_width_total
     if available_y <= 0:
         raise ValueError(
             "Insufficient Y-space for steps after accounting for platforms and borders"
         )
 
     # Calculate number of steps
-    num_steps = int(available_y // cfg.step_width)
-    total_y = platform_width_total + num_steps * cfg.step_width
+    num_steps: int = int(available_y // cfg.step_width)
+    total_y: float = platform_width_total + num_steps * cfg.step_width
 
     # Calculate overflow (distribute evenly to platforms)
-    overflow = available_y - num_steps * cfg.step_width
-    platform_width_bottom = cfg.platform_width_bottom + overflow / 2
-    platform_width_top = cfg.platform_width_top + overflow / 2
+    overflow: float = available_y - num_steps * cfg.step_width
+    platform_width_bottom: float = cfg.platform_width_bottom + overflow / 2
+    platform_width_top: float = cfg.platform_width_top + overflow / 2
 
     # Initialize mesh list and terrain center
     meshes_list = []
     terrain_center = [cfg.size[0] / 2, cfg.size[1] / 2, 0.0]
-    terrain_size = (
+    terrain_size: tuple[float, float] = (
         cfg.size[0] - 2 * cfg.border_width,
         cfg.size[1] - 2 * cfg.border_width,
     )
@@ -63,27 +63,33 @@ def stairs_terrain(
         )
 
     # Calculate starting Y position (bottom of bottom platform)
-    total_y = platform_width_bottom + num_steps * cfg.step_width + platform_width_top
-    start_y = terrain_center[1] - total_y / 2
-
-    # Create bottom platform (at ground level)
-    bottom_platform_center = [
-        terrain_center[0],
-        start_y + platform_width_bottom / 2,
-        step_height / 2,  # Center at half height
-    ]
-    bottom_platform = trimesh.creation.box(
-        (terrain_size[0], platform_width_bottom, step_height),
-        trimesh.transformations.translation_matrix(bottom_platform_center),
+    total_y: float = (
+        platform_width_bottom + num_steps * cfg.step_width + platform_width_top
     )
-    meshes_list.append(bottom_platform)
+    start_y: float = terrain_center[1] - total_y / 2
+
+    if cfg.platform_width_bottom > 0:
+        # Create bottom platform (at ground level)
+        bottom_platform_center = [
+            terrain_center[0],
+            start_y + platform_width_bottom / 2,
+            step_height / 2,  # Center at half height
+        ]
+        bottom_platform = trimesh.creation.box(
+            (terrain_size[0], platform_width_bottom, step_height),
+            trimesh.transformations.translation_matrix(bottom_platform_center),
+        )
+        meshes_list.append(bottom_platform)
 
     # Create steps (each extending from ground to its height)
     for step_idx in range(num_steps):
-        step_height_current = (step_idx + 1) * step_height
-        step_center = [
+        step_height_current: float = (step_idx + 1) * step_height
+        step_center: list[float] = [
             terrain_center[0],
-            start_y + platform_width_bottom + (step_idx + 0.5) * cfg.step_width,
+            start_y
+            + platform_width_bottom
+            + step_idx * cfg.step_width
+            + cfg.step_width / 2,
             step_height_current / 2,  # Center of box from ground to height
         ]
         step_mesh = trimesh.creation.box(
@@ -92,29 +98,31 @@ def stairs_terrain(
         )
         meshes_list.append(step_mesh)
 
-    # Create top platform (at height of last step)
-    top_platform_center = [
-        terrain_center[0],
-        start_y
-        + platform_width_bottom
-        + num_steps * cfg.step_width
-        + platform_width_top / 2,
-        num_steps
-        * step_height
-        / 2,  # + step_height / 2  # Center at last step's height + half platform height
-    ]
-    top_platform = trimesh.creation.box(
-        (terrain_size[0], platform_width_top, (num_steps + 0) * step_height),
-        trimesh.transformations.translation_matrix(top_platform_center),
-    )
-    meshes_list.append(top_platform)
+    if cfg.platform_width_top > 0:
+        # Create top platform (at height of last step)
+        top_platform_center = [
+            terrain_center[0],
+            start_y
+            + platform_width_bottom
+            + num_steps * cfg.step_width
+            + platform_width_top / 2,
+            num_steps
+            * step_height
+            / 2,  # + step_height / 2  # Center at last step's height + half platform height
+        ]
+        top_platform = trimesh.creation.box(
+            (terrain_size[0], platform_width_top, (num_steps + 0) * step_height),
+            trimesh.transformations.translation_matrix(top_platform_center),
+        )
+        meshes_list.append(top_platform)
 
     # Set terrain origin (center of top platform surface)
     origin = np.array(
         [
             terrain_center[0],
             terrain_center[1],
-            num_steps * step_height + step_height,  # Surface of top platform
+            terrain_center[2],
+            # num_steps * step_height + step_height,  # Surface of top platform
         ]
     )
 
