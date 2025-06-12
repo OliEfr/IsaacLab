@@ -20,7 +20,7 @@ STAIRS_TERRAINS_CFG = TerrainGeneratorCfg(
     use_cache=False,
     sub_terrains={
         "stairs": MeshStairsTerrainCfg(
-            step_height_range=({STEP_HEIGHT}, {STEP_HEIGHT}),
+            step_height_range=(0.01, 0.2),
             step_width=0.5,
             platform_width_top=2.0,
             platform_width_bottom=4.0,
