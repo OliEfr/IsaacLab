@@ -8,7 +8,7 @@ if [[ "$confirm" != "yes" ]]; then
 fi
 
 seeds=(1 2)
-step_height=(0.01 0.02)
+step_height=(0.01 0.05 0.1)
 
 current_datetime=$(date +"%Y-%m-%d_%H-%M-%S")
 
