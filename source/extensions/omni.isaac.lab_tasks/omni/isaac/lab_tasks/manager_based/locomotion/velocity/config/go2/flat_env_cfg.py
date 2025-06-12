@@ -42,13 +42,14 @@ class UnitreeGo2FlatEnvCfgSimpleReward(UnitreeGo2FlatEnvCfg):
         # post init of parent
         super().__post_init__()
 
+    @override
+    def __init_reward__(self):
         # disable rewards
         for field in fields(self.rewards):
             reward_obj = getattr(self.rewards, field.name)
             reward_obj.weight = 0.0
+            print("zero REWARDS")
 
-    @override
-    def __init_reward__(self):
         # set task reward: from AMP for hardware baseline
         # NOTE AMP for Hardware has std=1. Can be activated by commenting out the two following lines
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.5

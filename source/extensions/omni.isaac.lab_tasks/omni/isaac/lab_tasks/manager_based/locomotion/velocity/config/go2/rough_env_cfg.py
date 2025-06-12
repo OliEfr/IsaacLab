@@ -193,9 +193,9 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.terminations.base_contact.params["sensor_cfg"].body_names = "base"
 
         terrain_gen = self.scene.terrain.terrain_generator
-        assert terrain_gen is not None
         if (
-            terrain_gen.sub_terrains["stairs"].step_height_range[0]
+            terrain_gen is not None
+            and terrain_gen.sub_terrains["stairs"].step_height_range[0]
             == terrain_gen.sub_terrains["stairs"].step_height_range[1]
         ):
             print("[INFO] Fixed step height detected")
