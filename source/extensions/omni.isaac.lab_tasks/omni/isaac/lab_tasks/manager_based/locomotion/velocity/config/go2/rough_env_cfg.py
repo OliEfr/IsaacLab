@@ -98,6 +98,9 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
             print("[INFO] Switch to stair terrain")
             self.scene = StairsSceneCfg(num_envs=4096, env_spacing=4.0)
             self.scene.terrain.terrain_generator.curriculum = False
+
+            # Change spawn location of agents
+            self.events.reset_base.func = vel_mdp.reset_root_state_from_terrain
         elif self.terrain_type == "rough":
             raise NotImplementedError()
         else:
