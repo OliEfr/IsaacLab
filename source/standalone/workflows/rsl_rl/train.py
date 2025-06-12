@@ -153,8 +153,13 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # wrap around environment for rsl-rl
     env = RslRlVecEnvWrapper(env)
 
+    try:
+        group = env_cfg.scene.terrain.terrain_generator.sub_terrains["stairs"].step_height_range[0]
+        group = f"{env_cfg.__class__.__name__}_stairs_{group:.3f}m"
+    except:
+        group = None
     # create runner from rsl-rl
-    runner = agent_cfg.runner_class(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device) # OnPolicyRunner, AMPOnPolicyRunner
+    runner = agent_cfg.runner_class(env, agent_cfg.to_dict(), log_dir=log_dir, device=agent_cfg.device, group=group) # OnPolicyRunner, AMPOnPolicyRunner
     # write git state to logs
     runner.add_git_repo_to_log(__file__)
     # load the checkpoint
