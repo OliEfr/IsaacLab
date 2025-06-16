@@ -19,8 +19,8 @@ XY_FIELD_XY_LABEL_MAPPING = {
 @dataclass
 class DataSourceNames:
     manual_trajectory = "Manual Trajectory"
-    video_depth_cam = "Video (Depth Cam)"
-    video_depth_model = "Video (Depth Model)"
+    video_depth_cam = "Video w. Depth Camera"
+    video_depth_model = "Video w. DepthAnythingV2"
     mocap = "MoCap"
     mocap2 = "MoCap2"
     mocap3 = "MoCap3"

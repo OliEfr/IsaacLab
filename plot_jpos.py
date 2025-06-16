@@ -40,7 +40,8 @@ class amp_expert_data:
     ]
     
     
-    plot_title="Joint pos. data (front-left leg) after retargeting to Go2"
+    plot_title="Recorded Expert Data"
+    ylabel = True
     
     def get_locomotion_data(self, recording_path):
         with open(recording_path, "r") as f:
@@ -80,7 +81,8 @@ class data_after_training:
         "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_1/RecordJposEpisodeTargetVelocityEvaluation/x_0.6_y_0.0_heading_0.0.th": plot_DEFINITIONS.ExperimentNames.video_depth_model,
     }
     
-    plot_title="Joint pos. (front-left leg) after AMP training"
+    plot_title="Trained Agent"
+    ylabel = False
     
     def get_locomotion_data(self, recording_path):
         jpos = torch.load(recording_path)  # (frames, n_envs, n_joints)
@@ -110,17 +112,19 @@ def plot_locomotion_data(data_class):
     # Set font sizes
     plt.rcParams.update(
         {
-            "font.size": 30,  # Default font size
-            "axes.titlesize": 36,  # Title font size
-            "axes.labelsize": 30,  # Axes labels font size
-            "xtick.labelsize": 26,  # X-tick label size
-            "ytick.labelsize": 26,  # Y-tick label size
-            "legend.fontsize": 26,  # Legend font size
+            "font.size": 40,  # Default font size
+            "axes.titlesize": 35,  # Title font size
+            "axes.labelsize": 40,  # Axes labels font size
+            "xtick.labelsize": 35,  # X-tick label size
+            "ytick.labelsize": 35,  # Y-tick label size
+            "legend.fontsize": 35,  # Legend font size
         }
     )
+    linewidth = 3
+    point_size= 25
 
     # Create subplots for the 3 joints
-    fig, axs = plt.subplots(3, 1, figsize=(14, 15), sharex=True)
+    fig, axs = plt.subplots(3, 1, figsize=(14, 12), sharex=True)
 
     # Define a color for each recording
     color = ["blue", "green", "red", "black"]
@@ -141,15 +145,15 @@ def plot_locomotion_data(data_class):
 
         # Plot each joint separately on its corresponding subplot
         # Joint 1
-        axs[0].plot(time, locomotion_data.jpos_leg1[:, 0].numpy(), color=color[i])
+        axs[0].plot(time, locomotion_data.jpos_leg1[:, 0].numpy(), color=color[i], linewidth=linewidth)
         axs[0].scatter(
-            time, locomotion_data.jpos_leg1[:, 0].numpy(), color=color[i], s=10
+            time, locomotion_data.jpos_leg1[:, 0].numpy(), color=color[i], s=point_size
         )
 
         # Joint 2
-        axs[1].plot(time, locomotion_data.jpos_leg1[:, 1].numpy(), color=color[i])
+        axs[1].plot(time, locomotion_data.jpos_leg1[:, 1].numpy(), color=color[i], linewidth=linewidth)
         axs[1].scatter(
-            time, locomotion_data.jpos_leg1[:, 1].numpy(), color=color[i], s=10
+            time, locomotion_data.jpos_leg1[:, 1].numpy(), color=color[i], s=point_size
         )
 
         # Joint 3
@@ -157,31 +161,49 @@ def plot_locomotion_data(data_class):
             time,
             locomotion_data.jpos_leg1[:, 2].numpy(),
             color=color[i],
-            label=data_class.recording_path_name_mapping[recording_path])
+            label=data_class.recording_path_name_mapping[recording_path],
+            linewidth=linewidth)
         axs[2].scatter(
-            time, locomotion_data.jpos_leg1[:, 2].numpy(), color=color[i], s=10
+            time, locomotion_data.jpos_leg1[:, 2].numpy(), color=color[i], s=point_size
         )
 
     # Set x and y labels
-    axs[-1].set_xlabel("Time (s)")
+    axs[-1].set_xlabel("Time [s]", fontweight="bold")
+    joint_names = ["Hip", "Thigh", "Calf"]
     for i, ax in enumerate(axs):
-        ax.set_title(f"Joint #{i + 1}")
-        ax.set_ylabel(f"pos. [rad]")
+        ax.set_title(f"Joint Nr. {i + 1} ({joint_names[i]})")
+        if data_class.ylabel:
+            ax.yaxis.set_label_coords(-0.15, 0.5)
+            ax.set_ylabel("pos.\n[rad]", fontweight="bold")
         ax.grid(True)
 
     # ax.set_xlim(right=0.5)
 
-    plt.suptitle(data_class.plot_title)
-    plt.legend(title="Data", ncol=2, loc=(0.05, -1.5))
+    plt.suptitle(data_class.plot_title, fontweight="bold",y=0.92)
     plt.tight_layout()
 
     plt.savefig("plots/" + data_class.__class__.__name__ + ".pdf", bbox_inches="tight")
+    
+    # Create separate figure for legend only
+    legend = plt.legend(title="Data", ncol=2, loc=(0.05, -1.5))
+    # Create separate figure for legend only
+    fig_legend = plt.figure(figsize=(4, 2))
+    ax_legend = fig_legend.add_subplot(111)
+    ax_legend.legend(handles=legend.legend_handles, 
+                    labels=[t.get_text() for t in legend.get_texts()], 
+                    title="", ncol=2, loc='center', frameon=False)
+    ax_legend.axis('off')
+    fig_legend.savefig("plots/" + data_class.__class__.__name__ + "_legend.pdf", bbox_inches='tight')
 
 
 def main():
     
-    data_class = data_after_training() # data_after_training() || amp_expert_data()
+    data_class = amp_expert_data() 
     plot_locomotion_data(data_class=data_class)
+    
+    data_class = data_after_training() 
+    plot_locomotion_data(data_class=data_class)
+
 
 
 if __name__ == "__main__":
