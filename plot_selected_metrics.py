@@ -114,7 +114,7 @@ def plot_metrics(metrics):
             for x, mean, mn, mx in zip(x_pos, means, mins, maxs):
                 # add value in plot
                 if mx > y_max:
-                    ax.text(x, y_max-0.015, f"{mx:.2f}\n+-{mean - mn + (mx - mean):.2f}", ha='center', va='bottom', fontsize=12)
+                    ax.text(x, y_max-0.02, f"{mx:.2f}\n+-{mean - mn + (mx - mean):.2f}", ha='center', va='bottom', fontsize=12)
             
         
         ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric],  y=1.07)
