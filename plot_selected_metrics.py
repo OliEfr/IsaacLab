@@ -7,19 +7,21 @@ import plot_DEFINITIONS
 
 # Set global plot styling
 plt.rcParams.update({
-    'font.size': 24,           # Default font size
-    'axes.titlesize': 24,      # Title font size
-    'axes.labelsize': 24,      # Axes labels font size
-    'xtick.labelsize': 18,     # X-tick label size
-    'ytick.labelsize': 18,     # Y-tick label size
-    'legend.fontsize': 16,     # Legend font size
+    'font.size': 40,           # Default font size
+    'axes.labelsize': 40,      # Axes labels font size
+    'xtick.labelsize': 24,     # X-tick label size
+    'ytick.labelsize': 24,     # Y-tick label size
+    'legend.fontsize': 24,     # Legend font size
+    'axes.titlesize': 24,      # Axes titles font size
+    'axes.titleweight': 'bold',  # Axes titles font weight
 })
 
+
 metrics_to_plot = [
-    "mean_mechanical_cot",
-    "heading_error",
-    "error_vel_yaw",
     "error_vel_xy",
+    "error_vel_yaw",
+    "mean_mechanical_cot",
+    # "heading_error",
     "agent_expert_distances",
 ]
 
@@ -69,11 +71,11 @@ def plot_metrics(metrics):
         print("No metrics to plot.")
         return
 
-    cols = int(np.ceil(np.sqrt(n_metrics)))
-    rows = int(np.ceil(n_metrics / cols))
+    cols = n_metrics # int(np.ceil(np.sqrt(n_metrics)))
+    rows = 1 # int(np.ceil(n_metrics / cols))
 
     fig = plt.figure(figsize=(5 * cols, 4 * rows))
-    fig.suptitle("Mean and Range Between Seeds", fontsize=16, y=0.995)
+    # fig.suptitle("Mean and Range Between Seeds", fontsize=16, y=0.995)
 
     all_run_names = sorted({run for v in metrics.values() for run, _, _, _ in v})
     cmap = plt.cm.get_cmap('tab10', len(all_run_names))
@@ -105,8 +107,8 @@ def plot_metrics(metrics):
         ax.set_xticklabels([])
         ax.set_xticks([])
         
-        ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
-        ax.set_ylabel(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
+        ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric])
+        # ax.set_ylabel(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
 
     handles = [plt.Rectangle((0,0),1,1, color=color_map[run]) for run in all_run_names]
@@ -137,11 +139,17 @@ def main():
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_2",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_3",
         ],
-        plot_DEFINITIONS.ExperimentNames.video_depth_cam_extended: [
-            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_1",
-            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_2",
-            "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_3",
+        plot_DEFINITIONS.ExperimentNames.video_depth_cam_extendedWithoutReverse: [
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-06-06_15-35-34_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_1",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-06-06_15-35-34_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_2",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-06-06_15-35-34_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_3",
+            
         ],
+        # plot_DEFINITIONS.ExperimentNames.video_depth_cam_extended: [
+        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_1",
+        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_2",
+        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_3",
+        # ],
         plot_DEFINITIONS.ExperimentNames.video_depth_model: [
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_1",
             "logs/rsl_rl/unitree_go2_AMPflat/2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_2",
@@ -157,6 +165,11 @@ def main():
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_2",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_3",
         ],
+        # plot_DEFINITIONS.ExperimentNames.animal_avatar: [
+        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_1",
+        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_2",
+        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_3",
+        # ],
     }
 
     metrics = collect_metrics_per_run(runs)

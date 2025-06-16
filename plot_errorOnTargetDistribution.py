@@ -8,9 +8,10 @@ from pathlib import Path
 from collections import defaultdict
 from matplotlib.ticker import FuncFormatter
 import plot_DEFINITIONS
+import math
 
 
-def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
+def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field, ax=None):
     # Plot settings
     plot_values_in_cells = False  # whether to show values in cells
     plot_colorbar_label = False
@@ -45,7 +46,7 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
 
     plot_title = plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric_field]
     x_label = plot_DEFINITIONS.XY_FIELD_XY_LABEL_MAPPING[x_field]
-    y_label = plot_DEFINITIONS.XY_FIELD_XY_LABEL_MAPPING[y_field]
+    y_label = plot_DEFINITIONS.XY_FIELD_XY_LABEL_MAPPING[y_field].replace(" [m", "\n[m") # insert linebreak
     cbar_label = plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric_field]
 
     # Find all seed directories
@@ -119,20 +120,28 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
         if not np.isnan(mean_val) and not np.isnan(range_val):
             annot.loc[y, x] = f"{mean_val:.4f}\n({range_val:.4f})"
 
-    # Set font sizes
-    plt.rcParams.update(
-        {
-            "font.size": 40,  # Default font size
-            "axes.titlesize": 48,  # Title font size
-            "axes.labelsize": 40,  # Axes labels font size
-            "xtick.labelsize": 36,  # X-tick label size
-            "ytick.labelsize": 36,  # Y-tick label size
-            "legend.fontsize": 36,  # Legend font size
-        }
-    )
-
-    # Create figure and axis with larger size
-    plt.figure(figsize=(16, 14))  # Slightly taller to accommodate two lines of text
+    # Determine if we need to create a figure or use provided axes
+    create_individual_figure = ax is None
+    
+    # NOTE for using the plots individually, it is a good idea to use those parameters:
+    # plt.rcParams.update(
+    #     {
+    #         "font.size": 40,  # Default font size
+    #         "axes.titlesize": 48,  # Title font size
+    #         "axes.labelsize": 40,  # Axes labels font size
+    #         "xtick.labelsize": 36,  # X-tick label size
+    #         "ytick.labelsize": 36,  # Y-tick label size
+    #         "legend.fontsize": 36,  # Legend font size
+    #     }
+    # )
+    
+    if create_individual_figure:
+        # Create figure and axis with larger size
+        fig = plt.figure(figsize=(16, 14))
+        ax = fig.gca()
+    else:
+        # Use provided axes - get the figure from axes
+        fig = ax.figure
 
     # Create heatmap with custom annotations
     heatmap_kwargs = {
@@ -148,6 +157,7 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
         "vmin": vmin,
         "vmax": vmax,
         "center":(vmin+vmax)/2 if vmin is not None and vmax is not None else None,
+        "ax": ax,  # Use the provided or created axes
     }
 
     heatmap_kwargs["annot"] = (
@@ -161,19 +171,21 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     sns.heatmap(**heatmap_kwargs)
 
     # Add title and labels
-    plt.title(plot_title, pad=25)
-    plt.xlabel(x_label, labelpad=10)
-    plt.ylabel(y_label, labelpad=10)
+    ax.set_title(plot_title, pad=25)
+    ax.set_xlabel(x_label, labelpad=10)
+    ax.set_ylabel(y_label, labelpad=10)
 
-    # Adjust layout to prevent label cutoff
-    plt.tight_layout()
 
-    # Save the plot
-    output_dir.mkdir(exist_ok=True, parents=True)
-    output_file = output_dir / output_filename
-    plt.savefig(output_file, bbox_inches="tight", format="pdf")
-    print(f"Plot saved to {output_file}")
+    if create_individual_figure:
+        # Adjust layout to prevent label cutoff
+        plt.tight_layout()
 
+        # Save the individual plot
+        output_dir.mkdir(exist_ok=True, parents=True)
+        output_file = output_dir / output_filename
+        plt.savefig(output_file, bbox_inches="tight", format="pdf")
+        print(f"Plot saved to {output_file}")
+        
     # Show the plot
     # plt.show()
 
@@ -184,7 +196,22 @@ def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field):
     # Save detailed statistics to CSV
     # df_sorted = df.sort_values([x_field, y_field])
     # print(f"Detailed statistics saved to {output_dir / output_filename}")
-    plt.close()
+
+    # Return the figure and title for grid arrangement
+    return fig
+
+
+# NOTE those are the parameters that work for the grid plot. If you want to use the individual plots, you should use the parameters from the NOTE above.    
+plt.rcParams.update(
+    {
+        "font.size": 20,  # Default font size
+        # "axes.titlesize": 48,  # Title font size
+        # "axes.labelsize": 18,  # Axes labels font size
+        "xtick.labelsize": 18,  # X-tick label size
+        "ytick.labelsize": 18,  # Y-tick label size
+        "legend.fontsize": 18,  # Legend font size
+    }
+)
 
 
 def main():
@@ -194,8 +221,9 @@ def main():
         "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_*",
         "2025-05-16_21-23-07_manuallyGenerated_SEED_*",
         "2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_*",
-        "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_*",
-        "2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_*",
+        # "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_*",
+        # "2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_*",
+        "2025-06-06_15-35-34_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_*",
     ]  # * searches for all seeds
 
     eval_dir_names = [
@@ -205,16 +233,85 @@ def main():
     ]  # Directory name containing the evaluation results (relative to seed directory)
 
     metric_fields = [
-        "heading_error",
-        "mean_mechanical_cot",
+        # "heading_error",
         "error_vel_xy",
-        "agent_expert_distances",
         "error_vel_yaw",
+        "mean_mechanical_cot",
+        "agent_expert_distances",
     ]  # metrics for which the plots are created
-
-    for experiment_dir in experiment_dirs:
+    
+    # Calculate total number of plots
+    assert len(eval_dir_names) == 1, "Multiple eval_dir_names not supported for grid plotting."
+    
+    # Calculate required grid dimensions
+    n_cols = len(metric_fields)
+    n_rows = len(experiment_dirs)
+    
+    # Create the combined figure upfront
+    combined_fig = plt.figure(figsize=(n_cols * 6, n_rows * 5))
+    
+    
+    experiment_names = plot_DEFINITIONS.ExperimentNames()
+    
+    
+    for i, experiment_dir in enumerate(experiment_dirs):
         for eval_dir_name in eval_dir_names:
-            for metric_field in metric_fields:
-                create_plots(base_dir, experiment_dir, eval_dir_name, metric_field)
+            for j, metric_field in enumerate(metric_fields):
+                ################ Create individual plot (for separate saving)
+                individual_fig = create_plots(base_dir, experiment_dir, eval_dir_name, metric_field)
+                plt.close(individual_fig) # prevent displaying
+                
+                ################ Create plot in the grid
+                ax = combined_fig.add_subplot(n_rows, n_cols, i * n_cols + j + 1)
+                create_plots(base_dir, experiment_dir, eval_dir_name, metric_field, ax=ax)
+                
+                # Styling
+                ax.set_title("")
+                if i < n_rows - 1:  # Not bottom row
+                    ax.set_xlabel("")
+                if j > 0:  # Not leftmost column
+                    ax.set_ylabel("")
+                    
+                if i < n_rows - 1:  # Not bottom row
+                    ax.set_xticklabels([])
+                if j > 0:  # Not leftmost column
+                    ax.set_yticklabels([])
+                    
+                # Column title
+                if i == 0: # First row
+                    ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric_field], fontweight='bold', y=1.4)
+                    
+                # Row title
+                if j == 0:  # First column
+                    # first value is x-axis, second is y-axis
+                    # insert linebreaks in names for readability
+                    ax.text(-0.7, 0.5, experiment_names.map_experiment_dir_to_experiment_name(experiment_dir).replace(" ", "\n", 1).replace(" Camera", "\nCamera", 1).replace(" (", "\n("), transform=ax.transAxes, 
+                           rotation=0, verticalalignment='center', horizontalalignment='left', fontweight='bold')
+                    
+                
+                # Colorbars
+                if hasattr(ax, 'collections') and ax.collections:
+                    if i == 0:  # Top row
+                        if ax.collections[0].colorbar:
+                            ax.collections[0].colorbar.remove()
+                        cax = ax.inset_axes([0.1, 1.05, 0.8, 0.05])
+                        cbar = combined_fig.colorbar(ax.collections[0], cax=cax, orientation='horizontal')
+                        cbar.ax.xaxis.set_ticks_position('top')
+                        cbar.ax.xaxis.set_label_position('top')
+                    else:
+                        if ax.collections[0].colorbar:
+                            ax.collections[0].colorbar.remove()
+                            
+    combined_fig.subplots_adjust(left=0.19, right=1, top=.9, bottom=0.5, hspace=0.1, wspace=0.05)
 
-main()
+    
+    output_dir = Path("plots")
+    output_dir.mkdir(exist_ok=True, parents=True)
+    combined_fig.savefig(output_dir / "combined_heatmap_grid.pdf", bbox_inches="tight", format="pdf")
+    print(f"Saved combined heatmap plot to {output_dir}")
+    
+    plt.show()
+    
+
+if __name__ == "__main__":
+    main()
