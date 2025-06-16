@@ -22,7 +22,7 @@ metrics_to_plot = [
     "error_vel_yaw",
     "mean_mechanical_cot",
     # "heading_error",
-    "agent_expert_distances",
+    # "agent_expert_distances",
 ]
 
 
@@ -107,14 +107,24 @@ def plot_metrics(metrics):
         ax.set_xticklabels([])
         ax.set_xticks([])
         
-        ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric])
+        # Set ymax, because value for AnimalAvatar is so large
+        if metric == "error_vel_xy":
+            y_max =  0.105
+            ax.set_ylim(0,y_max)
+            for x, mean, mn, mx in zip(x_pos, means, mins, maxs):
+                # add value in plot
+                if mx > y_max:
+                    ax.text(x, y_max-0.015, f"{mx:.2f}\n+-{mean - mn + (mx - mean):.2f}", ha='center', va='bottom', fontsize=12)
+            
+        
+        ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric],  y=1.07)
         # ax.set_ylabel(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
 
     handles = [plt.Rectangle((0,0),1,1, color=color_map[run]) for run in all_run_names]
     fig.legend(handles, all_run_names,
-               loc='right', bbox_to_anchor=(1.6, 0.5),
-               ncol=1)
+               bbox_to_anchor=(0.51, 0.05), loc='upper center',
+               ncol=2, frameon=False)
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.1 + 0.02 * (len(all_run_names) // 5))
@@ -165,11 +175,11 @@ def main():
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_2",
             "logs/rsl_rl/unitree_go2_flat/2025-05-16_21-23-07_complexReward_SEED_3",
         ],
-        # plot_DEFINITIONS.ExperimentNames.animal_avatar: [
-        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_1",
-        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_2",
-        #     "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_3",
-        # ],
+        plot_DEFINITIONS.ExperimentNames.animal_avatar: [
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_1",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_2",
+            "logs/rsl_rl/unitree_go2_AMPflat/2025-06-13_18-33-35_from_AnimalAvatar_SEED_3",
+        ],
     }
 
     metrics = collect_metrics_per_run(runs)
