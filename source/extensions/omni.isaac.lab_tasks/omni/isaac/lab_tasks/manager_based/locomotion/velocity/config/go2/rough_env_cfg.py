@@ -19,6 +19,7 @@ from ...terrain import STAIRS_TERRAINS_CFG, convert_to_play
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 from typing import Any
+import math
 
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
     LocomotionVelocityRoughEnvCfg,
@@ -35,7 +36,7 @@ class StairsSceneCfg(InteractiveSceneCfg):
     """Configuration for a cart-pole scene."""
 
     terrain = TerrainImporterCfg(
-        prim_path="/World/ground",
+        prim_path="/World/groundPlane",
         terrain_type="generator",
         terrain_generator=STAIRS_TERRAINS_CFG,
         max_init_terrain_level=5,
@@ -97,9 +98,14 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         elif self.terrain_type == "stairs":
             print("[INFO] Switch to stair terrain")
             self.scene = StairsSceneCfg(num_envs=4096, env_spacing=4.0)
+            self.scene.terrain.terrain_type = "generator"
             self.scene.terrain.terrain_generator.curriculum = False
+            self.curriculum.terrain_levels = None
+            self.curriculum = None
 
             # Change spawn location of agents
+            self.scene.height_scanner = None
+            self.observations.policy.height_scan = None
             self.events.reset_base.func = vel_mdp.reset_root_state_from_terrain
         elif self.terrain_type == "rough":
             raise NotImplementedError()
@@ -116,6 +122,9 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
 
     def update_stairs(self, step_width, step_height):
         if self.terrain_type != "stairs":
+            print(
+                f"[INFO] Ignoring `update_stairs` call, because terrain_type = `{self.terrain_type}`"
+            )
             return
         assert (
             not step_width == 0.0 or step_height == 0.0
@@ -129,7 +138,11 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         ].step_height_range = (step_height, step_height)
 
     def update_base_pos_obs(self, step_width, step_height):
-        assert self.terrain_type == "stairs"
+        if self.terrain_type != "stairs":
+            print(
+                f"[INFO] Ignoring `update_base_pos_obs` call, because terrain_type = `{self.terrain_type}`"
+            )
+            return
         print(
             f"[INFO] Updating observations in base_pos to {(step_width, 0, step_height)}"
         )
@@ -164,10 +177,6 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         if self.scene.height_scanner is not None:
             self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/base"
 
-        if self.terrain_type == "plane":
-            self.scene.terrain.terrain_type = "plane"
-            self.scene.terrain.terrain_generator = None
-
         # reduce action scale
         self.actions.joint_pos.scale = 0.25
 
@@ -177,8 +186,13 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.events.add_base_mass.params["asset_cfg"].body_names = "base"
         self.events.base_external_force_torque.params["asset_cfg"].body_names = "base"
         self.events.reset_robot_joints.params["position_range"] = (0.9, 1.1)
+
+        if self.terrain_type == "stairs":
+            yaw = (-20 / 180 * math.pi, 20 / 180 * math.pi)
+        else:
+            yaw = (-3.14, 3.14)
         self.events.reset_base.params = {
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
+            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": yaw},
             "velocity_range": {
                 "x": (-0.0, 0.0),
                 "y": (-0.0, 0.0),
@@ -195,6 +209,7 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
         terrain_gen = self.scene.terrain.terrain_generator
         if (
             terrain_gen is not None
+            and hasattr(terrain_gen.sub_terrains, "stairs")
             and terrain_gen.sub_terrains["stairs"].step_height_range[0]
             == terrain_gen.sub_terrains["stairs"].step_height_range[1]
         ):
@@ -223,11 +238,6 @@ class UnitreeGo2RoughEnvCfg(UnitreeGo2BaseEnvCfg):
             self.scene.terrain.terrain_generator.sub_terrains[
                 "random_rough"
             ].noise_step = (0.01 * 100)
-
-            print(
-                "Rough self.scene.terrain.terrain_generator.curriculum=",
-                self.scene.terrain.terrain_generator.curriculum,
-            )
 
     @override
     def __init_reward__(self):
@@ -259,17 +269,22 @@ class UnitreeGo2RoughEnvCfg(UnitreeGo2BaseEnvCfg):
         self.events.add_base_mass.params["asset_cfg"].body_names = "base"
         self.events.base_external_force_torque.params["asset_cfg"].body_names = "base"
         self.events.reset_robot_joints.params["position_range"] = (0.9, 1.1)
-        self.events.reset_base.params = {
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
-            "velocity_range": {
-                "x": (-0.0, 0.0),
-                "y": (-0.0, 0.0),
-                "z": (-0.0, 0.0),
-                "roll": (0.0, 0.0),
-                "pitch": (0.0, 0.0),
-                "yaw": (0.0, 0.0),
-            },
-        }
+        if False:
+            self.events.reset_base.params = {
+                "pose_range": {
+                    "x": (-0.5, 0.5),
+                    "y": (-0.5, 0.5),
+                    "yaw": (-3.14, 3.14),
+                },
+                "velocity_range": {
+                    "x": (-0.0, 0.0),
+                    "y": (-0.0, 0.0),
+                    "z": (-0.0, 0.0),
+                    "roll": (0.0, 0.0),
+                    "pitch": (0.0, 0.0),
+                    "yaw": (0.0, 0.0),
+                },
+            }
 
         # terminations
         self.terminations.base_contact.params["sensor_cfg"].body_names = "base"

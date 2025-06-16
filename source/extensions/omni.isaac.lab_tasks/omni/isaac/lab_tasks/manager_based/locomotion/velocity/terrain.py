@@ -9,7 +9,7 @@ from omni.isaac.lab_tasks.manager_based.locomotion.velocity.mesh_stairs_cfg impo
 
 STAIRS_TERRAINS_CFG = TerrainGeneratorCfg(
     difficulty_range=(0.0, 1.0),
-    size=(10.0, 26.0),
+    size=(26.0, 26.0),
     border_height=0.0,
     border_width=0.0,
     num_rows=4,

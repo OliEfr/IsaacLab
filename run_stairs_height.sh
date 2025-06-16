@@ -29,7 +29,7 @@ for step_height in "${step_height[@]}"; do
     # Simple Reward
     ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Stairs-SimpleReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${current_datetime}" --logger wandb --log_project_name stair_height_simple_reward
     # AMP
-    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-AMPStairs-Unitree-Go2-v0 env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' --headless --seed $seed --log_dir "${current_datetime}_fromVision_motions_DepthCam_extended" --log_project_name stair_height_amp
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-AMPStairs-Unitree-Go2-v0 env.amp_motion_folder='datasets/mocap_AMP_for_hardware/*' agent.amp_motion_folder='datasets/mocap_AMP_for_hardware/*' --headless --seed $seed --log_dir "${current_datetime}_fromVision_motions_DepthCam_extended" --logger wandb --log_project_name stair_height_amp
   done
 done
 # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0 --headless --seed 1 --log_dir "testtest"

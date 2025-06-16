@@ -13,7 +13,6 @@ import torch
 import trimesh
 from typing import TYPE_CHECKING
 
-# TODO: Figure out wher this import comes from
 from omni.isaac.lab.terrains.trimesh.utils import *  # noqa: F401, F403
 from omni.isaac.lab.terrains.trimesh.utils import make_border, make_plane
 
@@ -67,6 +66,8 @@ def stairs_terrain(
         platform_width_bottom + num_steps * cfg.step_width + platform_width_top
     )
     start_y: float = terrain_center[1] - total_y / 2
+    # Minimum height offset
+    min_height: float = 1.0
 
     if cfg.platform_width_bottom > 0:
         # Create bottom platform (at ground level)
@@ -76,14 +77,14 @@ def stairs_terrain(
             step_height / 2,  # Center at half height
         ]
         bottom_platform = trimesh.creation.box(
-            (terrain_size[0], platform_width_bottom, step_height),
+            (terrain_size[0], platform_width_bottom, min_height),
             trimesh.transformations.translation_matrix(bottom_platform_center),
         )
         meshes_list.append(bottom_platform)
 
     # Create steps (each extending from ground to its height)
     for step_idx in range(num_steps):
-        step_height_current: float = (step_idx + 1) * step_height
+        step_height_current: float = step_idx * step_height
         step_center: list[float] = [
             terrain_center[0],
             start_y
@@ -93,7 +94,7 @@ def stairs_terrain(
             step_height_current / 2,  # Center of box from ground to height
         ]
         step_mesh = trimesh.creation.box(
-            (terrain_size[0], cfg.step_width, step_height_current),
+            (terrain_size[0], cfg.step_width, step_height_current + min_height),
             trimesh.transformations.translation_matrix(step_center),
         )
         meshes_list.append(step_mesh)
@@ -111,7 +112,7 @@ def stairs_terrain(
             / 2,  # + step_height / 2  # Center at last step's height + half platform height
         ]
         top_platform = trimesh.creation.box(
-            (terrain_size[0], platform_width_top, (num_steps + 0) * step_height),
+            (terrain_size[0], platform_width_top, num_steps * step_height + min_height),
             trimesh.transformations.translation_matrix(top_platform_center),
         )
         meshes_list.append(top_platform)
@@ -121,7 +122,7 @@ def stairs_terrain(
         [
             terrain_center[0],
             terrain_center[1],
-            terrain_center[2],
+            terrain_center[2] + min_height,
             # num_steps * step_height + step_height,  # Surface of top platform
         ]
     )
