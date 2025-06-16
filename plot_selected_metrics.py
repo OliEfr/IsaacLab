@@ -65,7 +65,7 @@ def collect_metrics_per_run(runs_dict):
 
     return metrics
 
-def plot_metrics(metrics):
+def plot_metrics(metrics, runs):
     n_metrics = len(metrics_to_plot)
     if n_metrics == 0:
         print("No metrics to plot.")
@@ -77,7 +77,7 @@ def plot_metrics(metrics):
     fig = plt.figure(figsize=(5 * cols, 4 * rows))
     # fig.suptitle("Mean and Range Between Seeds", fontsize=16, y=0.995)
 
-    all_run_names = sorted({run for v in metrics.values() for run, _, _, _ in v})
+    all_run_names = list(runs.keys())
     cmap = plt.cm.get_cmap('tab10', len(all_run_names))
     color_map = {run: cmap(i) for i, run in enumerate(all_run_names)}
 
@@ -183,7 +183,7 @@ def main():
     }
 
     metrics = collect_metrics_per_run(runs)
-    plot_metrics(metrics)
+    plot_metrics(metrics, runs)
 
 if __name__ == "__main__":
     main()
