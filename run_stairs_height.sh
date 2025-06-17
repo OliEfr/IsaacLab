@@ -8,12 +8,14 @@ if [[ "$confirm" != "yes" ]]; then
 fi
 
 seeds=(1 2)
-step_height=(0.01 0.05 0.1)
+step_height=(0.05 0.1)
+# step_height=(0.01 0.05 0.1)
 
 current_datetime=$(date +"%Y-%m-%d_%H-%M-%S")
 
 TEMPLATE_PATH="./fix_step_height.diff"
 
+is_first=true
 for step_height in "${step_height[@]}"; do
   for seed in "${seeds[@]}"; do
     echo "Experiment step_height=${step_height} seed=${seed}"
@@ -25,11 +27,11 @@ for step_height in "${step_height[@]}"; do
     rm "$tmpfile"
 
     # Complex Reward
-    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Stairs-ComplexReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${current_datetime}" --logger wandb --log_project_name stair_height_complex_reward
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Stairs-ComplexReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "stair_height_complex_reward_${current_datetime}" --logger wandb --log_project_name stair_height_complex_reward
     # Simple Reward
-    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Stairs-SimpleReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${current_datetime}" --logger wandb --log_project_name stair_height_simple_reward
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Stairs-SimpleReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "stair_height_simple_reward_${current_datetime}" --logger wandb --log_project_name stair_height_simple_reward
     # AMP
-    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-AMPStairs-Unitree-Go2-v0 env.amp_motion_folder='datasets/mocap_AMP_for_hardware/*' agent.amp_motion_folder='datasets/mocap_AMP_for_hardware/*' --headless --seed $seed --log_dir "${current_datetime}_fromVision_motions_DepthCam_extended" --logger wandb --log_project_name stair_height_amp
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-AMPStairs-Unitree-Go2-v0 env.amp_motion_folder='datasets/mocap_AMP_for_hardware/*' agent.amp_motion_folder='datasets/mocap_AMP_for_hardware/*' --headless --seed $seed --log_dir "stair_height_amp_${current_datetime}_fromVision_motions_DepthCam_extended" --logger wandb --log_project_name stair_height_amp
   done
 done
 # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0 --headless --seed 1 --log_dir "testtest"

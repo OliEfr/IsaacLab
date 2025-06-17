@@ -25,6 +25,7 @@ def base_pos(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     sinusoidal_encoding=None,
     use_env_frame=True,
+    only_yaw=False,
 ) -> torch.Tensor:
     """Root position and yaw in the asset's root frame."""
     # extract the used quantities (to enable type-hinting)
@@ -48,4 +49,7 @@ def base_pos(
         encoded_pos = sinusodial_encoding_3d(env_pos, se)
         return torch.cat([encoded_pos, encoded_yaw], dim=-1)
 
-    return torch.cat([env_pos, encoded_yaw], dim=-1)
+    if only_yaw:
+        return encoded_yaw
+    else:
+        return torch.cat([env_pos, encoded_yaw], dim=-1)

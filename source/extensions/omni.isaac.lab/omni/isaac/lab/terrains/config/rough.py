@@ -8,9 +8,7 @@
 import omni.isaac.lab.terrains as terrain_gen
 
 from ..terrain_generator_cfg import TerrainGeneratorCfg
-from omni.isaac.lab_tasks.manager_based.locomotion.velocity.mesh_stairs_cfg import (
-    MeshStairsTerrainCfg,
-)
+from ..terrain_generator_cfg import FlatPatchSamplingCfg
 
 ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(8.0, 8.0),
@@ -65,3 +63,42 @@ ROUGH_TERRAINS_CFG = TerrainGeneratorCfg(
     },
 )
 """Rough terrains configuration."""
+
+
+STAIRS_TERRAINS_CFG = TerrainGeneratorCfg(
+    difficulty_range=(0.0, 1.0),
+    size=(40, 40),
+    border_height=0.0,
+    border_width=0.0,
+    num_rows=6,
+    num_cols=6,
+    horizontal_scale=0.1,
+    vertical_scale=0.005,
+    slope_threshold=0.01,
+    use_cache=False,
+    sub_terrains={
+        "stairs": terrain_gen.MeshStairsTerrainCfg(
+            step_height_range=(0.0, 0.15),
+            step_width=0.3,
+            platform_width_top=2.0,
+            platform_width_bottom=6.0,
+            flat_patch_sampling={
+                "init_pos": FlatPatchSamplingCfg(
+                    num_patches=100,
+                    patch_radius=0.14,
+                    x_range=(0, 0),
+                    y_range=(-17, -15),
+                    max_height_diff=0.1,
+                ),
+                "target": FlatPatchSamplingCfg(
+                    num_patches=100,
+                    patch_radius=0.14,
+                    x_range=(0, 0),
+                    y_range=(10, 11),
+                    max_height_diff=0.1,
+                ),
+            },
+        ),
+    },
+)
+"""Stairs terrains configuration."""

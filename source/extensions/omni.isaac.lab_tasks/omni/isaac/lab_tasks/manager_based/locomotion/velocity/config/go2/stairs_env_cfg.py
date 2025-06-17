@@ -6,6 +6,7 @@
 import math
 from omegaconf import MISSING
 from dataclasses import MISSING as DMISSING
+from dataclasses import fields
 
 from omni.isaac.lab.envs.mdp.rewards import (
     joint_deviation_l1,
@@ -21,11 +22,6 @@ from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg
 from omni.isaac.lab.envs import ManagerBasedRLEnvCfg
 from omni.isaac.lab.managers import CurriculumTermCfg as CurrTerm
 from omni.isaac.lab.managers import EventTermCfg as EventTerm
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import RewardTermCfg as RewTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
 from omni.isaac.lab.scene import InteractiveSceneCfg
 from omni.isaac.lab.sensors import ContactSensorCfg, RayCasterCfg, patterns
 from omni.isaac.lab.terrains import TerrainImporterCfg
@@ -41,12 +37,17 @@ import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as vel_mdp
 ##
 # Pre-defined configs
 ##
-from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
+from omni.isaac.lab.terrains.config.rough import STAIRS_TERRAINS_CFG  # isort: skip
 from ... import mdp
 
-from ...terrain import STAIRS_TERRAINS_CFG, convert_to_play
-
 from .rough_env_cfg import UnitreeGo2RoughEnvCfg
+
+
+def convert_to_play(cfg):
+    cfg.num_rows = 1
+    cfg.num_cols = 1
+    return cfg
+
 
 ##
 # Scene definition
@@ -103,26 +104,6 @@ class StairsSceneCfg(InteractiveSceneCfg):
     )
 
 
-import omni.isaac.lab.sim as sim_utils
-import omni.isaac.lab.utils.math as math_utils
-import torch
-from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg, RigidObject
-from omni.isaac.lab.envs import ManagerBasedEnv, ManagerBasedRLEnvCfg
-from omni.isaac.lab.managers import CurriculumTermCfg as CurrTerm
-from omni.isaac.lab.managers import EventTermCfg as EventTerm
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import RewardTermCfg as RewTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors import ContactSensorCfg, RayCasterCfg, patterns
-from omni.isaac.lab.terrains import TerrainImporterCfg
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
-from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
-
-
 @configclass
 class TopOfStairsCommandsCfg:
     """Command that tries to reach the ."""
@@ -130,37 +111,15 @@ class TopOfStairsCommandsCfg:
     base_velocity = mdp.TargetVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.02,
+        rel_standing_envs=0.0,
         rel_heading_envs=1.0,
         heading_command=True,
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.TargetVelocityCommandCfg.Ranges(
-            lin_vel_x=(0, 0),
-            lin_vel_y=(0, 0),
-            ang_vel_z=(0, 0),
-            heading=(0, 0),
-        ),
-    )
-
-
-@configclass
-class UniformVelocityCommandsCfg:
-    """Command specifications for the MDP."""
-
-    base_velocity = mdp.UniformVelocityCommandCfg(
-        asset_name="robot",
-        resampling_time_range=(10.0, 10.0),
-        rel_standing_envs=0.02,
-        rel_heading_envs=1.0,
-        heading_command=True,
-        heading_control_stiffness=0.5,
-        debug_vis=True,
-        ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0),
-            lin_vel_y=(-1.0, 1.0),
+            lin_vel_mag=(0.0, 1.0),
             ang_vel_z=(-1.0, 1.0),
-            heading=(-math.pi, math.pi),
+            heading=(math.pi / 2, math.pi / 2),
         ),
     )
 
@@ -168,7 +127,6 @@ class UniformVelocityCommandsCfg:
 ##
 # Environment configuration
 ##
-import omni.isaac.lab.sim as sim_utils
 
 # Import base configs
 from .my_cfgs_amp import AMPUnitreeGo2FlatEnvCfg
@@ -215,6 +173,43 @@ class UnitreeGo2StairsComplexRewardEnvCfg(UnitreeGo2FlatEnvCfgComplexReward):
     terrain_type: str = "stairs"
     commands = TopOfStairsCommandsCfg()
 
+    def __init_reward__(self):
+        super().__init_reward__()
+
+        # Zero all rewards
+        for field in fields(self.rewards):
+            reward_obj = getattr(self.rewards, field.name)
+            reward_obj.weight = 0.0
+
+        # Foot clearance
+        self.rewards.foot_clearance.weight = 0.1
+
+        # Undesirable things
+        self.rewards.dof_torques_l2.weight = -0.0002
+        self.rewards.dof_acc_l2.weight = -2.5e-7
+        self.rewards.action_rate_l2.weight = -0.01
+        self.rewards.joint_pos_limits.weight = -10.0
+        self.rewards.torque_limits.weight = -1.0e-5
+        # self.rewards.joint_deviation_l1.weight = (
+        #     -0.75 / 2
+        # )  # consider reducing this in case performance on task reward is bad
+        # self.rewards.lin_vel_z_l2.weight = -2.0
+        # self.rewards.ang_vel_xy_l2.weight = -0.05
+        # self.rewards.feet_air_time.weight = (
+        #     7.5  # consider reducing this to 7.5 if performance on task reward is bad
+        # )
+        # self.rewards.undesired_contacts_thigh.weight = -1.0
+        # self.rewards.undesired_contacts_calf.weight = -1.0
+        # self.rewards.contact_forces.weight = -1.0
+        # self.rewards.flat_orientation_l2.weight = -0.01
+
+        # Tracking
+        self.rewards.track_lin_vel_xy_exp.params["std"] = 0.5
+        self.rewards.track_ang_vel_z_exp.params["std"] = 0.5
+        self.rewards.track_lin_vel_xy_exp.weight = 2.5
+        self.rewards.track_ang_vel_z_exp.weight = 1.5
+
+
 @configclass
 class UnitreeGo2StairsComplexRewardEnvCfg_PLAY(UnitreeGo2StairsComplexRewardEnvCfg):
     scene: StairsSceneCfg = StairsSceneCfg(num_envs=1, env_spacing=4.0)
@@ -234,6 +229,15 @@ class UnitreeGo2StairsComplexRewardEnvCfg_PLAY(UnitreeGo2StairsComplexRewardEnvC
         self.scene.terrain.terrain_generator.num_cols = 1
         self.scene.terrain.terrain_generator.curriculum = False
 
+        self.scene.terrain.terrain_generator.difficulty_range = (1.0, 1.0)
+        self.scene.terrain.terrain_generator.size = (20, 40)
+        self.scene.terrain.terrain_generator.sub_terrains["stairs"].flat_patch_sampling[
+            "init_pos"
+        ].x_range = (-9, 9)
+        self.scene.terrain.terrain_generator.sub_terrains["stairs"].flat_patch_sampling[
+            "target"
+        ].x_range = (-9, 9)
+
         # disable randomization for play
         self.observations.policy.enable_corruption = False
         # remove random pushing event
@@ -245,6 +249,7 @@ class UnitreeGo2StairsComplexRewardEnvCfg_PLAY(UnitreeGo2StairsComplexRewardEnvC
 class UnitreeGo2StairsSimpleRewardEnvCfg(UnitreeGo2FlatEnvCfgSimpleReward):
     terrain_type: str = "stairs"
     commands = TopOfStairsCommandsCfg()
+
 
 @configclass
 class UnitreeGo2StairsSimpleRewardEnvCfg_PLAY(UnitreeGo2StairsSimpleRewardEnvCfg):

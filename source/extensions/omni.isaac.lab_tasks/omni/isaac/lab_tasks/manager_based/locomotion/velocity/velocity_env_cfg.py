@@ -154,12 +154,6 @@ class ObservationsCfg:
             noise=Unoise(n_min=-0.1, n_max=0.1),
             clip=(-1.0, 1.0),
         )
-        world_pos = ObsTerm(
-            func=mdp.base_pos,
-            params={"sinusoidal_encoding": (1, 0, 1)},
-            noise=Unoise(n_min=-0.01, n_max=0.01),
-            clip=(-1.0, 1.0),
-        )
 
         # phases
         phases = None
@@ -357,6 +351,17 @@ class RewardsCfg:
     torque_limits = RewTerm(
         func=applied_torque_limits,
         weight=-0.0,
+    )
+
+    foot_clearance = RewTerm(
+        func=mdp.foot_clearance_reward,
+        weight=0.0,
+        params={
+            # "std": 0.05,
+            # "tanh_mult": 2.0,
+            "target_height": -0.22,
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*_foot"),
+        },
     )
 
     # residual_action_l2 = RewTerm(

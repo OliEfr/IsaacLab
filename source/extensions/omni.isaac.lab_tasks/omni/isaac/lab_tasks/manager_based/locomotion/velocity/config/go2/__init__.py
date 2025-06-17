@@ -190,7 +190,7 @@ gym.register(
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs_amp:AMPUnitreeGo2StairsEnvCfg_PLAY",
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:AMPUnitreeGo2StairsEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPFlatPPORunnerCfg",
     },
 )
@@ -212,7 +212,7 @@ gym.register(
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs_amp:UnitreeGo2StairsEnvCfgComplexReward_PLAY",
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsComplexRewardEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
     },
 )
@@ -234,7 +234,7 @@ gym.register(
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs_amp:UnitreeGo2StairsEnvCfgSimpleReward_PLAY",
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsSimpleRewardEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
     },
 )

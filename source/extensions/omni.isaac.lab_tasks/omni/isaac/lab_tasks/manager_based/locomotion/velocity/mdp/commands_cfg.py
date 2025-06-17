@@ -15,7 +15,7 @@ from .vel_target_command import TargetVelocityCommand
 
 @configclass
 class TargetVelocityCommandCfg(CommandTermCfg):
-    """Configuration for the uniform velocity command generator."""
+    """Configuration for the target velocity command generator. Command vectors point towards a goal."""
 
     class_type: type = TargetVelocityCommand
 
@@ -47,11 +47,8 @@ class TargetVelocityCommandCfg(CommandTermCfg):
     class Ranges:
         """Uniform distribution ranges for the velocity commands."""
 
-        lin_vel_x: tuple[float, float] = MISSING
-        """Range for the linear-x velocity command (in m/s)."""
-
-        lin_vel_y: tuple[float, float] = MISSING
-        """Range for the linear-y velocity command (in m/s)."""
+        lin_vel_mag: tuple[float, float] = MISSING
+        """Range for the velocity magnitude command (in m/s)."""
 
         ang_vel_z: tuple[float, float] = MISSING
         """Range for the angular-z velocity command (in rad/s)."""
@@ -59,7 +56,7 @@ class TargetVelocityCommandCfg(CommandTermCfg):
         heading: tuple[float, float] | None = None
         """Range for the heading command (in rad). Defaults to None.
 
-        This parameter is only used if :attr:`~UniformVelocityCommandCfg.heading_command` is True.
+        This parameter is only used if :attr:`~TargetVelocityCommandCfg.heading_command` is True.
         """
 
     ranges: Ranges = MISSING

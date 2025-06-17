@@ -68,10 +68,10 @@ parser.add_argument(
     help="Target y speed for evaluation.",
 )
 parser.add_argument(
-    "--ang_vel_z",
+    "--yaw",
     type=float,
     default=None,
-    help="Target ang_vel_z (yaw, note that this is actually yaw rate) for evaluation.",
+    help="Target yaw (ang_vel_z, note that this is actually yaw rate) for evaluation.",
 )
 
 # append AppLauncher cli args
@@ -331,7 +331,7 @@ def main():
 
         NUM_EVAL_STEPS = (
             PLAY_EPISODES_PER_ENV
-            * env.env.num_envs
+            * env.num_envs
             * PLAY_EPISODE_LENGTH
             / env.unwrapped.step_dt
         )
@@ -340,7 +340,7 @@ def main():
             jpos_log = torch.zeros(
                 (
                     int(PLAY_EPISODE_LENGTH / env.unwrapped.step_dt),
-                    int(env.env.num_envs),
+                    int(env.num_envs),
                     12,
                 )
             )
@@ -374,11 +374,11 @@ def main():
                 # amp_rewards_buffer += amp_rewards_logging
 
             if args_cli.evaluate and eval_config.record_episode_jpos:
-                jpos_log[total_num_steps // env.env.num_envs] = (
+                jpos_log[total_num_steps // env.num_envs] = (
                     env.unwrapped.scene["robot"].data.joint_pos
                 )
 
-            total_num_steps += env.env.num_envs
+            total_num_steps += env.num_envs
             episode_length_buf += 1
 
             assert (
@@ -455,7 +455,7 @@ def main():
             eval_episode_metrics[key] = torch.mean(torch.tensor(value)).item()
         # other stats
         eval_episode_metrics["num_eval_steps"] = NUM_EVAL_STEPS
-        eval_episode_metrics["num_envs"] = env.env.num_envs
+        eval_episode_metrics["num_envs"] = env.num_envs
         eval_episode_metrics["episodes_per_env"] = PLAY_EPISODES_PER_ENV
         eval_episode_metrics["total_episodes (real)"] = total_episodes_real
 
