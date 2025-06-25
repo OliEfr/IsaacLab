@@ -149,7 +149,7 @@ def main():
     
     
     # Recorded jpos path
-    recording_path = "datasets/fromVision_motions/fromVision_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+    recording_path = "datasets/fromVision_motions_DepthCam_extended/start_stop_1271493000_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
     with open(recording_path, "r") as f:
         motion_json = json.load(f)
         motion_data = np.array(motion_json["Frames"])
@@ -169,10 +169,9 @@ def main():
     
     recording_dt = float(motion_json["FrameDuration"])
     
-    assert recording_dt == 0.03334 or recording_dt == 0.01667 # should be 30Hz (video) or 60Hz (mocap)
+    assert recording_dt == 0.03334 or recording_dt == 0.01667 or recording_dt == 0.021 # should be 30Hz (video) or 60Hz (mocap)
     
-    recording_dt *= 3 if recording_dt == 0.01667 else 1 # slow down a little
-    
+    # recording_dt *= 3 if recording_dt == 0.01667 else 1 # slow down a little
     
     
     # Now we are ready!

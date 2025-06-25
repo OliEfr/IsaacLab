@@ -4,14 +4,24 @@ echo "Run training script..."
 
 datetime="$1" # $1 refers to the first command-line argument
 
+# check if datetime is empty. If so, set it to current datetime.
+if [ -z "$datetime" ]; then
+    datetime=$(date +"%Y-%m-%d_%H-%M-%S")
+fi
+
+
 seeds=(1 2 3)
  
 for seed in "${seeds[@]}"; do
     # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/manuallyGenerated/*' agent.amp_motion_folder='datasets/manuallyGenerated/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_manuallyGenerated"
 
-    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extended_DR"
+    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extended_DR2"
 
-    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse"
+    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse"
+
+    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse"
+
+    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/from_AnimalAvatar/*' agent.amp_motion_folder='datasets/from_AnimalAvatar/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_from_AnimalAvatar"
 
     # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_AlignedDepthAnything/*' agent.amp_motion_folder='datasets/fromVision_motions_AlignedDepthAnything/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_AlignedDepthAnything"
     
@@ -19,7 +29,7 @@ for seed in "${seeds[@]}"; do
 
     # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-SimpleReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_simpleReward_DR"
 
-    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_complexReward_DR"
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_complexReward_test_DR3"
 done
 
 

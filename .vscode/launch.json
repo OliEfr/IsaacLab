@@ -36,10 +36,10 @@
             "type": "python",
             "request": "launch",
             "args": [
-                // "env.amp_motion_folder='datasets/mocap_AMP_for_hardware/*'",
-                // "agent.amp_motion_folder='datasets/mocap_AMP_for_hardware/*'",
+                "env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*'",
+                "agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*'",
                 "--task",
-                "Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0",
+                "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0",
                 "--headless",
                 "--seed",
                 "42",
@@ -56,14 +56,18 @@
             "request": "launch",
             "args": [
                 "--task",
-                "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0",
+                // "Isaac-Velocity-AMPFlat-Unitree-Go2-v0",
+                "Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0",
                 "--num_envs",
                 "25",
-                "--load_run", "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_1",
-                "--amp_motion_folder", "datasets/mocap_AMP_for_hardware/*",
+                // "--load_run", "2025-06-03_20-53-29_fromVision_motions_DepthCam_extended_DR_SEED_1",
+                "--load_run", "2025-06-25_09-34-30_complexReward_test_DR3_SEED_1",
+                // "--headless"
                 "--x_speed", "0.5",
-                "--y_speed", "0.5",
-                "--heading", "0",
+                "--y_speed", "0.0",
+                "--yaw", "0.0",
+                // "--evaluate",
+                // "--eval_config", "TargetXHeadingDistribution",
             ], // load last checkpoint from specific run like such: ["--load_run", "2025-04-30_09-13-56"]
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
             "console": "integratedTerminal"
@@ -74,14 +78,9 @@
             "request": "launch",
             "args": [
                 "--task",
-                "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0",
-                "--load_run", "2025-05-16_21-23-07_manuallyGenerated_SEED_2",
-                "--amp_motion_folder", "datasets/manuallyGenerated/*",
-                "--x_speed", "0.5",
-                "--y_speed", "0.0",
-                "--heading", "0.5",
+                "Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0",
+                "--load_run", "2025-05-16_21-23-07_complexReward_SEED_1",
                 "--evaluate",
-                "--eval_config", "TargetXHeadingDistribution",
             ], // load last checkpoint from specific run like such: ["--load_run", "2025-04-30_09-13-56"]
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
             "console": "integratedTerminal"

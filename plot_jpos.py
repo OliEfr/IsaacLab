@@ -186,7 +186,6 @@ def plot_locomotion_data(data_class):
     
     # Create separate figure for legend only
     legend = plt.legend(title="Data", ncol=2, loc=(0.05, -1.5))
-    # Create separate figure for legend only
     fig_legend = plt.figure(figsize=(4, 2))
     ax_legend = fig_legend.add_subplot(111)
     ax_legend.legend(handles=legend.legend_handles, 
