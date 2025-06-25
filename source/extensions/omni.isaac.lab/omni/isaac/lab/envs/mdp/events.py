@@ -994,7 +994,7 @@ def reset_root_state_from_terrain(
         ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=asset.device
     )
 
-    velocities = asset.data.default_root_state[:, 7:13] + rand_samples
+    velocities = asset.data.default_root_state[env_ids, 7:13] + rand_samples
 
     # set into the physics simulation
     asset.write_root_pose_to_sim(
