@@ -50,10 +50,10 @@ class UnitreeGo2FlatPPORunnerCfg(UnitreeGo2RoughPPORunnerCfg):
     def __post_init__(self):
         super().__post_init__()
 
-        self.max_iterations = int(300 * 1.5 * 2) # +2 it for rough terrain
+        self.max_iterations = int(300 * 1.5 * 2 * 2) # +2 it for rough terrain
         self.experiment_name = "unitree_go2_flat"
-        self.policy.actor_hidden_dims = [128, 128, 128]
-        self.policy.critic_hidden_dims = [128, 128, 128]
+        self.policy.actor_hidden_dims = [256, 256, 256]
+        self.policy.critic_hidden_dims = [256, 256, 256]
 
 @configclass
 class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):

@@ -48,7 +48,7 @@ class UnitreeGo2FlatEnvCfgSimpleReward(UnitreeGo2FlatEnvCfg):
         # NOTE AMP for Hardware has std=1. Can be activated by commenting out the two following lines
         self.rewards.track_lin_vel_xy_exp.params["std"] = .5
         self.rewards.track_ang_vel_z_exp.params["std"] = .5
-        self.rewards.track_lin_vel_xy_exp.weight = 2.5 # was 1.5 before adding actuator delay
+        self.rewards.track_lin_vel_xy_exp.weight = 3.25 # was 1.5 before adding actuator delay; was 2.5 before increasing actuator delay 1 -> 4
         self.rewards.track_ang_vel_z_exp.weight = 1.5 # was 0.75 before adding actuator delay
 
 
