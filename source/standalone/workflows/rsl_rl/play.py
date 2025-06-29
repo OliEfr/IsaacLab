@@ -173,15 +173,21 @@ def main():
         env_cfg.commands.base_velocity.ranges.lin_vel_y = [args_cli.y_speed, args_cli.y_speed]
     if args_cli.yaw is not None:
         env_cfg.commands.base_velocity.ranges.ang_vel_z = [args_cli.yaw, args_cli.yaw]
+    
+    # Load the stored agent config. We replace some parameters in agent_cfg with the stored values later in the code.
+    f = open(os.path.join(log_dir, "params", "agent.yaml"))
+    loaded_agent_cfg = yaml.load(f, Loader=yaml.FullLoader)
+    f.close()
+    
+    agent_cfg.policy.actor_hidden_dims = loaded_agent_cfg["policy"]["actor_hidden_dims"]
+    agent_cfg.policy.critic_hidden_dims = loaded_agent_cfg["policy"]["critic_hidden_dims"]
 
     if env_cfg.is_amp_env:
         # Load same motion files that were used during training. This is required, otherwise results might be different than in training due to RSI, and the agent_expert_distances gets calculated incorrectly.
-        with open(os.path.join(log_dir, "params", "agent.yaml")) as f:
-            loaded_agent_cfg = yaml.load(f, Loader=yaml.FullLoader)
-            amp_motion_folder = loaded_agent_cfg["amp_motion_folder"]
-            env_cfg.amp_motion_folder = amp_motion_folder
-            agent_cfg.amp_motion_folder = amp_motion_folder
-            print(f"Using the following AMP motion folder: {amp_motion_folder}")
+        amp_motion_folder = loaded_agent_cfg["amp_motion_folder"]
+        env_cfg.amp_motion_folder = amp_motion_folder
+        agent_cfg.amp_motion_folder = amp_motion_folder
+        print(f"Using the following AMP motion folder: {amp_motion_folder}")
 
         env_cfg.update_motion_files()
         agent_cfg.update_motion_files()
@@ -202,7 +208,7 @@ def main():
             env_cfg.action_manager_class
         )
     )
-
+    
     if args_cli.evaluate:
         eval_config.run_checks(env_cfg=env_cfg, args_cli=args_cli)
 
