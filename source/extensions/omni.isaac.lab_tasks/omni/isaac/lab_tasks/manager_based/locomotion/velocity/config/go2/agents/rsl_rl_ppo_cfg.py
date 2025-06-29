@@ -66,7 +66,7 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.experiment_name = "unitree_go2_AMPflat" 
 
         self.policy_class_name = 'ActorCritic'
-        self.max_iterations = 25_000 # number of policy updates
+        self.max_iterations = 30_000 # number of policy updates
 
         self.amp_reward_coef = 2.0
         

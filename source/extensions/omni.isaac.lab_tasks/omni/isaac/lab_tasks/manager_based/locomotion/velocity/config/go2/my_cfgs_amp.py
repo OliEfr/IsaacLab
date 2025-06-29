@@ -32,7 +32,7 @@ class AMPUnitreeGo2FlatEnvCfg(UnitreeGo2FlatEnvCfg):
         self.rewards.track_lin_vel_xy_exp.params["std"] = 0.22 # TODO should this be ang_vel?
 
 
-        self.scene.num_envs = 5480
+        self.scene.num_envs = 2*4096 # 5480
 
         # style
         self.action_manager_class = "ActionManager"  # Default action manager
