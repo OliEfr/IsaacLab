@@ -45,6 +45,11 @@ for seed in "${seeds[@]}"; do
     # USE
     ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py \
     --task Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0 \
-    --load_run ${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_SEED_${seed} \
+    --load_run ${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl_DR2_SEED_${seed} \
+    --evaluate
+
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/play.py \
+    --task Isaac-Velocity-AMPNoisyFlat-Unitree-Go2-Play-v0 \
+    --load_run ${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl_DR2_SEED_${seed} \
     --evaluate
 done

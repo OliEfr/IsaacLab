@@ -36,8 +36,8 @@
             "type": "python",
             "request": "launch",
             "args": [
-                "env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*'",
-                "agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*'",
+                "env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/*'",
+                "agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/*'",
                 "--task",
                 "Isaac-Velocity-AMPFlat-Unitree-Go2-Play-v0",
                 "--headless",
@@ -51,24 +51,42 @@
             "justMyCode": false,
         },
         {
-            "name": "Python: Play Environment",
+            "name": "Python: Play Flat Environment",
             "type": "python",
             "request": "launch",
             "args": [
                 "--task",
-                // "Isaac-Velocity-AMPFlat-Unitree-Go2-v0",
                 "Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0",
                 "--num_envs",
                 "25",
-                // "--load_run", "2025-06-03_20-53-29_fromVision_motions_DepthCam_extended_DR_SEED_1",
-                "--load_run", "2025-06-25_09-34-30_complexReward_test_DR3_SEED_1",
+                "--load_run", "2025-06-25_17-02-26_complexReward_test_DR3_SEED_1",
                 // "--headless"
                 "--x_speed", "0.5",
                 "--y_speed", "0.0",
                 "--yaw", "0.0",
                 // "--evaluate",
                 // "--eval_config", "TargetXHeadingDistribution",
-            ], // load last checkpoint from specific run like such: ["--load_run", "2025-04-30_09-13-56"]
+            ],
+            "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Play AMP Flat Environment",
+            "type": "python",
+            "request": "launch",
+            "args": [
+                "--task",
+                "Isaac-Velocity-AMPFlat-Unitree-Go2-v0",
+                "--num_envs",
+                "25",
+                "--load_run", "2025-06-29_19-55-20_fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl_DR2_SEED_1",
+                // "--headless"
+                "--x_speed", "0.5",
+                "--y_speed", "0.0",
+                "--yaw", "0.0",
+                // "--evaluate",
+                // "--eval_config", "TargetXHeadingDistribution",
+            ],
             "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
             "console": "integratedTerminal"
         },
@@ -92,7 +110,7 @@
             "args": [
                 "--task",
                 "Isaac-Velocity-Rough-Unitree-Go2-v0",
-                "--headless",
+                // "--headless",
                 "--log_dir",
                 "debug"
             ],

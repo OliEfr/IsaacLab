@@ -17,7 +17,9 @@ for seed in "${seeds[@]}"; do
 
     # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extended/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extended_DR2"
 
-    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse"
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl_DR2"
+
+    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/*' --task Isaac-Velocity-AMPNoisyFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl_DR2"
 
     # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py env.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' agent.amp_motion_folder='datasets/fromVision_motions_DepthCam_extendedWithoutReverse/*' --task Isaac-Velocity-AMPFlat-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_fromVision_motions_DepthCam_extendedWithoutReverse"
 
@@ -29,7 +31,7 @@ for seed in "${seeds[@]}"; do
 
     # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-SimpleReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_simpleReward_DR"
 
-    ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_complexReward_test_DR3"
+    # ./isaaclab.sh -p source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-ComplexReward-Unitree-Go2-v0 --headless --seed $seed --log_dir "${datetime}_complexReward_test_DR3"
 done
 
 

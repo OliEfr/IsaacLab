@@ -9,4 +9,4 @@ current_datetime=$(date +"%Y-%m-%d_%H-%M-%S") # this gets current datetime
 
 bash run_train.sh $current_datetime
 bash run_eval.sh $current_datetime
-bash run_eval_targetDistributions.sh $current_datetime
+# bash run_eval_targetDistributions.sh $current_datetime
