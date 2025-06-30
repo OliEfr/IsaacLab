@@ -20,7 +20,7 @@ from rsl_rl.runners import OnPolicyRunner, AMPOnPolicyRunner
 class UnitreeGo2RoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 1500 # num_learning_iterations
-    save_interval = 250
+    save_interval = 249
     experiment_name = "unitree_go2_rough"
     empirical_normalization = False
     policy = RslRlPpoActorCriticCfg(
@@ -60,13 +60,13 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
     def __post_init__(self):
         super().__post_init__()
         
-        self.save_interval = 5000
+        self.save_interval = 4999
         
         
         self.experiment_name = "unitree_go2_AMPflat" 
 
         self.policy_class_name = 'ActorCritic'
-        self.max_iterations = 30_000 # number of policy updates
+        self.max_iterations = 30_100 # 30_000 + 100 to make sure last policy is saved
 
         self.amp_reward_coef = 2.0
         
@@ -91,3 +91,9 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
 
         self.amp_motion_files = motion_files
         
+
+@configclass
+class UnitreeGo2AMPNoisyFlatPPORunnerCfg(UnitreeGo2AMPFlatPPORunnerCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.experiment_name = "unitree_go2_AMPNoisyflat" 

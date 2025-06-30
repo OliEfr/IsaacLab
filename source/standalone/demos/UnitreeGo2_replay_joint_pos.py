@@ -50,7 +50,10 @@ from rsl_rl.datasets.motion_loader import AMPLoader
 
 from omni.isaac.lab_assets.unitree import UNITREE_GO2_CFG  # isort:skip
 UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity=True
-robot_z_offset = 0.1 # avoid ground floor penetration (might prevent ground collision forces)
+robot_z_offset = 0.5 # avoid ground floor penetration (might prevent ground collision forces)
+
+# Recorded jpos path
+recording_path = "datasets/fromVision_motions_DepthCamStairs/stairs_3_5339749000_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
 
 
 
@@ -137,6 +140,8 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
 def main():
     """Main function."""
     
+    global recording_path
+    
     # Initialize the simulation context
     sim = sim_utils.SimulationContext(sim_utils.SimulationCfg(dt=0.01))
     # Set main camera
@@ -148,8 +153,7 @@ def main():
     sim.reset()
     
     
-    # Recorded jpos path
-    recording_path = "datasets/fromVision_motions_DepthCam_extended/start_stop_1271493000_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+
     with open(recording_path, "r") as f:
         motion_json = json.load(f)
         motion_data = np.array(motion_json["Frames"])
@@ -171,7 +175,7 @@ def main():
     
     assert recording_dt == 0.03334 or recording_dt == 0.01667 or recording_dt == 0.021 # should be 30Hz (video) or 60Hz (mocap)
     
-    # recording_dt *= 3 if recording_dt == 0.01667 else 1 # slow down a little
+    recording_dt *= 3 if recording_dt == 0.01667 else 3 # slow down a little
     
     
     # Now we are ready!
