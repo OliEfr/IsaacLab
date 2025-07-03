@@ -14,7 +14,7 @@ from omni.isaac.lab.utils import configclass
 from .null_command import NullCommand
 from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand
 from .pose_command import UniformPoseCommand
-from .velocity_command import NormalVelocityCommand, UniformVelocityCommand
+from .velocity_command import NormalVelocityCommand, UniformVelocityCommand, Global3DUniformVelocityCommand
 
 
 @configclass
@@ -59,9 +59,6 @@ class UniformVelocityCommandCfg(CommandTermCfg):
     This parameter is only used if :attr:`heading_command` is True.
     """
     
-    command_in_world_coordinates: bool = False
-    """Whether to use command in world coordinates or not. If set to true, body command is computed from world command. Defaults to False."""
-
     @configclass
     class Ranges:
         """Uniform distribution ranges for the velocity commands."""
@@ -97,7 +94,12 @@ class UniformVelocityCommandCfg(CommandTermCfg):
     # Set the scale of the visualization markers to (0.5, 0.5, 0.5)
     goal_vel_visualizer_cfg.markers["arrow"].scale = (0.5, 0.5, 0.5)
     current_vel_visualizer_cfg.markers["arrow"].scale = (0.5, 0.5, 0.5)
+    
+@configclass
+class Global3DUniformVelocityCommandCfg(UniformVelocityCommandCfg):
+    """Configuration for the uniform velocity command generator."""
 
+    class_type: type = Global3DUniformVelocityCommand
 
 @configclass
 class NormalVelocityCommandCfg(UniformVelocityCommandCfg):

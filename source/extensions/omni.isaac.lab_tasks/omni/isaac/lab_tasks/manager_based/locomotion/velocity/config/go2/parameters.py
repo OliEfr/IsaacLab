@@ -118,11 +118,27 @@ def set_rewards_complex(cfg):
 
 
 def set_stairs_env_cfg_cmds(cfg):
-    cfg.commands.base_velocity.command_in_world_coordinates = True # this makes the following command ranges defined in world coordinates!
-    cfg.commands.base_velocity.ranges.lin_vel_x = (-0.1, 0.1)
-    cfg.commands.base_velocity.ranges.lin_vel_y = (-0.5, 1.0)
-    cfg.commands.base_velocity.ranges.ang_vel_z = (0, 0)
-    cfg.commands.base_velocity.ranges.heading = (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)) # global heading "up the stairs" is in y direction, which is math.pi/2
+    cfg.commands.base_velocity = mdp.Global3DUniformVelocityCommandCfg(
+        asset_name="robot",
+        resampling_time_range=(10.0, 10.0), # Always keep that exactly 10.0, otherwise metric computation will be wrong. (It is wrong anyways if episodes terminate prematurely!)
+        rel_standing_envs=0.02,
+        rel_heading_envs=1.0,
+        heading_command=True,
+        heading_control_stiffness=0.5,
+        debug_vis=True,
+        # training
+        # ranges=mdp.UniformVelocityCommandCfg.Ranges(
+        #     lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+        # ),
+        # https://arxiv.org/pdf/2203.15103 (AMP make good substitutes for reward function) uses (-1,2), (-0.3, 0.3), (-1.57, + 1.57)
+        # NOTE below target values are from AMP for hardware
+        ranges=mdp.UniformVelocityCommandCfg.Ranges(
+            lin_vel_x=(-0.1, 0.1), # AMP for hardware has here (-1.0, 2.0)
+            lin_vel_y=(-0.5, 1.0),
+            ang_vel_z=(0, 0),
+            heading=(math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)) # global heading "up the stairs" is in y direction, which is math.pi/2
+        ),
+    )
     
     
 def set_stairs_env_cfg_reset_base(cfg):

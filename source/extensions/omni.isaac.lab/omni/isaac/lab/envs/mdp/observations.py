@@ -569,7 +569,7 @@ def relative_position_on_stairs(
     # This is privileged information -> potential omit this, or only use yaw.
     root_rot = asset.data.root_quat_w
 
-    return torch.cat([sin_encoding, cos_encoding, root_rot], dim=1)
+    return torch.cat([sin_encoding.unsqueeze(1), cos_encoding.unsqueeze(1), root_rot], dim=1)
 
 def stair_parameters(
     env: ManagerBasedEnv,

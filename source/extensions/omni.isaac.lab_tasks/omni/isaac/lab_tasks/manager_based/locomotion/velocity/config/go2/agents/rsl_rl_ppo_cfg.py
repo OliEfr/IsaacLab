@@ -103,4 +103,4 @@ class UnitreeGo2AMPNoisyFlatPPORunnerCfg(UnitreeGo2AMPFlatPPORunnerCfg):
 class UnitreeGo2StairsPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
     def __post_init__(self):
         super().__post_init__()
-        self.experiment_name = "unitree_go2_AMPStairs" 
+        self.experiment_name = "unitree_go2_Stairs" 

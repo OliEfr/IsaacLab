@@ -21,7 +21,7 @@ from omni.isaac.lab.markers import VisualizationMarkers
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedEnv
 
-    from .commands_cfg import NormalVelocityCommandCfg, UniformVelocityCommandCfg
+    from .commands_cfg import NormalVelocityCommandCfg, UniformVelocityCommandCfg, Global3DUniformVelocityCommandCfg
 
 
 class UniformVelocityCommand(CommandTerm):
@@ -57,6 +57,8 @@ class UniformVelocityCommand(CommandTerm):
         """
         # initialize the base class
         super().__init__(cfg, env)
+        
+        self.command_in_world_coordinates = False
 
         # check configuration
         if self.cfg.heading_command and self.cfg.ranges.heading is None:
@@ -131,17 +133,7 @@ class UniformVelocityCommand(CommandTerm):
     @property
     def command(self) -> torch.Tensor:
         """The desired base velocity command in the base frame. Shape is (num_envs, 3)."""
-        if self.cfg.command_in_world_coordinates:
-            # NOTE the naming for self.vel_command_b is inconsistent when used with self.cfg.command_in_world_coordinates (ie _b does not mean "body" anymore.)
-            # set third component to zero, as it is target yaw
-            vel_command_3d_b = torch.cat([self.vel_command_b[..., :2], torch.zeros_like(self.vel_command_b[..., :1])], dim=-1)
-            # rotate in world frame
-            vel_command_3d_w = math_utils.quat_rotate_inverse(self.robot.data.root_quat_w, vel_command_3d_b)
-            # add target yaw again
-            vel_command_3d_w[..., 2] = self.vel_command_b[..., 2]
-            return vel_command_3d_w
-        else:
-            return self.vel_command_b
+        return self.vel_command_b
 
     """
     Implementation specific functions.
@@ -155,18 +147,22 @@ class UniformVelocityCommand(CommandTerm):
         # logs data
         
         # determine error_vel_xy depending on if command is in world coordinates or not
+        # NOTE The check for "self.command_in_world_coordinates" is kept to reuse this function in inheriting classes. This class itself should always use the body frame.
         # NOTE I could also use self.command here, but this requires additional computation
-        if self.cfg.command_in_world_coordinates:
-            reference_vel = self.robot.data.root_lin_vel_w[:, :2]
+        if self.command_in_world_coordinates:
+            self.metrics["error_vel_xy"] += (
+                torch.norm(self.vel_command_b[:, :2] - self.robot.data.root_lin_vel_w[:, :2], dim=-1) / max_command_step
+            )
+            self.metrics["error_vel_yaw"] += (
+                torch.abs(self.vel_command_b[:, 3] - self.robot.data.root_ang_vel_b[:, 2]) / max_command_step
+            )
         else:
-            reference_vel = self.robot.data.root_lin_vel_b[:, :2]
-        self.metrics["error_vel_xy"] += (
-            torch.norm(self.vel_command_b[:, :2] - reference_vel, dim=-1) / max_command_step
-        )
-        
-        self.metrics["error_vel_yaw"] += (
-            torch.abs(self.vel_command_b[:, 2] - self.robot.data.root_ang_vel_b[:, 2]) / max_command_step
-        )
+            self.metrics["error_vel_xy"] += (
+                torch.norm(self.vel_command_b[:, :2] - self.robot.data.root_lin_vel_b[:, :2], dim=-1) / max_command_step
+            )
+            self.metrics["error_vel_yaw"] += (
+                torch.abs(self.vel_command_b[:, 2] - self.robot.data.root_ang_vel_b[:, 2]) / max_command_step
+            )
 
         # oli's metrics
         power = torch.sum(torch.abs(self.robot.data.joint_vel * self.robot.data.applied_torque), dim=-1)
@@ -282,6 +278,93 @@ class UniformVelocityCommand(CommandTerm):
         arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
 
         return arrow_scale, arrow_quat
+    
+class Global3DUniformVelocityCommand(UniformVelocityCommand):
+    """Similar to UniformVelocityCommand, but the velocity component has three values xyz in order to support rotation from world in body frame. The velocity command is given in world frame.
+    """
+
+    cfg: Global3DUniformVelocityCommandCfg
+    """The configuration of the command generator."""
+
+    def __init__(self, cfg: Global3DUniformVelocityCommandCfg, env: ManagerBasedEnv):
+        """Initialize the command generator.
+
+        Args:
+            cfg: The configuration of the command generator.
+            env: The environment.
+
+        Raises:
+            ValueError: If the heading command is active but the heading range is not provided.
+        """
+        # initialize the base class
+        super().__init__(cfg, env)
+        
+        self.command_in_world_coordinates = True
+        
+
+        # crete buffers to store the command
+        # -- command: x vel, y vel, yaw vel, heading
+        # NOTE the naming for self.vel_command_b is inconsistent here (ie _b does not mean "body" anymore), but it is kept for compatibility with the UniformVelocityCommand class
+        self.vel_command_b = torch.zeros(self.num_envs, 4, device=self.device)
+
+    """
+    Properties
+    """
+
+    @property
+    def command(self) -> torch.Tensor:
+        vel_command_3d_b = self.vel_command_b[..., :3]
+        # rotate in world frame
+        vel_command_3d_w = math_utils.quat_rotate_inverse(self.robot.data.root_quat_w, vel_command_3d_b)
+        # add target yaw again
+        command = torch.cat((vel_command_3d_w, self.vel_command_b[:, 3].unsqueeze(1)), dim=1)
+        return command
+
+    """
+    Implementation specific functions.
+    """
+
+    def _resample_command(self, env_ids: Sequence[int]):
+        # sample velocity commands
+        r = torch.empty(len(env_ids), device=self.device)
+        # -- linear velocity - x direction
+        self.vel_command_b[env_ids, 0] = r.uniform_(*self.cfg.ranges.lin_vel_x)
+        # -- linear velocity - y direction
+        self.vel_command_b[env_ids, 1] = r.uniform_(*self.cfg.ranges.lin_vel_y)
+        # -- linear velocity - z direction - always 0
+        self.vel_command_b[env_ids, 2] = 0.0
+        # -- ang vel yaw - rotation around z
+        self.vel_command_b[env_ids, 3] = r.uniform_(*self.cfg.ranges.ang_vel_z)
+        # heading target
+        if self.cfg.heading_command:
+            self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
+            # update heading envs
+            self.is_heading_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_heading_envs
+        # update standing envs
+        self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
+
+    def _update_command(self):
+        """Post-processes the velocity command.
+
+        This function sets velocity command to zero for standing environments and computes angular
+        velocity from heading direction if the heading_command flag is set.
+        """
+        # Compute angular velocity from heading direction
+        if self.cfg.heading_command:
+            # resolve indices of heading envs
+            env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
+            # compute angular velocity
+            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - self.robot.data.heading_w[env_ids])
+            self.vel_command_b[env_ids, 3] = torch.clip(
+                self.cfg.heading_control_stiffness * heading_error,
+                min=self.cfg.ranges.ang_vel_z[0],
+                max=self.cfg.ranges.ang_vel_z[1],
+            )
+        # Enforce standing (i.e., zero velocity command) for standing envs
+        # TODO: check if conversion is needed
+        standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
+        self.vel_command_b[standing_env_ids, :] = 0.0
+
 
 
 class NormalVelocityCommand(UniformVelocityCommand):
