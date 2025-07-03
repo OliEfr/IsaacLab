@@ -39,7 +39,7 @@ class UniformVelocityCommand(CommandTerm):
     .. math::
 
         \omega_z = \frac{1}{2} \text{wrap_to_pi}(\theta_{\text{target}} - \theta_{\text{current}})
-
+        
     """
 
     cfg: UniformVelocityCommandCfg
@@ -131,7 +131,17 @@ class UniformVelocityCommand(CommandTerm):
     @property
     def command(self) -> torch.Tensor:
         """The desired base velocity command in the base frame. Shape is (num_envs, 3)."""
-        return self.vel_command_b
+        if self.cfg.command_in_world_coordinates:
+            # NOTE the naming for self.vel_command_b is inconsistent when used with self.cfg.command_in_world_coordinates (ie _b does not mean "body" anymore.)
+            # set third component to zero, as it is target yaw
+            vel_command_3d_b = torch.cat([self.vel_command_b[..., :2], torch.zeros_like(self.vel_command_b[..., :1])], dim=-1)
+            # rotate in world frame
+            vel_command_3d_w = math_utils.quat_rotate_inverse(self.robot.data.root_quat_w, vel_command_3d_b)
+            # add target yaw again
+            vel_command_3d_w[..., 2] = self.vel_command_b[..., 2]
+            return vel_command_3d_w
+        else:
+            return self.vel_command_b
 
     """
     Implementation specific functions.
@@ -143,9 +153,17 @@ class UniformVelocityCommand(CommandTerm):
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = 1 # max_command_time / self._env.step_dt
         # logs data
+        
+        # determine error_vel_xy depending on if command is in world coordinates or not
+        # NOTE I could also use self.command here, but this requires additional computation
+        if self.cfg.command_in_world_coordinates:
+            reference_vel = self.robot.data.root_lin_vel_w[:, :2]
+        else:
+            reference_vel = self.robot.data.root_lin_vel_b[:, :2]
         self.metrics["error_vel_xy"] += (
-            torch.norm(self.vel_command_b[:, :2] - self.robot.data.root_lin_vel_b[:, :2], dim=-1) / max_command_step
+            torch.norm(self.vel_command_b[:, :2] - reference_vel, dim=-1) / max_command_step
         )
+        
         self.metrics["error_vel_yaw"] += (
             torch.abs(self.vel_command_b[:, 2] - self.robot.data.root_ang_vel_b[:, 2]) / max_command_step
         )

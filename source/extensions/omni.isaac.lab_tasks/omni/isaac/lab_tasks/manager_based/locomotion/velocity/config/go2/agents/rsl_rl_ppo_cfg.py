@@ -91,9 +91,16 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
 
         self.amp_motion_files = motion_files
         
-
+# This class only exists to provide self.experiment_name for logging.
 @configclass
 class UnitreeGo2AMPNoisyFlatPPORunnerCfg(UnitreeGo2AMPFlatPPORunnerCfg):
     def __post_init__(self):
         super().__post_init__()
         self.experiment_name = "unitree_go2_AMPNoisyflat" 
+        
+# This class only exists to provide self.experiment_name for logging.
+@configclass
+class UnitreeGo2StairsPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.experiment_name = "unitree_go2_AMPStairs" 

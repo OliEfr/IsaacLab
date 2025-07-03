@@ -58,6 +58,9 @@ class UniformVelocityCommandCfg(CommandTermCfg):
 
     This parameter is only used if :attr:`heading_command` is True.
     """
+    
+    command_in_world_coordinates: bool = False
+    """Whether to use command in world coordinates or not. If set to true, body command is computed from world command. Defaults to False."""
 
     @configclass
     class Ranges:

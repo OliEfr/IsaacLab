@@ -3,54 +3,30 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import glob
+
 from omni.isaac.lab.utils import configclass
-from dataclasses import fields
 
-from .rough_env_cfg import UnitreeGo2RoughEnvCfg
+from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
 
 
-@configclass
-class UnitreeGo2FlatEnvCfg(UnitreeGo2RoughEnvCfg):
-    def __post_init__(self):
-        # post init of parent
-        super().__post_init__()
-
-        # NOTE this class should not be used directly. All rewards are zero here. You should inherit from this class to define your rewards.
-
-        # override rewards
-        # self.rewards.flat_orientation_l2.weight = -2.5
-        # self.rewards.feet_air_time.weight = 0.25
-
-        # change terrain to flat
-        self.scene.terrain.terrain_type = "plane"  # comment out for rough terrain
-        self.scene.terrain.terrain_generator = None  # comment out for rough terrain
-        self.curriculum.terrain_levels = None  # comment out for rough terrain
-        # no height scan
-        self.scene.height_scanner = None
-        self.observations.policy.height_scan = None
-        
+from . import parameters
 
 ####################################################################
-
+# Flat simple reward
 
 @configclass
-class UnitreeGo2FlatEnvCfgSimpleReward(UnitreeGo2FlatEnvCfg):
+class UnitreeGo2FlatEnvCfgSimpleReward(LocomotionVelocityRoughEnvCfg):
     def __post_init__(self):
+        
+        
         # post init of parent
         super().__post_init__()
-
-        # disable rewards
-        for field in fields(self.rewards):
-            reward_obj = getattr(self.rewards, field.name)
-            reward_obj.weight = 0.0
-
-        # set task reward: from AMP for hardware baseline
-        # NOTE AMP for Hardware has std=1. Can be activated by commenting out the two following lines
-        self.rewards.track_lin_vel_xy_exp.params["std"] = .5
-        self.rewards.track_ang_vel_z_exp.params["std"] = .5
-        self.rewards.track_lin_vel_xy_exp.weight = 3.25 # was 1.5 before adding actuator delay; was 2.5 before increasing actuator delay 1 -> 4
-        self.rewards.track_ang_vel_z_exp.weight = 1.5 # was 0.75 before adding actuator delay
-
+        
+        self.terrain_type = "flat"
+        parameters.set_terrain(self)
+        parameters.set_rewards_simple(self)
+        pass
 
 @configclass
 class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
@@ -58,38 +34,23 @@ class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
         # post init of parent
         super().__post_init__()
 
-        # make a smaller scene for play
-        self.scene.num_envs = 50
-        self.scene.env_spacing = 2.5
-        # disable randomization for play
-        self.observations.policy.enable_corruption = False
-        # remove random pushing event
-        self.events.base_external_force_torque = None
-        self.events.push_robot = None
+        parameters.set_play_settings_flat(self)
+        pass
 
 
 #######################################################################
-
+# Flat complex reward
 
 @configclass
 class UnitreeGo2FlatEnvCfgComplexReward(UnitreeGo2FlatEnvCfgSimpleReward):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
+        
+        parameters.set_rewards_complex(self)
+        pass
 
-        self.rewards.lin_vel_z_l2.weight = -2.0
-        self.rewards.ang_vel_xy_l2.weight = -0.05
-        self.rewards.dof_torques_l2.weight =  -0.0002
-        self.rewards.dof_acc_l2.weight = -2.5e-7
-        self.rewards.action_rate_l2.weight = -0.01
-        self.rewards.feet_air_time.weight = 10 # consider reducing this to 7.5 if performance on task reward is bad
-        self.rewards.undesired_contacts_thigh.weight = -1.0
-        self.rewards.undesired_contacts_calf.weight = -1.0
-        self.rewards.contact_forces.weight = -1.0
-        self.rewards.flat_orientation_l2.weight = -0.01
-        self.rewards.joint_pos_limits.weight = -10.0
-        self.rewards.torque_limits.weight = -1.0e-5
-        self.rewards.joint_deviation_l1.weight = -0.75 # consider reducing this in case performance on task reward is bad
+        
 
 
 @configclass
@@ -97,12 +58,52 @@ class UnitreeGo2FlatEnvCfgComplexReward_PLAY(UnitreeGo2FlatEnvCfgComplexReward):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
+        
+        parameters.set_play_settings_flat(self)
+        
+        
+#######################################################################
+# Flat AMP
+        
+@configclass
+class AMPUnitreeGo2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+        
+        self.terrain_type = "flat"
+        parameters.set_terrain(self)
 
-        # make a smaller scene for play
-        self.scene.num_envs = 50
-        self.scene.env_spacing = 2.5
-        # disable randomization for play
-        self.observations.policy.enable_corruption = False
-        # remove random pushing event
-        self.events.base_external_force_torque = None
-        self.events.push_robot = None
+        self.is_amp_env: bool = True
+
+        parameters.set_rewards_amp(self)
+
+        self.scene.num_envs = 2 * 4096  # 5480
+
+        # style
+        self.action_manager_class = "ActionManager"  # Default action manager
+
+        parameters.set_amp_settings(self)
+    
+        
+    def update_motion_files(self):
+        motion_files = glob.glob(self.amp_motion_folder)
+        self.amp_motion_files = motion_files
+
+        assert (
+            self.events.reference_state_initialization is not None
+        ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
+        self.events.reference_state_initialization.params["motion_files"] = motion_files
+
+
+
+@configclass
+class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+
+        parameters.set_play_settings_flat(self)
+
+        self.amp_motion_folder = "datasets/dummy/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training
+    

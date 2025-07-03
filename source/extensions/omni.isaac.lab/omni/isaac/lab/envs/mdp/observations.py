@@ -532,3 +532,61 @@ Commands.
 def generated_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
     """The generated command from command term in the command manager with the given name."""
     return env.command_manager.get_command(command_name)
+
+
+def relative_position_on_stairs(
+    env: ManagerBasedEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Root position and yaw in the asset's root frame."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+
+    # terrain indexes for each robot
+    # row is "difficulty level", column is "terrain type"
+    # (from terrain_importer.py)
+    rows = env.scene.terrain.terrain_levels
+    cols = env.scene.terrain.terrain_types
+
+    # step width for each robot's terrain
+    step_width = env.scene.terrain.terrain_params["step_width"][rows, cols]
+
+    root_pos_y_absolute = asset.data.root_pos_w[:, 1] - env.scene.env_origins[:, 1] # in environment frame
+
+    # It is important to define a coordinate system with regard to which the relative positions are calculated. Otherwise sim2real will be difficult.
+    # We define the y-origin as beginning of first step.
+    y_position_relative = (
+        root_pos_y_absolute
+        - env.cfg.scene.terrain.terrain_generator.sub_terrains[
+            "stairs"
+        ].y_coordinate_origin_relative_to_first_stair_step
+    )
+    
+    frequency = 2 * torch.pi / step_width
+    sin_encoding = torch.sin(frequency * y_position_relative)
+    cos_encoding = torch.cos(frequency * y_position_relative)
+    
+    # This is privileged information -> potential omit this, or only use yaw.
+    root_rot = asset.data.root_quat_w
+
+    return torch.cat([sin_encoding, cos_encoding, root_rot], dim=1)
+
+def stair_parameters(
+    env: ManagerBasedEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Root position and yaw in the asset's root frame."""
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+
+    # terrain indexes for each robot
+    # row is "difficulty level", column is "terrain type"
+    # (from terrain_importer.py)
+    rows = env.scene.terrain.terrain_levels
+    cols = env.scene.terrain.terrain_types
+
+    # terrain's parameters for each terrain
+    step_heights = env.scene.terrain.terrain_params["step_height"][rows, cols]
+    step_widths = env.scene.terrain.terrain_params["step_width"][rows, cols]
+
+    return torch.stack((step_heights, step_widths), dim=-1)

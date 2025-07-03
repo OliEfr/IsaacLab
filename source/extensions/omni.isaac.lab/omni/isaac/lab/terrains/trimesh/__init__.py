@@ -20,6 +20,7 @@ from .mesh_terrains_cfg import (
     MeshPitTerrainCfg,
     MeshPlaneTerrainCfg,
     MeshPyramidStairsTerrainCfg,
+    MeshStairsTerrainCfg,
     MeshRailsTerrainCfg,
     MeshRandomGridTerrainCfg,
     MeshRepeatedBoxesTerrainCfg,

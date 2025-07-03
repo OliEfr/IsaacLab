@@ -82,72 +82,72 @@ gym.register(
     },
 )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+# """"""""""""""""""""""""""""""""""""""""""""""""""
 
 
-gym.register(
-    id="Isaac-Velocity-InterpolatedStyleFlat-Unitree-Go2-v0",
-    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs:InterpolatedStyleUnitreeGo2FlatEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
-    },
-)
+# gym.register(
+#     id="Isaac-Velocity-InterpolatedStyleFlat-Unitree-Go2-v0",
+#     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+#     disable_env_checker=True,
+#     kwargs={
+#         "env_cfg_entry_point": f"{__name__}.my_cfgs:InterpolatedStyleUnitreeGo2FlatEnvCfg",
+#         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+#     },
+# )
 
-gym.register(
-    id="Isaac-Velocity-InterpolatedStyleFlat-Unitree-Go2-Play-v0",
-    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs:InterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
-    },
-)
+# gym.register(
+#     id="Isaac-Velocity-InterpolatedStyleFlat-Unitree-Go2-Play-v0",
+#     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+#     disable_env_checker=True,
+#     kwargs={
+#         "env_cfg_entry_point": f"{__name__}.my_cfgs:InterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY",
+#         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+#     },
+# )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+# """"""""""""""""""""""""""""""""""""""""""""""""""
 
-gym.register(
-    id="Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-v0",
-    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs:FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
-    },
-)
+# gym.register(
+#     id="Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-v0",
+#     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+#     disable_env_checker=True,
+#     kwargs={
+#         "env_cfg_entry_point": f"{__name__}.my_cfgs:FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg",
+#         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+#     },
+# )
 
-gym.register(
-    id="Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-Play-v0",
-    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs:FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
-    },
-)
+# gym.register(
+#     id="Isaac-Velocity-FrequencyInterpolatedStyleFlat-Unitree-Go2-Play-v0",
+#     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+#     disable_env_checker=True,
+#     kwargs={
+#         "env_cfg_entry_point": f"{__name__}.my_cfgs:FrequencyInterpolatedStyleUnitreeGo2FlatEnvCfg_PLAY",
+#         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+#     },
+# )
 
-""""""""""""""""""""""""""""""""""""""""""""""""""
+# """"""""""""""""""""""""""""""""""""""""""""""""""
 
-gym.register(
-    id="Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-v0",
-    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs:LegwiseLatentActionUnitreeGo2FlatEnvCfg",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
-    },
-)
+# gym.register(
+#     id="Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-v0",
+#     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+#     disable_env_checker=True,
+#     kwargs={
+#         "env_cfg_entry_point": f"{__name__}.my_cfgs:LegwiseLatentActionUnitreeGo2FlatEnvCfg",
+#         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+#     },
+# )
 
-gym.register(
-    id="Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-Play-v0",
-    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
-    disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs:LegwiseLatentActionUnitreeGo2FlatEnvCfg_PLAY",
-        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
-    },
-)
+# gym.register(
+#     id="Isaac-Velocity-LegwiseLatentActionFlat-Unitree-Go2-Play-v0",
+#     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+#     disable_env_checker=True,
+#     kwargs={
+#         "env_cfg_entry_point": f"{__name__}.my_cfgs:LegwiseLatentActionUnitreeGo2FlatEnvCfg_PLAY",
+#         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2FlatPPORunnerCfg",
+#     },
+# )
 
 
 """"""""""""""""""""""""""""""""""""""""""""""""""
@@ -157,7 +157,7 @@ gym.register(
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs_amp:AMPUnitreeGo2FlatEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.flat_env_cfg:AMPUnitreeGo2FlatEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPFlatPPORunnerCfg",
     },
 )
@@ -167,13 +167,13 @@ gym.register(
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.my_cfgs_amp:AMPUnitreeGo2FlatEnvCfg_PLAY",
+        "env_cfg_entry_point": f"{__name__}.flat_env_cfg:AMPUnitreeGo2FlatEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPFlatPPORunnerCfg",
     },
 )
 
 """"""""""""""""""""""""""""""""""""""""""""""""""
-
+# TODO move from my_cfgs_amp to dedicated file
 gym.register(
     id="Isaac-Velocity-AMPNoisyFlat-Unitree-Go2-v0",
     entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
@@ -194,3 +194,50 @@ gym.register(
     },
 )
 
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+gym.register(
+    id="Isaac-Velocity-Stairs-SimpleReward-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsEnvCfgSimpleReward",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2StairsPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-Stairs-SimpleReward-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsEnvCfgSimpleReward_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2StairsPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+gym.register(
+    id="Isaac-Velocity-Stairs-ComplexReward-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsEnvCfgComplexReward",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2StairsPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-Stairs-ComplexReward-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.stairs_env_cfg:UnitreeGo2StairsEnvCfgComplexReward_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2StairsPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)

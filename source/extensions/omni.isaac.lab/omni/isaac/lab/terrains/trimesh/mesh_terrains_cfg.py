@@ -48,6 +48,26 @@ class MeshPyramidStairsTerrainCfg(SubTerrainBaseCfg):
     :obj:`platform_width` (depending on the direction) with no steps in the remaining area. Additionally,
     no border will be added.
     """
+    
+@configclass
+class MeshStairsTerrainCfg(SubTerrainBaseCfg):
+    """Configuration for a stair mesh terrain."""
+
+    function = mesh_terrains.stairs_terrain
+
+    border_width: float = 0.2
+    """The width of the border around the terrain (in m). Defaults to 0.0.
+    The border is a flat terrain with the same height as the terrain.
+    """
+    step_height_range: tuple[float, float] = MISSING
+    """The minimum and maximum height of the steps (in m)."""
+    platform_width_top: float = 5.5
+    """The width of the top platform."""
+    platform_width_bottom: float = 5
+    """The width of the bottom platform."""
+    holes: bool = False
+    y_coordinate_origin_relative_to_first_stair_step: float = -0.5
+    """The coordinate origin of each sub_terrain relative to the start position of the first stair step."""
 
 
 @configclass
