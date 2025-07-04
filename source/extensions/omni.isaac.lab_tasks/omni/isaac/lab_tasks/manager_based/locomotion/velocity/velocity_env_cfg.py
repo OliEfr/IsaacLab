@@ -114,7 +114,6 @@ class CommandsCfg:
             ang_vel_z=(-1.57, 1.57),
             heading=(-math.pi, math.pi),
         ),
-        command_in_world_coordinates = False,
     )
 
 

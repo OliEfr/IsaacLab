@@ -18,10 +18,12 @@ from omni.isaac.lab.assets import Articulation
 from omni.isaac.lab.managers import CommandTerm
 from omni.isaac.lab.markers import VisualizationMarkers
 
+from omni.isaac.lab.envs.mdp.commands.pose_2d_command import TerrainBasedPose2dCommand
+
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedEnv
 
-    from .commands_cfg import NormalVelocityCommandCfg, UniformVelocityCommandCfg, Global3DUniformVelocityCommandCfg
+    from .commands_cfg import NormalVelocityCommandCfg, UniformVelocityCommandCfg, Global3DUniformVelocityCommandCfg, TerrainBasedPose2dCommandCfg, TerrainBasedPose2dBasedVelocityCommandCfg
 
 
 class UniformVelocityCommand(CommandTerm):
@@ -57,7 +59,7 @@ class UniformVelocityCommand(CommandTerm):
         """
         # initialize the base class
         super().__init__(cfg, env)
-        
+
         self.command_in_world_coordinates = False
 
         # check configuration
@@ -145,7 +147,7 @@ class UniformVelocityCommand(CommandTerm):
         max_command_time = self.cfg.resampling_time_range[1]
         max_command_step = 1 # max_command_time / self._env.step_dt
         # logs data
-        
+
         # determine error_vel_xy depending on if command is in world coordinates or not
         # NOTE The check for "self.command_in_world_coordinates" is kept to reuse this function in inheriting classes. This class itself should always use the body frame.
         # NOTE I could also use self.command here, but this requires additional computation
@@ -365,6 +367,237 @@ class Global3DUniformVelocityCommand(UniformVelocityCommand):
         standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
         self.vel_command_b[standing_env_ids, :] = 0.0
 
+    def _debug_vis_callback(self, event):
+        # check if robot is initialized
+        # note: this is needed in-case the robot is de-initialized. we can't access the data
+        if not self.robot.is_initialized:
+            return
+        # get marker location
+        # -- base state
+        base_pos_w = self.robot.data.root_pos_w.clone()
+        base_pos_w[:, 2] += 0.5
+        # -- resolve the scales and quaternions
+        vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_xyz_velocity_to_arrow(
+            self.command[:, :3]
+        )
+        vel_arrow_scale, vel_arrow_quat = self._resolve_xyz_velocity_to_arrow(
+            self.robot.data.root_lin_vel_b[:, :3]
+        )
+        
+        # display markers
+        self.goal_vel_visualizer.visualize(
+            base_pos_w, vel_des_arrow_quat, vel_des_arrow_scale
+        )
+        self.current_vel_visualizer.visualize(
+            base_pos_w, vel_arrow_quat, vel_arrow_scale
+        )
+
+    """
+    Internal helpers.
+    """
+
+    def _resolve_xyz_velocity_to_arrow(self, xy_velocity: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Converts the XY base velocity command to arrow direction rotation."""
+        # obtain default scale of the marker
+        default_scale = self.goal_vel_visualizer.cfg.markers["arrow"].scale
+        # arrow-scale
+        arrow_scale = torch.tensor(default_scale, device=self.device).repeat(xy_velocity.shape[0], 1)
+        arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity, dim=1) * 3.0
+        # arrow-direction
+        
+        heading_angle = torch.atan2(xy_velocity[:, 1], xy_velocity[:, 0])
+        xy_magnitude = torch.linalg.norm(xy_velocity[:, :2], dim=1)
+        pitch = -torch.atan2(xy_velocity[:, 2], xy_magnitude)  # Negative because positive Z is up
+        zeros = torch.zeros_like(heading_angle)
+        arrow_quat = math_utils.quat_from_euler_xyz(zeros, pitch, heading_angle)
+        # convert everything back from base to world frame
+        base_quat_w = self.robot.data.root_quat_w
+        arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
+
+        return arrow_scale, arrow_quat
+
+
+class TerrainBasedPose2dBasedVelocityCommand(UniformVelocityCommand):
+    r""" Sample velocities that point towards 2D poses on the terrain.
+        
+    """
+
+    cfg: TerrainBasedPose2dBasedVelocityCommandCfg
+    """The configuration of the command generator."""
+
+    def __init__(self, cfg: TerrainBasedPose2dBasedVelocityCommandCfg, env: ManagerBasedEnv):
+        """Initialize the command generator.
+
+        Args:
+            cfg: The configuration of the command generator.
+            env: The environment.
+
+        Raises:
+            ValueError: If the heading command is active but the heading range is not provided.
+        """
+        # initialize the base class
+        super().__init__(cfg, env)
+        
+        assert False, "Untested."
+
+        self.command_in_world_coordinates = False
+
+        # check configuration
+        if self.cfg.heading_command and self.cfg.ranges.heading is None:
+            raise ValueError(
+                "The velocity command has heading commands active (heading_command=True) but the `ranges.heading`"
+                " parameter is set to None."
+            )
+        if self.cfg.ranges.heading and not self.cfg.heading_command:
+            omni.log.warn(
+                f"The velocity command has the 'ranges.heading' attribute set to '{self.cfg.ranges.heading}'"
+                " but the heading command is not active. Consider setting the flag for the heading command to True."
+            )
+
+        self.vel_command_mag = torch.zeros(self.num_envs, 1, device=self.device)
+
+        self.target_pose2d = TerrainBasedPose2dCommand(
+            cfg=TerrainBasedPose2dCommandCfg(
+                asset_name="robot",
+                simple_heading=True,
+                resampling_time_range=(10.0, 10.0),
+                ranges=TerrainBasedPose2dCommandCfg.Ranges(heading=(0.0, 0.0)),
+                debug_vis=True,
+                goal_pose_visualizer_cfg=RED_ARROW_X_MARKER_CFG.replace(
+                    prim_path="/Visuals/Command/pose_goal"
+                ),
+            ),
+            env=env,
+        )
+
+    def __str__(self) -> str:
+        """Return a string representation of the command generator."""
+        msg = "TerrainBasedPose2dBasedVelocityCommand:\n"
+        msg += f"\tCommand dimension: {tuple(self.command.shape[1:])}\n"
+        msg += f"\tResampling time range: {self.cfg.resampling_time_range}\n"
+        msg += f"\tHeading command: {self.cfg.heading_command}\n"
+        if self.cfg.heading_command:
+            msg += f"\tHeading probability: {self.cfg.rel_heading_envs}\n"
+        msg += f"\tStanding probability: {self.cfg.rel_standing_envs}"
+        return msg
+
+    """
+    Properties
+    """
+
+    @property
+    def command(self) -> torch.Tensor:
+        """The desired base velocity command in the base frame. Shape is (num_envs, 3)."""
+        target_vec = (
+            self.target_pose2d.pos_command_w - self.robot.data.root_pos_w[:, :3]
+        )
+        target_vec = target_vec / torch.norm(
+            target_vec, dim=-1, keepdim=True
+        ).expand_as(target_vec)
+        # Isolate yaw
+        target_vel = math_utils.quat_rotate_inverse(
+            math_utils.yaw_quat(self.robot.data.root_quat_w), target_vec
+        )
+        # Scale to desired speed
+        target_vel *= self.vel_command_mag
+
+        return target_vel
+
+    
+
+    def _resample_command(self, env_ids: Sequence[int]):
+        # sample velocity commands
+        r = torch.empty(len(env_ids), device=self.device)
+        # -- linear velocity - x direction
+        self.vel_command_b[env_ids, 0] = r.uniform_(*self.cfg.ranges.lin_vel_x)
+        # -- linear velocity - y direction
+        self.vel_command_b[env_ids, 1] = r.uniform_(*self.cfg.ranges.lin_vel_y)
+        # -- ang vel yaw - rotation around z
+        self.vel_command_b[env_ids, 2] = r.uniform_(*self.cfg.ranges.ang_vel_z)
+        # heading target
+        if self.cfg.heading_command:
+            self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
+            # update heading envs
+            self.is_heading_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_heading_envs
+        # update standing envs
+        self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
+
+    def _update_command(self):
+        """Post-processes the velocity command.
+
+        This function sets velocity command to zero for standing environments and computes angular
+        velocity from heading direction if the heading_command flag is set.
+        """
+        # Compute angular velocity from heading direction
+        if self.cfg.heading_command:
+            # resolve indices of heading envs
+            env_ids = self.is_heading_env.nonzero(as_tuple=False).flatten()
+            # compute angular velocity
+            heading_error = math_utils.wrap_to_pi(self.heading_target[env_ids] - self.robot.data.heading_w[env_ids])
+            self.vel_command_b[env_ids, 2] = torch.clip(
+                self.cfg.heading_control_stiffness * heading_error,
+                min=self.cfg.ranges.ang_vel_z[0],
+                max=self.cfg.ranges.ang_vel_z[1],
+            )
+        # Enforce standing (i.e., zero velocity command) for standing envs
+        # TODO: check if conversion is needed
+        standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
+        self.vel_command_b[standing_env_ids, :] = 0.0
+
+    def _set_debug_vis_impl(self, debug_vis: bool):
+        # set visibility of markers
+        # note: parent only deals with callbacks. not their visibility
+        if debug_vis:
+            # create markers if necessary for the first tome
+            if not hasattr(self, "goal_vel_visualizer"):
+                # -- goal
+                self.goal_vel_visualizer = VisualizationMarkers(self.cfg.goal_vel_visualizer_cfg)
+                # -- current
+                self.current_vel_visualizer = VisualizationMarkers(self.cfg.current_vel_visualizer_cfg)
+            # set their visibility to true
+            self.goal_vel_visualizer.set_visibility(True)
+            self.current_vel_visualizer.set_visibility(True)
+        else:
+            if hasattr(self, "goal_vel_visualizer"):
+                self.goal_vel_visualizer.set_visibility(False)
+                self.current_vel_visualizer.set_visibility(False)
+
+    def _debug_vis_callback(self, event):
+        # check if robot is initialized
+        # note: this is needed in-case the robot is de-initialized. we can't access the data
+        if not self.robot.is_initialized:
+            return
+        # get marker location
+        # -- base state
+        base_pos_w = self.robot.data.root_pos_w.clone()
+        base_pos_w[:, 2] += 0.5
+        # -- resolve the scales and quaternions
+        vel_des_arrow_scale, vel_des_arrow_quat = self._resolve_xy_velocity_to_arrow(self.command[:, :2])
+        vel_arrow_scale, vel_arrow_quat = self._resolve_xy_velocity_to_arrow(self.robot.data.root_lin_vel_b[:, :2])
+        # display markers
+        self.goal_vel_visualizer.visualize(base_pos_w, vel_des_arrow_quat, vel_des_arrow_scale)
+        self.current_vel_visualizer.visualize(base_pos_w, vel_arrow_quat, vel_arrow_scale)
+
+    """
+    Internal helpers.
+    """
+
+    def _resolve_xy_velocity_to_arrow(self, xy_velocity: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Converts the XY base velocity command to arrow direction rotation."""
+        # obtain default scale of the marker
+        default_scale = self.goal_vel_visualizer.cfg.markers["arrow"].scale
+        # arrow-scale
+        arrow_scale = torch.tensor(default_scale, device=self.device).repeat(xy_velocity.shape[0], 1)
+        arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity, dim=1) * 3.0
+        # arrow-direction
+        heading_angle = torch.atan2(xy_velocity[:, 1], xy_velocity[:, 0])
+        zeros = torch.zeros_like(heading_angle)
+        arrow_quat = math_utils.quat_from_euler_xyz(zeros, zeros, heading_angle)
+        # convert everything back from base to world frame
+        base_quat_w = self.robot.data.root_quat_w
+        arrow_quat = math_utils.quat_mul(base_quat_w, arrow_quat)
+
+        return arrow_scale, arrow_quat
 
 
 class NormalVelocityCommand(UniformVelocityCommand):

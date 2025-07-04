@@ -14,7 +14,7 @@ from omni.isaac.lab.utils import configclass
 from .null_command import NullCommand
 from .pose_2d_command import TerrainBasedPose2dCommand, UniformPose2dCommand
 from .pose_command import UniformPoseCommand
-from .velocity_command import NormalVelocityCommand, UniformVelocityCommand, Global3DUniformVelocityCommand
+from .velocity_command import NormalVelocityCommand, UniformVelocityCommand, Global3DUniformVelocityCommand, TerrainBasedPose2dBasedVelocityCommand
 
 
 @configclass
@@ -100,6 +100,30 @@ class Global3DUniformVelocityCommandCfg(UniformVelocityCommandCfg):
     """Configuration for the uniform velocity command generator."""
 
     class_type: type = Global3DUniformVelocityCommand
+    
+    
+@configclass
+class TerrainBasedPose2dBasedVelocityCommandCfg(UniformVelocityCommandCfg):
+    """Configuration for the target velocity command generator. Command vectors point towards a goal."""
+
+    class_type: type = TerrainBasedPose2dBasedVelocityCommand
+
+
+    @configclass
+    class Ranges:
+        """Uniform distribution ranges for the velocity commands."""
+
+        lin_vel_mag: tuple[float, float] = MISSING
+        """Range for the velocity magnitude command (in m/s)."""
+
+        ang_vel_z: tuple[float, float] = MISSING
+        """Range for the angular-z velocity command (in rad/s)."""
+
+        heading: tuple[float, float] | None = None
+        """Range for the heading command (in rad). Defaults to None.
+        This parameter is only used if :attr:`~TargetVelocityCommandCfg.heading_command` is True.
+        """
+
 
 @configclass
 class NormalVelocityCommandCfg(UniformVelocityCommandCfg):
