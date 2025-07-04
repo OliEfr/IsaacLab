@@ -62,6 +62,8 @@ def set_terrain(cfg):
         cfg.scene.height_scanner = None
         cfg.observations.policy.height_scan = None
     # TODO flat noisy
+    elif cfg.terrain_type == "flat_noisy":
+        raise ValueError(f"Untested.")
     else:
         raise ValueError(f"Unknown terrain type: {cfg.terrain_type}.")
 
@@ -169,3 +171,32 @@ def set_amp_settings(cfg):
             "motion_files": cfg.amp_motion_files,
         },
     )
+
+def remove_domain_randomization(cfg):
+    cfg.scene.robot.actuators["base_legs"].min_delay = 0
+    cfg.scene.robot.actuators["base_legs"].max_delay = 0
+    cfg.events.push_robot = None
+    cfg.events.add_base_mass.params["mass_distribution_params"] = (-2.0, 2.0)
+    cfg.events.reset_robot_joints.params["position_range"] = (0.9, 1.1)
+    cfg.events.reset_base.params = {
+        "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
+        "velocity_range": {
+            "x": (-0.2, 0.2),
+            "y": (-0.2, 0.2),
+            "z": (-0.2, 0.2),
+            "roll": (-0.2, 0.2),
+            "pitch": (-0.2, 0.2),
+            "yaw": (-0.2, 0.2),
+        },
+    }
+
+    cfg.events.physics_material.params["static_friction_range"] = (0.8, 0.8)
+    cfg.events.physics_material.params["dynamic_friction_range"] = (0.6, 0.6)
+    cfg.events.physics_material.params["restitution_range"] = (0.0, 0.0)
+    cfg.events.randomize_link_mass = None
+    cfg.events.actuator_gains = None
+    cfg.events.joint_limits = None
+
+    print("[INFO] Domain Randomization removed. Note that you can probably train with much lower max_iterations compared to when using Domain Randomization.")
+
+    assert not cfg.terrain_type == "flat_noisy", "flat_noisy is only for Domain Randomization."

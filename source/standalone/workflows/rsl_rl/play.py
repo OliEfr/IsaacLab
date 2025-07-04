@@ -179,6 +179,7 @@ def main():
     loaded_agent_cfg = yaml.load(f, Loader=yaml.FullLoader)
     f.close()
     
+    # Previous policies have been trained with different configuration.
     agent_cfg.policy.actor_hidden_dims = loaded_agent_cfg["policy"]["actor_hidden_dims"]
     agent_cfg.policy.critic_hidden_dims = loaded_agent_cfg["policy"]["critic_hidden_dims"]
 

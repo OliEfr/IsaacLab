@@ -48,7 +48,6 @@ class UnitreeGo2FlatEnvCfgComplexReward(UnitreeGo2FlatEnvCfgSimpleReward):
         super().__post_init__()
         
         parameters.set_rewards_complex(self)
-        pass
 
         
 

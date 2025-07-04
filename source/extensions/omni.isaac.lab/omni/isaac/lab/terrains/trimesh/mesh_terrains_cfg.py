@@ -61,13 +61,17 @@ class MeshStairsTerrainCfg(SubTerrainBaseCfg):
     """
     step_height_range: tuple[float, float] = MISSING
     """The minimum and maximum height of the steps (in m)."""
-    platform_width_top: float = 5.5
+    platform_width_top: float = 20
     """The width of the top platform."""
     platform_width_bottom: float = 5
     """The width of the bottom platform."""
     holes: bool = False
+    
     y_coordinate_origin_relative_to_first_stair_step: float = -0.5
     """The coordinate origin of each sub_terrain relative to the start position of the first stair step."""
+    
+    width_to_height_ratio: float = 34 / 14
+    """The ratio of the width to the height of the stairs. (34 / 14) is value for the stair where video demonstrations were collected."""
 
 
 @configclass

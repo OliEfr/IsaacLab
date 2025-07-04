@@ -154,7 +154,7 @@ def stairs_terrain(
     step_height = cfg.step_height_range[0] + difficulty * (
         cfg.step_height_range[1] - cfg.step_height_range[0]
     )
-    step_width = step_height * (34 / 14) # demo was collected for a stair of step height 14cm and step width 34 cm. We want to keep that ratio for all generated stairs.
+    step_width = step_height * cfg.width_to_height_ratio # demo was collected for a stair of step height 14cm and step width 34 cm. We want to keep that ratio for all generated stairs.
     
     terrain_params = {"step_height": step_height, "step_width": step_width}
 
@@ -163,7 +163,7 @@ def stairs_terrain(
 
     num_steps = int(available_y_for_stairs // step_width)
     print(f"[INFO] Generated Terrains with num_steps: {num_steps}, stair height: {step_height:.2f}, stair width: {step_width:.2f}")
-    assert num_steps > 4, "Generated low amount of stairs. Are you sure your terrain parameters are suitable?"
+    assert num_steps > 4, f"Generated low amount of stairs:  {num_steps}. Are you sure your terrain parameters are suitable?"
 
     # Add remaining y-space to top platform
     overflow = available_y_for_stairs - num_steps * step_width
