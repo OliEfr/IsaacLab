@@ -119,56 +119,40 @@ def set_rewards_complex(cfg):
 
 def set_stairs_env_cfg_cmds(cfg):
     cfg.commands.base_velocity = mdp.Global3DUniformVelocityCommandCfg(
-        asset_name="robot",
-        resampling_time_range=(10.0, 10.0), # Always keep that exactly 10.0, otherwise metric computation will be wrong. (It is wrong anyways if episodes terminate prematurely!)
-        rel_standing_envs=0.02,
-        rel_heading_envs=1.0,
-        heading_command=True,
-        heading_control_stiffness=0.5,
-        debug_vis=True,
-        # training
-        # ranges=mdp.UniformVelocityCommandCfg.Ranges(
-        #     lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
-        # ),
-        # https://arxiv.org/pdf/2203.15103 (AMP make good substitutes for reward function) uses (-1,2), (-0.3, 0.3), (-1.57, + 1.57)
-        # NOTE below target values are from AMP for hardware
+        # inherit parameters where possible
+        asset_name=cfg.commands.base_velocity.asset_name,
+        resampling_time_range=cfg.commands.base_velocity.resampling_time_range,
+        rel_standing_envs=cfg.commands.base_velocity.rel_standing_envs,
+        rel_heading_envs=cfg.commands.base_velocity.rel_heading_envs,
+        heading_command=cfg.commands.base_velocity.heading_command,
+        heading_control_stiffness=cfg.commands.base_velocity.heading_control_stiffness,
+        debug_vis=cfg.commands.base_velocity.debug_vis,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.1, 0.1), # AMP for hardware has here (-1.0, 2.0)
+            lin_vel_x=(-0.1, 0.1),
             lin_vel_y=(-0.5, 1.0),
             ang_vel_z=(0, 0),
-            heading=(math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)) # global heading "up the stairs" is in y direction, which is math.pi/2
+            heading=(
+                math.pi / 2 - math.radians(20),
+                math.pi / 2 + math.radians(20),
+            ),  # global heading "up the stairs" is in y direction, which is math.pi/2
         ),
     )
-    # cfg.commands.base_velocity = mdp.TerrainBasedPose2dBasedVelocityCommandCfg(
-    #     asset_name="robot",
-    #     resampling_time_range=(10.0, 10.0),
-    #     rel_standing_envs=0.0,
-    #     rel_heading_envs=1.0,
-    #     heading_command=True,
-    #     heading_control_stiffness=0.5,
-    #     debug_vis=True,
-    #     ranges=mdp.TerrainBasedPose2dBasedVelocityCommandCfg.Ranges(
-    #         lin_vel_mag=(0.0, 1.0),
-    #         ang_vel_z=(-1.0, 1.0),
-    #         heading=(math.pi / 2, math.pi / 2),
-    #     ),
-    # )
-    
-    
+
+
 def set_stairs_env_cfg_reset_base(cfg):
     cfg.events.reset_base.params["pose_range"] = {
                 "x": (-0.5, 0.5),
                 "y": (-0.1, 0.1),
                 "yaw": (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)),
             }
-    
+
 def add_relative_position_on_stairs_observation(cfg):
     cfg.observations.policy.relative_position_on_stairs = ObsTerm(func=mdp.relative_position_on_stairs)
 
 def add_stair_parameters_observation(cfg):
     cfg.observations.policy.stair_parameters = ObsTerm(func=mdp.stair_parameters)
-    
-    
+
+
 def set_amp_settings(cfg):
     cfg.amp_motion_folder = "datasets/fromVision_motions_3/*"
     cfg.amp_motion_files = glob.glob(cfg.amp_motion_folder)
@@ -185,4 +169,3 @@ def set_amp_settings(cfg):
             "motion_files": cfg.amp_motion_files,
         },
     )
-    
