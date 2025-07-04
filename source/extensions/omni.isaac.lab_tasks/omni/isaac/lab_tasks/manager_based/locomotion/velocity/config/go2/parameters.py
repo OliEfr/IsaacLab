@@ -8,6 +8,9 @@ from omni.isaac.lab.managers import SceneEntityCfg
 
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
+from omni.isaac.lab.managers import RewardTermCfg as RewTerm
+
+from omni.isaac.lab_tasks.manager_based.navigation.mdp.rewards import position_command_error_tanh, heading_command_error_abs
 
 ##
 # Pre-defined configs
@@ -15,6 +18,8 @@ from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
 from omni.isaac.lab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
 from omni.isaac.lab.terrains.config.flat_noisy import FLAT_TERRAINS_CFG  # isort: skip
 from omni.isaac.lab.terrains.config.stairs import STAIRS_TERRAINS_CFG  # isort: skip
+
+from omni.isaac.lab.terrains.config.box import BOX_TERRAINS_CFG  # isort: skip
 
 def set_play_settings_flat(cfg):
     cfg.scene.num_envs = 50
@@ -61,8 +66,14 @@ def set_terrain(cfg):
         cfg.scene.terrain.terrain_generator = STAIRS_TERRAINS_CFG
         cfg.scene.height_scanner = None
         cfg.observations.policy.height_scan = None
-    # TODO flat noisy
+        cfg.curriculum.terrain_levels = None
+    elif cfg.terrain_type == "box":
+        cfg.scene.terrain.terrain_generator = BOX_TERRAINS_CFG
+        cfg.scene.height_scanner = None
+        cfg.observations.policy.height_scan = None
+        cfg.curriculum.terrain_levels = None
     elif cfg.terrain_type == "flat_noisy":
+        # TODO
         raise ValueError(f"Untested.")
     else:
         raise ValueError(f"Unknown terrain type: {cfg.terrain_type}.")
@@ -141,6 +152,52 @@ def set_stairs_env_cfg_cmds(cfg):
     )
 
 
+def set_box_env_cfg_cmds(cfg):
+
+    # command
+    cfg.commands.base_velocity = None
+    # NOTE could add z height to command to guidance during learning
+    cfg.commands.pose_command = mdp.UniformPose2dCommandCfg(
+        asset_name="robot",
+        simple_heading=True,
+        resampling_time_range=(20.0, 20.0), # >= episode length = no resampling
+        debug_vis=True,
+        ranges=mdp.UniformPose2dCommandCfg.Ranges(
+            pos_x=(0.0, 0.0),
+            pos_y=(2.0, 2.0),
+            heading=(
+                math.pi / 2 - math.radians(20),
+                math.pi / 2 + math.radians(20),
+            ),  # global heading "up the stairs" is in y direction, which is math.pi/2
+        ),
+    )
+
+    # observation
+    cfg.observations.policy.velocity_commands = None
+    cfg.observations.policy.pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
+
+    # reward; omit orientation tracking for now
+    cfg.rewards.track_lin_vel_xy_exp = None
+    cfg.rewards.track_ang_vel_z_exp = None
+    cfg.rewards.position_tracking = RewTerm(
+        func=position_command_error_tanh,
+        weight=30,
+        params={"std": 2.0, "command_name": "pose_command"},
+    )
+    cfg.rewards.position_tracking_fine_grained = RewTerm(
+        func=position_command_error_tanh,
+        weight=30,
+        params={"std": 0.2, "command_name": "pose_command"},
+    )
+    cfg.rewards.orientation_tracking = RewTerm(
+        func=heading_command_error_abs,
+        weight=-20,
+        params={"command_name": "pose_command"},
+    )
+    
+    assert cfg.curriculum.terrain_levels == None, "Curriculum not supported for box environment as it is velocity dependent in the base environment config (vel_env_cfg.py)."
+
+
 def set_stairs_env_cfg_reset_base(cfg):
     cfg.events.reset_base.params["pose_range"] = {
                 "x": (-0.5, 0.5),
@@ -148,11 +205,24 @@ def set_stairs_env_cfg_reset_base(cfg):
                 "yaw": (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)),
             }
 
+def set_box_env_cfg_reset_base(cfg):
+    cfg.events.reset_base.params["pose_range"] = {
+                "x": (-0.5, 0.5),
+                "y": (-0.15, 0.15),
+                "yaw": (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)),
+            }
+
 def add_relative_position_on_stairs_observation(cfg):
     cfg.observations.policy.relative_position_on_stairs = ObsTerm(func=mdp.relative_position_on_stairs)
 
+def add_relative_position_to_box_observation(cfg):
+    cfg.observations.policy.relative_position_on_stairs = ObsTerm(func=mdp.relative_position_to_box)
+
 def add_stair_parameters_observation(cfg):
     cfg.observations.policy.stair_parameters = ObsTerm(func=mdp.stair_parameters)
+
+def add_box_parameters_observation(cfg):
+    cfg.observations.policy.box_parameters = ObsTerm(func=mdp.box_parameters)
 
 
 def set_amp_settings(cfg):

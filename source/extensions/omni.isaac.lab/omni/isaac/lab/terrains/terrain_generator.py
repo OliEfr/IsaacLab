@@ -141,16 +141,8 @@ class TerrainGenerator:
         # create a list of all sub-terrains
         self.terrain_meshes = list()
         self.terrain_origins = np.zeros((self.cfg.num_rows, self.cfg.num_cols, 3))
-        self.terrain_params = TensorDict(
-            {
-                "step_height": torch.zeros(
-                    (self.cfg.num_rows, self.cfg.num_cols), device=self.device
-                ),
-                "step_width": torch.zeros(
-                    (self.cfg.num_rows, self.cfg.num_cols), device=self.device
-                ),
-            }
-        )
+        # TensorDict for bookkeeping terrain parameters; will be populated later
+        self.terrain_params = TensorDict()
 
         # parse configuration and add sub-terrains
         # create terrains based on curriculum or randomly
@@ -232,8 +224,15 @@ class TerrainGenerator:
             self._add_sub_terrain(mesh, origin, sub_row, sub_col, sub_terrains_cfgs[sub_index])
             # bookkeeping of terrain parameters
             if terrain_params is not None:
-                self.terrain_params["step_height"][sub_row, sub_col] = terrain_params["step_height"]
-                self.terrain_params["step_width"][sub_row, sub_col] = terrain_params["step_width"]
+                for key in terrain_params.keys():
+                    # Create key if doesn't exist yet
+                    if not key in self.terrain_params:
+                        assert index == 0, "Only expect new keys at the first iteration."
+                        self.terrain_params[key] = torch.zeros(
+                            (self.cfg.num_rows, self.cfg.num_cols), device=self.device
+                        )
+                    # Populate values
+                    self.terrain_params[key][sub_row, sub_col] = terrain_params[key]
 
     def _generate_curriculum_terrains(self):
         """Add terrains based on the difficulty parameter."""

@@ -104,3 +104,10 @@ class UnitreeGo2StairsPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
     def __post_init__(self):
         super().__post_init__()
         self.experiment_name = "unitree_go2_Stairs" 
+        
+# This class only exists to provide self.experiment_name for logging.
+@configclass
+class UnitreeGo2BoxPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.experiment_name = "unitree_go2_Box" 

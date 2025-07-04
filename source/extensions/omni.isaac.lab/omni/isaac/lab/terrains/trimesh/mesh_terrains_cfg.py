@@ -68,7 +68,7 @@ class MeshStairsTerrainCfg(SubTerrainBaseCfg):
     holes: bool = False
     
     y_coordinate_origin_relative_to_first_stair_step: float = -0.5
-    """The coordinate origin of each sub_terrain relative to the start position of the first stair step."""
+    """The coordinate origin of each sub_terrain relative to the start position of the first stair step. This values determines how far in front of the first stair step the robot spawns. Must be negative."""
     
     width_to_height_ratio: float = 34 / 14
     """The ratio of the width to the height of the stairs. (34 / 14) is value for the stair where video demonstrations were collected."""
@@ -141,10 +141,14 @@ class MeshBoxTerrainCfg(SubTerrainBaseCfg):
 
     box_height_range: tuple[float, float] = MISSING
     """The minimum and maximum height of the box (in m)."""
-    platform_width: float = 1.0
+    platform_width: float = 2.0
     """The width of the square platform at the center of the terrain. Defaults to 1.0."""
     double_box: bool = False
     """If True, the pit contains two levels of stairs/boxes. Defaults to False."""
+    
+    y_coordinate_origin_relative_to_box_start: float = -0.6
+    """The coordinate origin of each sub_terrain relative to the start of the box in y-direction. This value determines how far in front of the box the robot spawns. Must be negative."""
+    
 
 
 @configclass

@@ -315,6 +315,7 @@ class Global3DUniformVelocityCommand(UniformVelocityCommand):
 
     @property
     def command(self) -> torch.Tensor:
+        # NOTE for deployment on hardware I also need to command global velocity.
         vel_command_3d_b = self.vel_command_b[..., :3]
         # rotate in world frame
         vel_command_3d_w = math_utils.quat_rotate_inverse(self.robot.data.root_quat_w, vel_command_3d_b)

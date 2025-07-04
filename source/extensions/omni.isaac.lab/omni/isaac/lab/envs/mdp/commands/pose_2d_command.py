@@ -57,7 +57,7 @@ class UniformPose2dCommand(CommandTerm):
         self.pos_command_b = torch.zeros_like(self.pos_command_w)
         self.heading_command_b = torch.zeros_like(self.heading_command_w)
         # -- metrics
-        self.metrics["error_pos"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["error_pos_2d"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["error_heading"] = torch.zeros(self.num_envs, device=self.device)
 
     def __str__(self) -> str:
@@ -80,6 +80,7 @@ class UniformPose2dCommand(CommandTerm):
     """
 
     def _update_metrics(self):
+        # TODO implement further metrics
         # logs data
         self.metrics["error_pos_2d"] = torch.norm(self.pos_command_w[:, :2] - self.robot.data.root_pos_w[:, :2], dim=1)
         self.metrics["error_heading"] = torch.abs(wrap_to_pi(self.heading_command_w - self.robot.data.heading_w))

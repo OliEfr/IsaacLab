@@ -241,3 +241,51 @@ gym.register(
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
     },
 )
+
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+gym.register(
+    id="Isaac-Velocity-Box-SimpleReward-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.box_env_cfg:UnitreeGo2BoxEnvCfgSimpleReward",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2BoxPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-Box-SimpleReward-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.box_env_cfg:UnitreeGo2BoxEnvCfgSimpleReward_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2BoxPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+gym.register(
+    id="Isaac-Velocity-Box-ComplexReward-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.box_env_cfg:UnitreeGo2BoxEnvCfgComplexReward",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2BoxPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-Box-ComplexReward-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.box_env_cfg:UnitreeGo2BoxEnvCfgComplexReward_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2BoxPPORunnerCfg",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
+    },
+)

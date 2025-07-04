@@ -9,10 +9,10 @@ import omni.isaac.lab.terrains as terrain_gen
 
 from ..terrain_generator_cfg import TerrainGeneratorCfg
 
-STAIRS_TERRAINS_CFG = TerrainGeneratorCfg(
+BOX_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(
-        15.0,
-        30.5,
+        7.0,
+        7.0,
     ),  # make it long enough to make sure robot doesn't fall down at end of platform (1ms * 20s = 20m)
     border_width=0.2,
     num_rows=10,
@@ -22,9 +22,8 @@ STAIRS_TERRAINS_CFG = TerrainGeneratorCfg(
     slope_threshold=0.75,  # not relevant, I think
     use_cache=False,
     sub_terrains={
-        "stairs": terrain_gen.MeshStairsTerrainCfg(
-            step_height_range=(0.08, 0.16),  # demo was done for step height 0.14
-            width_to_height_ratio=34 / 14,
+        "box": terrain_gen.MeshBoxTerrainCfg(
+            box_height_range=(0.001, 0.001),  # demo was done for step height 0.14
         )
     },
 )

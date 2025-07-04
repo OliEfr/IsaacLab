@@ -241,7 +241,7 @@ def stairs_terrain(
     origin = np.array(
         [
             bottom_platform_center[0],
-            cfg.platform_width_bottom + cfg.border_width + cfg.y_coordinate_origin_relative_to_first_stair_step,
+            cfg.platform_width_bottom + cfg.border_width + cfg.y_coordinate_origin_relative_to_first_stair_step, # NOTE when you change those values, you need to adapt the observation relative_position_on_stairs.
             bottom_platform_center[2] + step_height + 0.1, # some z offset so that I can use same spawn height as for flat terrain. TODO: should be fixed by lowering terrain as spawn height depends on step size.
         ]
     )
@@ -619,6 +619,8 @@ def box_terrain(
     """
     # resolve the terrain configuration
     box_height = cfg.box_height_range[0] + difficulty * (cfg.box_height_range[1] - cfg.box_height_range[0])
+    
+    terrain_params = {"box_height": box_height}
 
     # initialize list of meshes
     meshes_list = list()
@@ -632,11 +634,13 @@ def box_terrain(
 
     # Generate the top box
     dim = (cfg.platform_width, cfg.platform_width, terrain_height + total_height)
+    # center in terrain
     pos = (0.5 * cfg.size[0], 0.5 * cfg.size[1], (total_height - terrain_height) / 2)
     box_mesh = trimesh.creation.box(dim, trimesh.transformations.translation_matrix(pos))
     meshes_list.append(box_mesh)
     # Generate the lower box
     if cfg.double_box:
+        assert False, "Only use single box."
         # calculate the size of the lower box
         outer_box_x = cfg.platform_width + (cfg.size[0] - cfg.platform_width) * box_2_ratio
         outer_box_y = cfg.platform_width + (cfg.size[1] - cfg.platform_width) * box_2_ratio
@@ -652,9 +656,11 @@ def box_terrain(
     meshes_list.append(ground_mesh)
 
     # specify the origin of the terrain
-    origin = np.array([pos[0], pos[1], total_height])
+    # set origin right in front of the box
+    assert cfg.y_coordinate_origin_relative_to_box_start < 0, "This value should be negative, so that robot spawns in front of the box. -0.6 is a good value."
+    origin = np.array([pos[0], pos[1] - cfg.platform_width / 2 + cfg.y_coordinate_origin_relative_to_box_start, 0.0]) # NOTE when you change those values, you need to adapt the observation "relative_position_to_box".
 
-    return meshes_list, origin
+    return meshes_list, origin, terrain_params
 
 
 def gap_terrain(
