@@ -242,7 +242,7 @@ def set_amp_settings(cfg):
         },
     )
 
-def remove_domain_randomization(cfg):
+def disable_domain_randomization(cfg):
     cfg.scene.robot.actuators["base_legs"].min_delay = 0
     cfg.scene.robot.actuators["base_legs"].max_delay = 0
     cfg.events.push_robot = None
@@ -266,7 +266,9 @@ def remove_domain_randomization(cfg):
     cfg.events.randomize_link_mass = None
     cfg.events.actuator_gains = None
     cfg.events.joint_limits = None
+    
+    cfg.disable_domain_randomization = True
 
-    print("[INFO] Domain Randomization removed. Note that you can probably train with much lower max_iterations compared to when using Domain Randomization.")
+    print("[INFO] Domain Randomization disabled. Note that you can probably train with much lower max_iterations compared to when using Domain Randomization.")
 
     assert not cfg.terrain_type == "flat_noisy", "flat_noisy is only for Domain Randomization."
