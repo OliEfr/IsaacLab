@@ -73,6 +73,12 @@ parser.add_argument(
     default=None,
     help="Target yaw (ang_vel_z, note that this is actually yaw rate) for evaluation.",
 )
+parser.add_argument(
+    "--max_delay",
+    type=float,
+    default=None,
+    help="Target max_delay for evaluation. For Huawei experiments.",
+)
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -173,6 +179,11 @@ def main():
         env_cfg.commands.base_velocity.ranges.lin_vel_y = [args_cli.y_speed, args_cli.y_speed]
     if args_cli.yaw is not None:
         env_cfg.commands.base_velocity.ranges.ang_vel_z = [args_cli.yaw, args_cli.yaw]
+        
+    # overwrite actuator max_delay for HUAWEI experiments
+    if args_cli.max_delay is not None:
+        env_cfg.scene.robot.actuators['base_legs'].max_delay = int(args_cli.max_delay)
+        print(env_cfg.scene.robot.actuators['base_legs'].max_delay)
     
     # Load the stored agent config. We replace some parameters in agent_cfg with the stored values later in the code.
     f = open(os.path.join(log_dir, "params", "agent.yaml"))
@@ -471,7 +482,7 @@ def main():
         if env_cfg.is_amp_env:
             eval_episode_metrics["amp_motion_folder"] = env_cfg.amp_motion_folder
 
-        eval_metric_file_name = eval(eval_config.eval_metric_filename) # eval: allows for dynamic file naming which is convenient for logging
+        eval_metric_file_name = str(args_cli.max_delay) + "_" + eval(eval_config.eval_metric_filename) # eval: allows for dynamic file naming which is convenient for logging
         with open(os.path.join(eval_metric_folder, eval_metric_file_name), "w") as f:
             yaml.dump(eval_episode_metrics, f)
         print(f"Metrics: {eval_episode_metrics}")
