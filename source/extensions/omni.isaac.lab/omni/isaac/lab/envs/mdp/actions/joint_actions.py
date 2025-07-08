@@ -175,6 +175,43 @@ class RelativeJointPositionAction(JointAction):
         # set position targets
         self._asset.set_joint_position_target(current_actions, joint_ids=self._joint_ids)
 
+class ResidualJointPositionAction(JointAction):
+    r"""Joint action term that applies the processed actions to the articulation's joints as relative position commands.
+
+    Unlike :class:`JointPositionAction`, this action term applies the processed actions as relative position commands.
+    This means that the processed actions are added to the current joint positions of the articulation's joints
+    before being sent as position commands.
+
+    This means that the action applied at every step is:
+
+    .. math::
+
+         \text{applied action} = \text{current joint positions} + \text{processed actions}
+
+    where :math:`\text{current joint positions}` are the current joint positions of the articulation's joints.
+    """
+
+    cfg: actions_cfg.ResidualJointPositionActionCfg
+    """The configuration of the action term."""
+
+    def __init__(self, cfg: actions_cfg.ResidualJointPositionActionCfg, env: ManagerBasedEnv):
+        # initialize the action term
+        super().__init__(cfg, env)
+
+        # TODO: Replace hardcoded location
+        self.reference: torch.Tensor = torch.load(cfg.reference_motion_path)
+        self.reference = self.reference[:, 2, :].to(self.device)
+
+    def apply_actions(self):
+        t: float = self._env.unwrapped.sim.current_time
+        t = t - self.cfg.period * int(t / self.cfg.period)
+        it = int(t / self._env.unwrapped.step_dt)
+        # Get the reference action based on the time step
+        reference_action = self.reference[it % self.reference.shape[0], self._joint_ids]
+        # add current reference joint position to the processed actions
+        current_actions = self.processed_actions + reference_action
+        # set position targets
+        self._asset.set_joint_position_target(current_actions, joint_ids=self._joint_ids)
 
 class JointVelocityAction(JointAction):
     """Joint action term that applies the processed actions to the articulation's joints as velocity commands."""

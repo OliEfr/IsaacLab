@@ -18,12 +18,13 @@ from omni.isaac.lab.terrains.config.rough import STAIRS_TERRAINS_CFG
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.utils.math import quat_rotate_inverse
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
-from typing import Any
 import math
 
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
+    ActionsCfg,
     LocomotionVelocityRoughEnvCfg,
 )
+import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 
 ##
 # Pre-defined configs
@@ -83,8 +84,23 @@ class StairsSceneCfg(InteractiveSceneCfg):
 
 
 @configclass
+class ResidualActionsCfg:
+    """Action specifications for the MDP."""
+
+    # TODO: Replace hard coded path
+    joint_pos = mdp.ResidualJointPositionActionCfg(
+        asset_name="robot",
+        joint_names=[".*"],
+        scale=0.25,
+        period=10.0,
+        reference_motion_path="/home/filip/Documents/oil/logs/rsl_rl/unitree_go2_flat/test_SEED_58/RecordJposEpisodeTargetVelocityEvaluation/x_1.0_y_0.0_yaw_0.0.th",
+    )
+
+
+@configclass
 class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
-    terrain_type: str | Any = MISSING
+    terrain_type: str = MISSING
+    action_type: str = "joint_pos"
 
     def __make_run_fast__(self):
         """Make the simulation run fast when rendering."""
@@ -170,6 +186,19 @@ class UnitreeGo2BaseEnvCfg(LocomotionVelocityRoughEnvCfg):
     def __post_init__(self):
         assert self.terrain_type != MISSING
         super().__post_init__()
+
+        if self.action_type == "joint_pos":
+            self.actions = ActionsCfg()
+            self.observations.policy.periodic_time = None
+        elif self.action_type == "residual_pos":
+            self.actions = ResidualActionsCfg()
+            self.observations.policy.periodic_time = ObsTerm(
+                func=mdp.periodic_time, params={"period": 10.0}
+            )
+
+        else:
+            raise ValueError(f"Unknown action type `{self.action_type}`")
+
         # self.__make_run_fast__()
         self.__init_terrain__()
         self.__init_reward__()

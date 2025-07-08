@@ -66,6 +66,19 @@ class RelativeJointPositionActionCfg(JointActionCfg):
     If True, this flag results in overwriting the values of :attr:`offset` to zero.
     """
 
+@configclass
+class ResidualJointPositionActionCfg(JointActionCfg):
+    """Configuration for the relative joint position action term.
+
+    See :class:`RelativeJointPositionAction` for more details.
+    """
+
+    class_type: type[ActionTerm] = joint_actions.ResidualJointPositionAction
+
+    reference_motion_path: str = MISSING
+
+    period: float = MISSING
+    """Period of the reference motion in seconds."""
 
 @configclass
 class JointVelocityActionCfg(JointActionCfg):

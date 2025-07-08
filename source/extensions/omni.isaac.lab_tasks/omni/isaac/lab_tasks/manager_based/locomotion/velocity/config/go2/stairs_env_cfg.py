@@ -171,6 +171,7 @@ class AMPUnitreeGo2StairsEnvCfg_PLAY(AMPUnitreeGo2StairsEnvCfg):
 @configclass
 class UnitreeGo2StairsComplexRewardEnvCfg(UnitreeGo2FlatEnvCfgComplexReward):
     terrain_type: str = "stairs"
+    action_type: str = "residual_pos"
     commands = TopOfStairsCommandsCfg()
 
     def __init_reward__(self):
@@ -198,9 +199,11 @@ class UnitreeGo2StairsComplexRewardEnvCfg(UnitreeGo2FlatEnvCfgComplexReward):
         # self.rewards.feet_air_time.weight = (
         #     7.5  # consider reducing this to 7.5 if performance on task reward is bad
         # )
-        # self.rewards.undesired_contacts_thigh.weight = -1.0
-        # self.rewards.undesired_contacts_calf.weight = -1.0
-        # self.rewards.contact_forces.weight = -1.0
+
+        # self.rewards.undesired_contacts_thigh.weight = -0.1
+        # self.rewards.undesired_contacts_calf.weight = -0.1
+        # self.rewards.contact_forces.weight = -0.1
+
         # self.rewards.flat_orientation_l2.weight = -0.01
 
         # Tracking

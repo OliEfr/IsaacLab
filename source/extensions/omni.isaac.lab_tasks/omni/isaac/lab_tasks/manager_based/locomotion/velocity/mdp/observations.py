@@ -53,3 +53,34 @@ def base_pos(
         return encoded_yaw
     else:
         return torch.cat([env_pos, encoded_yaw], dim=-1)
+
+
+def distance_to_next_step(
+    env: ManagerBasedEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    sinusoidal_encoding=None,
+    use_env_frame=True,
+    only_yaw=False,
+) -> torch.Tensor:
+    raise NotImplementedError()
+
+
+def is_on_stairs(
+    env: ManagerBasedEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    sinusoidal_encoding=None,
+    use_env_frame=True,
+    only_yaw=False,
+) -> torch.Tensor:
+    raise NotImplementedError()
+
+
+def periodic_time(env: ManagerBasedEnv, period: float = 10.0) -> torch.Tensor:
+    t: float = env.unwrapped.sim.current_time
+    t = t - period * int(t / period)
+    # Return a tensor of shape (N, 1) with the time in seconds, where N is the number of environments
+    # Repeat the time value for each environment
+    time_tensor = torch.full(
+        (env.unwrapped.num_envs, 1), t, device=env.unwrapped.scene.device
+    )
+    return time_tensor
