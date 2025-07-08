@@ -121,6 +121,7 @@ class ActionsCfg:
     """Action specifications for the MDP."""
 
     joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    # joint_res_pos = mdp.RelativeJointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5)
 
     # joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=10.0) # torque control; also change Go2 config actuator damping and stiffness to 0.0!
 
@@ -158,6 +159,9 @@ class ObservationsCfg:
         # phases
         phases = None
 
+        periodic_time = ObsTerm(func=mdp.periodic_time, params={"period": 10.0})
+        # distance_to_next_step = ObsTerm(func=mdp.distance_to_next_step)
+        # is_on_stairs = ObsTerm(func=mdp.is_on_stairs)
 
         def __post_init__(self):
             self.enable_corruption = True
