@@ -3,11 +3,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import glob
+
 from omni.isaac.lab.utils import configclass
 
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
+from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
+import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
+
 
 from . import parameters
+from . import residual_rl_data
 
 #######################################################################
 # Stairs simple reward
@@ -36,7 +42,7 @@ class UnitreeGo2StairsEnvCfgSimpleReward_PLAY(UnitreeGo2StairsEnvCfgSimpleReward
 
         parameters.set_play_settings_flat(self)
         parameters.set_play_settings_rough(self)
-        
+
 #######################################################################
 # Stairs complex reward
 
@@ -62,4 +68,51 @@ class UnitreeGo2StairsEnvCfgComplexReward_PLAY(UnitreeGo2StairsEnvCfgComplexRewa
 #######################################################################
 # Stairs AMP
 
-# TODO AMP
+@configclass
+class AMPUnitreeGo2StairsEnvCfg(LocomotionVelocityRoughEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+        
+        self.terrain_type = "stairs"
+        parameters.set_terrain(self)
+        parameters.set_stairs_env_cfg_cmds(self)
+        parameters.set_stairs_env_cfg_reset_base(self)
+        parameters.add_relative_position_on_stairs_observation(self)
+        parameters.add_stair_parameters_observation(self)
+
+
+        parameters.set_velocity_rewards_amp(self)
+
+        self.scene.num_envs = 2 * 4096  # 5480
+
+        # style
+        self.action_manager_class = "ActionManager"  # Default action manager
+
+        parameters.set_amp_settings(self)
+        # update motion files
+        self.amp_motion_folder = "datasets/fromVision_motions_DepthCamStairs/*"
+        self.amp_motion_files = glob.glob(self.amp_motion_folder)
+        
+        
+    
+    def update_motion_files(self):
+        motion_files = glob.glob(self.amp_motion_folder)
+        self.amp_motion_files = motion_files
+
+        assert (
+            self.events.reference_state_initialization is not None
+        ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
+        self.events.reference_state_initialization.params["motion_files"] = motion_files
+
+
+@configclass
+class AMPUnitreeGo2StairsEnvCfg_PLAY(AMPUnitreeGo2StairsEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+
+        parameters.set_play_settings_flat(self)
+        parameters.set_play_settings_rough(self)
+
+        self.amp_motion_folder = "datasets/dummy/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training

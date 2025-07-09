@@ -26,7 +26,6 @@ class UnitreeGo2FlatEnvCfgSimpleReward(LocomotionVelocityRoughEnvCfg):
         self.terrain_type = "flat"
         parameters.set_terrain(self)
         parameters.set_rewards_simple(self)
-        pass
 
 @configclass
 class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
@@ -35,7 +34,6 @@ class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
         super().__post_init__()
 
         parameters.set_play_settings_flat(self)
-        pass
 
 
 #######################################################################
@@ -73,9 +71,7 @@ class AMPUnitreeGo2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.terrain_type = "flat"
         parameters.set_terrain(self)
 
-        self.is_amp_env: bool = True
-
-        parameters.set_rewards_amp(self)
+        parameters.set_velocity_rewards_amp(self)
 
         self.scene.num_envs = 2 * 4096  # 5480
 
@@ -84,7 +80,6 @@ class AMPUnitreeGo2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         parameters.set_amp_settings(self)
     
-        
     def update_motion_files(self):
         motion_files = glob.glob(self.amp_motion_folder)
         self.amp_motion_files = motion_files
@@ -93,7 +88,6 @@ class AMPUnitreeGo2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
             self.events.reference_state_initialization is not None
         ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
         self.events.reference_state_initialization.params["motion_files"] = motion_files
-
 
 
 @configclass

@@ -7,8 +7,11 @@
 
 from __future__ import annotations
 
+import yaml
+import json
 import inspect
 import torch
+import numpy as np
 import weakref
 from abc import abstractmethod
 from collections.abc import Sequence
@@ -22,8 +25,8 @@ from omni.isaac.lab.assets import AssetBase
 from .manager_base import ManagerBase, ManagerTermBase
 from .manager_term_cfg import ActionTermCfg
 
-import yaml
-import json
+
+from rsl_rl.datasets.motion_loader import AMPLoader
 
 if TYPE_CHECKING:
     from omni.isaac.lab.envs import ManagerBasedEnv
@@ -713,7 +716,7 @@ class LegwiseLatentActionManager(ActionManager):
     @property
     def prev_amps(self) -> torch.Tensor:
         return self._prev_amps
-    
+
 class PhaseActionManager(ActionManager):
     """Extends the standard action manager with a phase. This is a misuse of the action manager, but convenient as the action manager is called every env step."""
 
@@ -745,7 +748,7 @@ class PhaseActionManager(ActionManager):
 
         self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
 
-        # reset phases for envs where episode length is 0; possible not required, as its handled by reset method of this class
+        # reset phases for envs where episode length is 0; possibly not required, as its handled by reset method of this class
         self.phases[torch.where(self._env.episode_length_buf == 0, True, False)] = (
             0.0
         )
@@ -780,7 +783,74 @@ class PhaseActionManager(ActionManager):
     @property
     def freqs(self) -> torch.Tensor:
         return self._freqs
-    
+
+class ResidualRLActionManager(PhaseActionManager):
+    def __init__(self, cfg: object, env: ManagerBasedEnv):
+        super().__init__(cfg, env)
+
+        assert hasattr(env.cfg, "residual_rl_data"), "Expected a motion file to be provided for residual RL action manager."
+
+        with open(env.cfg.residual_rl_data["motion_file"], "r") as f:
+            motion_json = json.load(f)
+            motion_data = np.array(motion_json["Frames"])
+            motion_data = AMPLoader.reorder_from_pybullet_to_isaac_lab(motion_data)
+        self.reference_jpos = AMPLoader.get_joint_pose_batch(motion_data)[
+            env.cfg.residual_rl_data["start_frame"] : env.cfg.residual_rl_data[
+                "end_frame"
+            ],
+            :,
+        ]
+        self.reference_jpos = torch.tensor(self.reference_jpos, device=self.device)
+        self.num_frames = self.reference_jpos.shape[0]
+
+        self._freqs[:] = 2.0 # Hz
+
+    def process_action(self, action: torch.Tensor):
+        # Dont inherit from base class as it checks for action dimensionality, and this is not correct for inheriting classes that change the actions
+        assert action.shape[1] == self.robot_action_dim
+
+        # store the input actions
+        self._prev_action[:] = self._action
+        self._action[:] = action.to(self.device)
+
+        # freq dependent phase
+        self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
+        
+        # reset phases for envs where episode length is 0; possibly not required, as its handled by reset method of this class
+        self.phases[torch.where(self._env.episode_length_buf == 0, True, False)] = (
+            0.0
+        )
+        # perform linear interpolation between two frames
+        unscaled_index = (self.phases / (2 * torch.pi)) * self.num_frames
+        idx0 = torch.floor(unscaled_index).long() % self.num_frames
+        idx1 = (idx0 + 1) % self.num_frames
+        alpha = (unscaled_index - torch.floor(unscaled_index)).unsqueeze(-1)
+        pos0 = self.reference_jpos[idx0]
+        pos1 = self.reference_jpos[idx1]
+        interpolated_reference_jpos = torch.lerp(
+            input=pos0, end=pos1, weight=alpha.to(pos0.dtype)
+        ).squeeze()
+
+        # sin cos phase for observations
+        self.sin_cos_phases = torch.cat(
+            (
+                torch.sin(self.phases),
+                torch.cos(self.phases),
+            ),
+            dim=1,
+        ) 
+
+        # split the actions and apply to each tensor
+        idx = 0
+        for term in self._terms.values():
+            assert list(self._terms.keys()) == ["joint_pos"], "Only joint_pos action supported."
+            term_actions = action[:, idx : idx + term.action_dim]
+            # we treat residual RL as time-varying offset for actuator target commands
+            term._offset = interpolated_reference_jpos
+            term.process_actions(term_actions)
+            idx += term.action_dim
+
+
 class LegwisePhaseActionManager(ActionManager):
     """Extends the standard action manager with a phase for each leg. This is a misuse of the action manager, but convenient as the action manager is called every env step."""
 
@@ -926,7 +996,7 @@ class InterpolatedStyleActionManager(LegwisePhaseActionManager):
     @property
     def jvel_ref(self) -> torch.Tensor:
         return self._jvel_ref
-    
+
 class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
     """This action manager extends the base class by making the frequency of the phase learnable."""
 
@@ -989,15 +1059,14 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
     def action_term_dim(self) -> list[int]:
         """Shape of each action term."""
         return [self.robot_action_dim + self.latent_action_dim] # This is queried by the policy to get output dimension. Its seems save to modify this variable.
-    
-   
-  
+
+
 # class StyleActionManager(PhaseActionManager):
 #     """Extends the PhaseActionManager to return a style to the current point in time. No interpolation implemented!"""
 
 #     def __init__(self, cfg: object, env: ManagerBasedEnv):
 #         raise NotImplementedError("This class is not yet implemented")
-        
+
 #         super().__init__(cfg, env)
 
 #         expert_data = "gait_cycle_data_5.json"
@@ -1012,7 +1081,6 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
 #             expert_metadata = yaml.safe_load(file)
 
 #         self._freqs = torch.full((self.num_envs, 1), expert_metadata["Learned frequency expert"],device=self.device) # set expert frequency
-
 
 
 #     def process_action(self, action: torch.Tensor):
@@ -1048,4 +1116,3 @@ class FrequencyInterpolatedStyleActionManager(InterpolatedStyleActionManager):
 #     @property
 #     def freqs(self) -> torch.Tensor:
 #         return self._freqs
-

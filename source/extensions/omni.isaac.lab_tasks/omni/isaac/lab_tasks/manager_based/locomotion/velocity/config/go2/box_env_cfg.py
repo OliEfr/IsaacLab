@@ -2,6 +2,7 @@
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
+import glob
 
 from omni.isaac.lab.utils import configclass
 
@@ -40,7 +41,7 @@ class UnitreeGo2BoxEnvCfgSimpleReward_PLAY(UnitreeGo2BoxEnvCfgSimpleReward):
         parameters.set_play_settings_rough(self)
         
 #######################################################################
-# Stairs complex reward
+# Box complex reward
 
 @configclass
 class UnitreeGo2BoxEnvCfgComplexReward(UnitreeGo2BoxEnvCfgSimpleReward):
@@ -63,6 +64,51 @@ class UnitreeGo2BoxEnvCfgComplexReward_PLAY(UnitreeGo2BoxEnvCfgComplexReward):
         parameters.set_play_settings_rough(self)
 
 #######################################################################
-# Stairs AMP
+# Box AMP
 
-# TODO AMP
+@configclass
+class AMPUnitreeGo2BoxEnvCfg(LocomotionVelocityRoughEnvCfg):
+    def __post_init__(self):
+        
+        # post init of parent
+        super().__post_init__()
+        
+        self.terrain_type = "box"
+        
+        parameters.set_terrain(self)
+        parameters.set_box_env_cfg_reset_base(self)
+        parameters.add_relative_position_to_box_observation(self)
+        parameters.add_box_parameters_observation(self)
+        parameters.set_box_env_cfg_cmds(self) # calling this last is the savest way
+        
+        parameters.set_pose2d_rewards_amp(self)
+
+        self.scene.num_envs = 2 * 4096  # 5480
+
+        # style
+        self.action_manager_class = "ActionManager"  # Default action manager
+
+        parameters.set_amp_settings(self)
+        assert False, "No correct motion files exist yet."
+    
+    def update_motion_files(self):
+        motion_files = glob.glob(self.amp_motion_folder)
+        self.amp_motion_files = motion_files
+
+        assert (
+            self.events.reference_state_initialization is not None
+        ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
+        self.events.reference_state_initialization.params["motion_files"] = motion_files
+
+
+@configclass
+class AMPUnitreeGo2BoxEnvCfg_PLAY(AMPUnitreeGo2BoxEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+
+        parameters.set_play_settings_flat(self)
+        parameters.set_play_settings_rough(self)
+
+        self.amp_motion_folder = "datasets/dummy/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training
+

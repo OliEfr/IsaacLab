@@ -89,12 +89,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     
     # Update motion files, and check if they are equal in env and agent config
     if env_cfg.is_amp_env:
+        # Agent and environment always require the same motion folder. Thus, we update the agent config motion folder to always match the environment config motion folder.
+        agent_cfg.amp_motion_folder = env_cfg.amp_motion_folder
+        
         env_cfg.update_motion_files()
         agent_cfg.update_motion_files()
         
+        # Legacy; will always yield true
         assert env_cfg.amp_motion_files == agent_cfg.amp_motion_files, f"Motion files in env and agent config should be the same, but got {env_cfg.amp_motion_files} and {agent_cfg.amp_motion_files}."
         
-        print(f"Using the following AMP motion files: {env_cfg.amp_motion_files}")
+        print(f"[INFO] Using the following AMP motion files: {env_cfg.amp_motion_files}")
     
     # override configurations with non-hydra CLI arguments
     agent_cfg = cli_args.update_rsl_rl_cfg(agent_cfg, args_cli)

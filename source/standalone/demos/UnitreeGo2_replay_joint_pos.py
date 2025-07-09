@@ -53,9 +53,8 @@ UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity=True
 robot_z_offset = 0.5 # avoid ground floor penetration (might prevent ground collision forces)
 
 # Recorded jpos path
-recording_path = "datasets/fromVision_motions_DepthCamStairs/stairs_3_5339749000_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
-
-
+recording_path = "datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/walk_869488000_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+freq=1 # replay frequency in Hz for the recorded trajectory
 
 
 def define_origins(num_origins: int, spacing: float) -> list[list[float]]:
@@ -103,7 +102,7 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
     # Define simulation stepping
     sim_dt = sim.get_physics_dt()
     count = 0
-    
+
     for index, robot in enumerate(entities.values()):
         # root state
         root_state = robot.data.default_root_state.clone()
@@ -114,27 +113,48 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
         robot.write_joint_state_to_sim(joint_pos, joint_vel)
         # reset the internal state
         robot.reset()
-    
+
+    freq = torch.tensor(freq, device=sim.device)
+    phase = torch.tensor(0.0, device=sim.device)
+    num_frames = torch.tensor(jpos.shape[0], device=sim.device)
+
     # Simulate physics
     while simulation_app.is_running():
-        count = count % jpos.shape[0]
+        start_time = time.time()
+
+        # freq dependent phase
+        phase = phase + sim_dt * 2 * torch.pi * freq
         
+        # perform linear interpolation between two frames
+        unscaled_index = (phase / (2 * torch.pi)) * num_frames
+        idx0 = torch.floor(unscaled_index).long() % num_frames
+        idx1 = (idx0 + 1) % num_frames
+        alpha = (unscaled_index - torch.floor(unscaled_index)).unsqueeze(-1)
+        pos0 = jpos[idx0]
+        pos1 = jpos[idx1]
+        interpolated_jpos = torch.lerp(
+            input=pos0, end=pos1, weight=alpha.to(pos0.dtype)
+        )
+
         # apply states to the robot
         for robot in entities.values():
-            # robot.set_joint_position_target(jpos[count])
-            joint_state = jpos[count]
+            joint_state = interpolated_jpos #jpos[count % num_frames]
             robot.write_joint_state_to_sim(joint_state, torch.zeros_like(joint_state))
-            root_state = torch.cat((root_pos[count], root_rot[count])).unsqueeze(0)
+            root_state = torch.cat((root_pos[0], root_rot[0])).unsqueeze(0)
             root_state[:, 2] += robot_z_offset
             robot.write_root_pose_to_sim(root_state)
         # perform step
         sim.step()
-        # update sim-time
-        count += 1
-        time.sleep(record_dt-sim_dt)
+
         # update buffers
         for robot in entities.values():
             robot.update(sim_dt)
+
+        print(f"Frame: {count % num_frames}")
+        sleep_duration = sim_dt - (time.time() - start_time)
+        if sleep_duration >  0: 
+            time.sleep(sleep_duration)
+        count += 1
 
 
 def main():
@@ -175,7 +195,7 @@ def main():
     
     assert recording_dt == 0.03334 or recording_dt == 0.01667 or recording_dt == 0.021 # should be 30Hz (video) or 60Hz (mocap)
     
-    recording_dt *= 3 if recording_dt == 0.01667 else 3 # slow down a little
+    # recording_dt *= 5 if recording_dt == 0.01667 else 5 # slow down a little
     
     
     # Now we are ready!

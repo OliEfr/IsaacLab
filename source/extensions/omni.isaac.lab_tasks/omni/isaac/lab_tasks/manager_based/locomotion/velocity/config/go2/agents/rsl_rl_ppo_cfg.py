@@ -88,7 +88,6 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         
     def update_motion_files(self):
         motion_files = glob.glob(self.amp_motion_folder)
-
         self.amp_motion_files = motion_files
         
 # This class only exists to provide self.experiment_name for logging.
@@ -97,6 +96,20 @@ class UnitreeGo2AMPNoisyFlatPPORunnerCfg(UnitreeGo2AMPFlatPPORunnerCfg):
     def __post_init__(self):
         super().__post_init__()
         self.experiment_name = "unitree_go2_AMPNoisyflat" 
+        
+# This class only exists to provide self.experiment_name for logging.
+@configclass
+class UnitreeGo2AMPStairsPPORunnerCfg(UnitreeGo2AMPFlatPPORunnerCfg):
+        def __post_init__(self):
+            super().__post_init__()
+            self.experiment_name = "unitree_go2_AMPStairs" 
+            
+# This class only exists to provide self.experiment_name for logging.
+@configclass
+class UnitreeGo2AMPBoxPPORunnerCfg(UnitreeGo2AMPFlatPPORunnerCfg):
+        def __post_init__(self):
+            super().__post_init__()
+            self.experiment_name = "unitree_go2_AMPBox" 
         
 # This class only exists to provide self.experiment_name for logging.
 @configclass

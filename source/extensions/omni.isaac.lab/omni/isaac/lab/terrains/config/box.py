@@ -23,7 +23,7 @@ BOX_TERRAINS_CFG = TerrainGeneratorCfg(
     use_cache=False,
     sub_terrains={
         "box": terrain_gen.MeshBoxTerrainCfg(
-            box_height_range=(0.001, 0.001),  # demo was done for step height 0.14
+            box_height_range=(0.1, 0.3),  # demo was done for step height 0.14
         )
     },
 )

@@ -95,11 +95,13 @@ def set_rewards_simple(cfg):
     )
 
 
-def set_rewards_amp(cfg):
+def set_velocity_rewards_amp(cfg):
     # disable rewards
     for field in fields(cfg.rewards):
         reward_obj = getattr(cfg.rewards, field.name)
-        reward_obj.weight = 0.0
+        # we need to check this because some reward terms might have been deleted previously depending on the environment and task
+        if reward_obj is not None:
+            reward_obj.weight = 0.0
 
     # set only task reward
     cfg.rewards.track_lin_vel_xy_exp.weight = 60
@@ -108,6 +110,19 @@ def set_rewards_amp(cfg):
     cfg.rewards.track_lin_vel_xy_exp.params["std"] = (
         0.22  # TODO should this be ang_vel?
     )
+
+def set_pose2d_rewards_amp(cfg):
+    # disable rewards
+    for field in fields(cfg.rewards):
+        reward_obj = getattr(cfg.rewards, field.name)
+        # we need to check this because some reward terms might have been deleted previously depending on the environment and task
+        if reward_obj is not None:
+            reward_obj.weight = 0.0
+
+    # set only task reward
+    cfg.rewards.orientation_tracking.weight = -20
+    cfg.rewards.position_tracking.weight = 30
+    cfg.rewards.position_tracking_fine_grained.weight = 30
 
 
 def set_rewards_complex(cfg):
@@ -216,7 +231,7 @@ def add_relative_position_on_stairs_observation(cfg):
     cfg.observations.policy.relative_position_on_stairs = ObsTerm(func=mdp.relative_position_on_stairs)
 
 def add_relative_position_to_box_observation(cfg):
-    cfg.observations.policy.relative_position_on_stairs = ObsTerm(func=mdp.relative_position_to_box)
+    cfg.observations.policy.relative_position_to_box = ObsTerm(func=mdp.relative_position_to_box)
 
 def add_stair_parameters_observation(cfg):
     cfg.observations.policy.stair_parameters = ObsTerm(func=mdp.stair_parameters)
@@ -226,6 +241,8 @@ def add_box_parameters_observation(cfg):
 
 
 def set_amp_settings(cfg):
+    cfg.is_amp_env = True
+    
     cfg.amp_motion_folder = "datasets/fromVision_motions_3/*"
     cfg.amp_motion_files = glob.glob(cfg.amp_motion_folder)
 

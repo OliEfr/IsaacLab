@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import math
+import torch
 from dataclasses import MISSING
 
 from omni.isaac.lab.envs.mdp.rewards import joint_deviation_l1, joint_pos_limits, applied_torque_limits
@@ -403,6 +404,7 @@ class TerminationsCfg:
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="base"), "threshold": 1.0},
     )
+    bad_orientation = DoneTerm(func=mdp.bad_orientation, params={"limit_angle": torch.pi/2})
     # joint_pos_out_of_limits = DoneTerm(
     #     func=mdp.joint_pos_out_of_limit,
     #     params={"asset_cfg": SceneEntityCfg("robot")}
