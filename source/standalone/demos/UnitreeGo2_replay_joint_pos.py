@@ -20,7 +20,9 @@ import argparse
 from omni.isaac.lab.app import AppLauncher
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="This script demonstrates different legged robots.")
+parser = argparse.ArgumentParser(
+    description="This script demonstrates different legged robots."
+)
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -43,18 +45,37 @@ import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.assets import Articulation
 
 from rsl_rl.datasets.motion_loader import AMPLoader
+from rsl_rl.utils import utils
+
+from omni.isaac.lab.terrains.config.stairs import STAIRS_TERRAINS_CFG  # isort:skip
+from omni.isaac.lab.terrains import TerrainImporter, TerrainImporterCfg
+
+from scipy.spatial.transform import Rotation as R
 
 ##
 # Pre-defined configs
 ##
 
 from omni.isaac.lab_assets.unitree import UNITREE_GO2_CFG  # isort:skip
-UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity=True
-robot_z_offset = 0.5 # avoid ground floor penetration (might prevent ground collision forces)
+
+UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity = True
+robot_z_offset = (
+    0.5  # avoid ground floor penetration (might prevent ground collision forces)
+)
+scene = "flat"
+trajectory_z_rot = 0  # degree
 
 # Recorded jpos path
-recording_path = "datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl/walk_869488000_amp.txt" # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
-freq=1 # replay frequency in Hz for the recorded trajectory
+recording_path = "datasets/fromVision_motions_DepthCamStairs/stairs_1_5199540000_amp.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+freq = 0.2  # replay frequency in Hz for the recorded trajectory
+
+
+def quat_isaac_to_scipy(quat):
+    return np.array([quat[1], quat[2], quat[3], quat[0]])
+
+
+def quat_scipy_to_isaac(quat):
+    return np.array([quat[3], quat[0], quat[1], quat[2]])
 
 
 def define_origins(num_origins: int, spacing: float) -> list[list[float]]:
@@ -64,9 +85,15 @@ def define_origins(num_origins: int, spacing: float) -> list[list[float]]:
     # create a grid of origins
     num_cols = np.floor(np.sqrt(num_origins))
     num_rows = np.ceil(num_origins / num_cols)
-    xx, yy = torch.meshgrid(torch.arange(num_rows), torch.arange(num_cols), indexing="xy")
-    env_origins[:, 0] = spacing * xx.flatten()[:num_origins] - spacing * (num_rows - 1) / 2
-    env_origins[:, 1] = spacing * yy.flatten()[:num_origins] - spacing * (num_cols - 1) / 2
+    xx, yy = torch.meshgrid(
+        torch.arange(num_rows), torch.arange(num_cols), indexing="xy"
+    )
+    env_origins[:, 0] = (
+        spacing * xx.flatten()[:num_origins] - spacing * (num_rows - 1) / 2
+    )
+    env_origins[:, 1] = (
+        spacing * yy.flatten()[:num_origins] - spacing * (num_cols - 1) / 2
+    )
     env_origins[:, 2] = robot_z_offset
     # return the origins
     return env_origins.tolist()
@@ -88,7 +115,9 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     # Origin with Unitree Go2
     prim_utils.create_prim("/World/Origin1", "Xform", translation=origins[0])
     # -- Robot
-    unitree_go2 = Articulation(UNITREE_GO2_CFG.replace(prim_path="/World/Origin1/Robot"))
+    unitree_go2 = Articulation(
+        UNITREE_GO2_CFG.replace(prim_path="/World/Origin1/Robot")
+    )
 
     # return the scene information
     scene_entities = {
@@ -97,26 +126,83 @@ def design_scene() -> tuple[dict, list[list[float]]]:
     return scene_entities, origins
 
 
-def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articulation], origins: torch.Tensor, jpos: torch.Tensor, root_pos: torch.Tensor, root_rot: torch.Tensor, record_dt: float = 0.0):
+def design_stairs_scene() -> tuple[dict, list[list[float]]]:
+    """Designs the scene."""
+    # Lights
+    cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
+    cfg.func("/World/Light", cfg)
+
+    terrain_cfg = STAIRS_TERRAINS_CFG
+    terrain_cfg.num_rows = 1
+    terrain_cfg.num_cols = 1
+    terrain_cfg.sub_terrains["stairs"].step_height_range = (0.14, 0.14)
+
+    # Handler for terrains importing
+    terrain_importer_cfg = TerrainImporterCfg(
+        num_envs=1,
+        env_spacing=3.0,
+        prim_path="/World/ground",
+        max_init_terrain_level=None,
+        terrain_type="generator",
+        terrain_generator=terrain_cfg,
+        debug_vis=True,
+    )
+    terrain_importer = TerrainImporter(terrain_importer_cfg)
+
+    # Origin with Unitree Go2
+    prim_utils.create_prim(
+        "/World/Origin1", "Xform", translation=terrain_importer.env_origins[0]
+    )
+    # -- Robot
+    unitree_go2 = Articulation(
+        UNITREE_GO2_CFG.replace(prim_path="/World/Origin1/Robot")
+    )
+
+    # return the scene information
+    scene_entities = {
+        "unitree_go2": unitree_go2,
+        "terrain": terrain_importer,
+    }
+    return scene_entities, terrain_importer.env_origins
+
+
+def run_simulator(
+    sim: sim_utils.SimulationContext,
+    entities: dict[str, Articulation],
+    origins: torch.Tensor,
+    motion_data: torch.Tensor = None,
+):
     """Runs the simulation loop."""
     # Define simulation stepping
     sim_dt = sim.get_physics_dt()
     count = 0
+    global freq
+    global_trajectory_rot = R.from_euler("z", trajectory_z_rot, degrees=True)
+    global_trajectory_rot_matrix = torch.tensor(
+        global_trajectory_rot.as_matrix(), dtype=torch.float32, device=sim.device
+    )
+
+    motion_data = torch.tensor(motion_data, device=sim.device)
 
     for index, robot in enumerate(entities.values()):
+        if not isinstance(robot, Articulation):
+            continue
         # root state
         root_state = robot.data.default_root_state.clone()
         root_state[:, :3] += origins[index]
         robot.write_root_state_to_sim(root_state)
         # joint state
-        joint_pos, joint_vel = robot.data.default_joint_pos.clone(), robot.data.default_joint_vel.clone()
+        joint_pos, joint_vel = (
+            robot.data.default_joint_pos.clone(),
+            robot.data.default_joint_vel.clone(),
+        )
         robot.write_joint_state_to_sim(joint_pos, joint_vel)
         # reset the internal state
         robot.reset()
 
     freq = torch.tensor(freq, device=sim.device)
     phase = torch.tensor(0.0, device=sim.device)
-    num_frames = torch.tensor(jpos.shape[0], device=sim.device)
+    num_frames = torch.tensor(motion_data.shape[0], device=sim.device)
 
     # Simulate physics
     while simulation_app.is_running():
@@ -124,84 +210,115 @@ def run_simulator(sim: sim_utils.SimulationContext, entities: dict[str, Articula
 
         # freq dependent phase
         phase = phase + sim_dt * 2 * torch.pi * freq
-        
+
         # perform linear interpolation between two frames
         unscaled_index = (phase / (2 * torch.pi)) * num_frames
         idx0 = torch.floor(unscaled_index).long() % num_frames
         idx1 = (idx0 + 1) % num_frames
         alpha = (unscaled_index - torch.floor(unscaled_index)).unsqueeze(-1)
-        pos0 = jpos[idx0]
-        pos1 = jpos[idx1]
-        interpolated_jpos = torch.lerp(
-            input=pos0, end=pos1, weight=alpha.to(pos0.dtype)
+
+        pos_start = AMPLoader.get_root_pos(motion_data[idx0])
+        pos_end = AMPLoader.get_root_pos(motion_data[idx1])
+        rot_start = AMPLoader.get_root_rot(motion_data[idx0])
+        rot_end = AMPLoader.get_root_rot(motion_data[idx1])
+        jpos_start = AMPLoader.get_joint_pose(motion_data[idx0])
+        jpos_end = AMPLoader.get_joint_pose(motion_data[idx1])
+
+        pos_interpolated = AMPLoader.slerp(pos_start, pos_end, alpha)
+        rot_interpolated = utils.quaternion_slerp(rot_start, rot_end, alpha)
+        jpos_interpolated = AMPLoader.slerp(jpos_start, jpos_end, alpha)
+        pos_interpolated_relative_to_origin = pos_interpolated - AMPLoader.get_root_pos(
+            motion_data[0]
         )
 
         # apply states to the robot
-        for robot in entities.values():
-            joint_state = interpolated_jpos #jpos[count % num_frames]
-            robot.write_joint_state_to_sim(joint_state, torch.zeros_like(joint_state))
-            root_state = torch.cat((root_pos[0], root_rot[0])).unsqueeze(0)
-            root_state[:, 2] += robot_z_offset
+        for index, robot in enumerate(entities.values()):
+            if not isinstance(robot, Articulation):
+                continue
+            robot.write_joint_state_to_sim(
+                jpos_interpolated, torch.zeros_like(jpos_interpolated)
+            )
+
+            # Rotate trajectory (pos)
+            pos_rotated = torch.matmul(
+                global_trajectory_rot_matrix.float(),
+                pos_interpolated_relative_to_origin.float(),
+            ).squeeze(-1)
+
+            # Rotate trajectory (rot)
+            rot_combined = global_trajectory_rot * R.from_quat(
+                quat_isaac_to_scipy(rot_interpolated.cpu().numpy())
+            )
+            rot_combined_quat = torch.tensor(
+                quat_scipy_to_isaac(rot_combined.as_quat()), device=sim.device
+            )
+
+            # Combine new root pose
+            root_state = torch.cat(
+                [
+                    (pos_rotated + origins[index]).unsqueeze(0),
+                    rot_combined_quat.unsqueeze(0),
+                ],
+                dim=-1,
+            )
+            # root_state[:, 2] += robot_z_offset
             robot.write_root_pose_to_sim(root_state)
         # perform step
         sim.step()
 
         # update buffers
         for robot in entities.values():
+            if not isinstance(robot, Articulation):
+                continue
             robot.update(sim_dt)
 
         print(f"Frame: {count % num_frames}")
         sleep_duration = sim_dt - (time.time() - start_time)
-        if sleep_duration >  0: 
+        if sleep_duration > 0:
             time.sleep(sleep_duration)
         count += 1
 
 
 def main():
     """Main function."""
-    
+
     global recording_path
-    
+
     # Initialize the simulation context
     sim = sim_utils.SimulationContext(sim_utils.SimulationCfg(dt=0.01))
     # Set main camera
     sim.set_camera_view(eye=[2.5, 2.5, 2.5], target=[0.0, 0.0, 0.0])
     # design scene
-    scene_entities, scene_origins = design_scene()
+    if scene == "stairs":
+        scene_entities, scene_origins = design_stairs_scene()
+    else:
+        scene_entities, scene_origins = design_scene()
     scene_origins = torch.tensor(scene_origins, device=sim.device)
     # Play the simulator
     sim.reset()
-    
-    
 
     with open(recording_path, "r") as f:
         motion_json = json.load(f)
         motion_data = np.array(motion_json["Frames"])
         motion_data = AMPLoader.reorder_from_pybullet_to_isaac_lab(motion_data)
-    jpos = AMPLoader.get_joint_pose_batch(motion_data)
-    root_pos = AMPLoader.get_root_pos_batch(motion_data)
-    root_rot = AMPLoader.get_root_rot_batch(motion_data)
+    
     lin_vel = AMPLoader.get_linear_vel_batch(motion_data)
-    
-    jpos = torch.tensor(jpos, device=sim.device)
-    root_pos = torch.tensor(root_pos, device=sim.device)
-    root_rot = torch.tensor(root_rot, device=sim.device)
     lin_vel = torch.tensor(lin_vel, device=sim.device)
-    
     mean_speed = torch.norm(lin_vel, dim=1).mean().item()
     print(f"[INFO]: Mean speed of the robot: {mean_speed:.2f} m/s")
-    
+
     recording_dt = float(motion_json["FrameDuration"])
-    
-    assert recording_dt == 0.03334 or recording_dt == 0.01667 or recording_dt == 0.021 # should be 30Hz (video) or 60Hz (mocap)
-    
+
+    assert (
+        recording_dt == 0.03334 or recording_dt == 0.01667 or recording_dt == 0.021
+    )  # should be 30Hz (video) or 60Hz (mocap)
+
     # recording_dt *= 5 if recording_dt == 0.01667 else 5 # slow down a little
-    
-    
+
     # Now we are ready!
     print("[INFO]: Setup complete...")
     # Run the simulator
-    run_simulator(sim, scene_entities, scene_origins, jpos, root_pos, root_rot, recording_dt)
+    run_simulator(sim, scene_entities, scene_origins, motion_data)
 
 
 if __name__ == "__main__":

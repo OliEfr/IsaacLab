@@ -116,6 +116,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         env_cfg.action_manager_class
     )
     
+    if not agent_cfg.policy.vel_dependent_actor_latent_dim == 0:
+        assert (
+            list(env_cfg.observations.policy.__dict__.items())[4][0]
+            == "velocity_commands"
+            and list(env_cfg.observations.policy.__dict__.items())[2][0]
+            == "base_lin_vel"
+            and list(env_cfg.observations.policy.__dict__.items())[3][0]
+            == "base_ang_vel"
+        ), "Found obs terms at wrong position. It must be on the correct position for the ActorFreq!"
+    
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
     log_root_path = os.path.abspath(log_root_path)

@@ -145,7 +145,7 @@ def main():
     if args_cli.evaluate:
         PLAY_EPISODE_LENGTH = eval_config.play_episode_length  # s
         PLAY_EPISODES_PER_ENV = eval_config.play_episodes_per_env # int
-       
+
         env_cfg = eval_config.set_env_cfg(env_cfg)
 
         # run some checks
@@ -179,17 +179,17 @@ def main():
         env_cfg.commands.base_velocity.ranges.lin_vel_y = [args_cli.y_speed, args_cli.y_speed]
     if args_cli.yaw is not None:
         env_cfg.commands.base_velocity.ranges.ang_vel_z = [args_cli.yaw, args_cli.yaw]
-        
+
     # overwrite actuator max_delay for HUAWEI experiments
     if args_cli.max_delay is not None:
         env_cfg.scene.robot.actuators['base_legs'].max_delay = int(args_cli.max_delay)
         print(env_cfg.scene.robot.actuators['base_legs'].max_delay)
-    
+
     # Load the stored agent config. We replace some parameters in agent_cfg with the stored values later in the code.
     f = open(os.path.join(log_dir, "params", "agent.yaml"))
     loaded_agent_cfg = yaml.load(f, Loader=yaml.FullLoader)
     f.close()
-    
+
     # Previous policies have been trained with different configuration.
     agent_cfg.policy.actor_hidden_dims = loaded_agent_cfg["policy"]["actor_hidden_dims"]
     agent_cfg.policy.critic_hidden_dims = loaded_agent_cfg["policy"]["critic_hidden_dims"]
@@ -220,7 +220,17 @@ def main():
             env_cfg.action_manager_class
         )
     )
-    
+
+    if not agent_cfg.policy.vel_dependent_actor_latent_dim == 0:
+        assert (
+            list(env_cfg.observations.policy.__dict__.items())[4][0]
+            == "velocity_commands"
+            and list(env_cfg.observations.policy.__dict__.items())[2][0]
+            == "base_lin_vel"
+            and list(env_cfg.observations.policy.__dict__.items())[3][0]
+            == "base_ang_vel"
+        ), "Found obs terms at wrong position. It must be on the correct position for the ActorFreq!"
+
     if args_cli.evaluate:
         eval_config.run_checks(env_cfg=env_cfg, args_cli=args_cli)
 
@@ -315,33 +325,33 @@ def main():
     simulated_step_time = env.unwrapped.step_dt
 
     ###### Debug correspondance of target speeds with freq ######
-    if hasattr(policy.actor, "actor_freq"):
-        x_speeds = torch.arange(-1.0, 2.0 + 0.1, 0.1)
-        target_cmds = torch.stack(
-            [torch.tensor([x, 0.0, 0.0] * 5) for x in x_speeds]
-        ).to(args_cli.device)
-        freq = (
-            torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
-            * env.unwrapped.action_manager.range_main_freq
-            + env.unwrapped.action_manager.mean_main_freq
-        )  # main_freq * scaling + offset
-        for x_speed, frequency in zip(x_speeds, freq):
-            print(f"x speed {x_speed:+.4f}: {frequency:+.4f} Hz")
+    # if hasattr(policy.actor, "actor_freq"):
+    #     x_speeds = torch.arange(-1.0, 2.0 + 0.1, 0.1)
+    #     target_cmds = torch.stack(
+    #         [torch.tensor([x, 0.0, 0.0] * 5) for x in x_speeds]
+    #     ).to(args_cli.device)
+    #     freq = (
+    #         torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
+    #         * env.unwrapped.action_manager.range_freq
+    #         + env.unwrapped.action_manager.mean_freq
+    #     )  # main_freq * scaling + offset
+    #     for x_speed, frequency in zip(x_speeds, freq):
+    #         print(f"x speed {x_speed:+.4f}: {frequency:+.4f} Hz")
 
-        print("######")
+    #     print("######")
 
-        y_speeds = torch.arange(-1.0, 1.0 + 0.1, 0.1)
-        target_cmds = torch.stack(
-            [torch.tensor([0.0, y, 0.0] * 5) for y in y_speeds]
-        ).to(args_cli.device)
-        freq = (
-            torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
-            * env.unwrapped.action_manager.range_main_freq
-            + env.unwrapped.action_manager.mean_main_freq
-        )  # main_freq * scaling + offset
-        for x_speed, frequency in zip(y_speeds, freq):
-            print(f"y speed {x_speed:+.4f}: {frequency:+.4f} Hz")
-        print("######")
+    #     y_speeds = torch.arange(-1.0, 1.0 + 0.1, 0.1)
+    #     target_cmds = torch.stack(
+    #         [torch.tensor([0.0, y, 0.0] * 5) for y in y_speeds]
+    #     ).to(args_cli.device)
+    #     freq = (
+    #         torch.clamp(policy.actor.actor_freq(target_cmds)[:, 0], -1.0, 1.0)
+    #         * env.unwrapped.action_manager.range_freq
+    #         + env.unwrapped.action_manager.mean_freq
+    #     )  # main_freq * scaling + offset
+    #     for x_speed, frequency in zip(y_speeds, freq):
+    #         print(f"y speed {x_speed:+.4f}: {frequency:+.4f} Hz")
+    #     print("######")
     ###### ###################### ######
 
     if args_cli.evaluate:
@@ -353,7 +363,7 @@ def main():
             * PLAY_EPISODE_LENGTH
             / env.unwrapped.step_dt
         )
-        
+
         if args_cli.evaluate:
             jpos_log = torch.zeros(
                 (
