@@ -264,16 +264,17 @@ def disable_domain_randomization(cfg):
     cfg.scene.robot.actuators["base_legs"].max_delay = 0
     cfg.events.push_robot = None
     cfg.events.add_base_mass.params["mass_distribution_params"] = (-2.0, 2.0)
-    cfg.events.reset_robot_joints.params["position_range"] = (0.9, 1.1)
+    if cfg.events.reset_robot_joints is not None: # its None for AMP
+        cfg.events.reset_robot_joints.params["position_range"] = (0.9, 1.1)
     cfg.events.reset_base.params = {
         "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
         "velocity_range": {
-            "x": (-0.2, 0.2),
-            "y": (-0.2, 0.2),
-            "z": (-0.2, 0.2),
-            "roll": (-0.2, 0.2),
-            "pitch": (-0.2, 0.2),
-            "yaw": (-0.2, 0.2),
+            "x": (-0.0, 0.0),
+            "y": (-0.0, 0.0),
+            "z": (-0.0, 0.0),
+            "roll": (-0.0, 0.0),
+            "pitch": (-0.0, 0.0),
+            "yaw": (-0.0, 0.0),
         },
     }
 
