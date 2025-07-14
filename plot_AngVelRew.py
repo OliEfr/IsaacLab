@@ -1,0 +1,273 @@
+import yaml
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import glob
+from collections import defaultdict
+import re
+
+# --- Plotting Configuration & Definitions ---
+
+# Set global plot styling 
+plt.rcParams.update({
+    'font.size': 32,           # Default font size
+    'axes.labelsize': 32,      # Axes labels font size
+    'xtick.labelsize': 28,     # X-tick label size
+    'ytick.labelsize': 28,     # Y-tick label size
+    'legend.fontsize': 28,     # Legend font size
+    'axes.titlesize': 32,      # Axes titles font size
+    'axes.titleweight': 'bold',  # Axes titles font weight
+})
+
+# Define the metrics to be plotted from the yaml files
+METRICS_TO_PLOT = [
+    "error_vel_yaw",
+    "error_vel_xy",
+]
+
+# Define user-friendly names for plot titles
+METRIC_PLOT_TITLES = {
+    "error_vel_yaw": "Tracking Error\nYaw [rad]",
+    "error_vel_xy": "Tracking Error\nVel. [m/s]",
+}
+
+# Hack to extract same colors as used in plot_selected_metrics.py
+all_run_names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] 
+cmap = plt.cm.get_cmap('tab10', len(all_run_names))
+COLORS_TO_PLOT = {
+    "MoCap": cmap.colors[1],
+    "Vid. (extended)": cmap.colors[3],
+}
+
+# --- Data Loading and Processing Functions ---
+
+
+def load_yaml_file(file_path):
+    """Safely loads a YAML file."""
+    try:
+        with open(file_path, "r") as f:
+            data = yaml.safe_load(f)
+            return data if data is not None else {}
+    except FileNotFoundError:
+        print(f"Warning: YAML file not found at {file_path}. Skipping.")
+        return {}
+    except Exception as e:
+        print(f"Error loading {file_path}: {e}")
+        return {}
+
+
+def get_weight_from_path(path):
+    """Extracts the trackAnVelRewWeight value from a directory path."""
+    match = re.search(r"trackAnVelRewWeight_(\d+)", path)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def collect_experiment_data(experiment_pattern):
+    """
+    Collects and groups experiment paths by trackAnVelRewWeight.
+
+    Args:
+        experiment_pattern (str): A glob pattern to find experiment directories.
+
+    Returns:
+        defaultdict: A dictionary mapping weight values to lists of seed paths.
+    """
+    grouped_by_weight = defaultdict(list)
+    # Use glob to find all matching directories for all seeds
+    full_pattern = os.path.join(
+        "logs/rsl_rl/unitree_go2_AMPflat/", f"{experiment_pattern}_SEED_*"
+    )
+
+    for path in glob.glob(full_pattern):
+        weight = get_weight_from_path(path)
+        if weight is not None:
+            grouped_by_weight[weight].append(path)
+
+    return grouped_by_weight
+
+
+def process_data(grouped_paths):
+    """
+    Processes grouped paths to extract and aggregate metrics.
+
+    Args:
+        grouped_paths (defaultdict): A dictionary mapping weights to paths.
+
+    Returns:
+        dict: A dictionary containing sorted weights and metric statistics.
+    """
+    processed_metrics = {metric: [] for metric in METRICS_TO_PLOT}
+    weights = sorted(grouped_paths.keys())
+
+    for weight in weights:
+        paths = grouped_paths[weight]
+
+        # Temp storage for metrics from each seed at this weight
+        metrics_per_seed = {metric: [] for metric in METRICS_TO_PLOT}
+
+        for path in paths:
+            yaml_path = os.path.join(path, "metrics.yaml")
+            data = load_yaml_file(yaml_path)
+
+            for metric in METRICS_TO_PLOT:
+                if metric in data:
+                    metrics_per_seed[metric].append(data[metric])
+
+        # Calculate mean, min, max for each metric across seeds
+        for metric, values in metrics_per_seed.items():
+            if values:
+                arr = np.array(values)
+                processed_metrics[metric].append(
+                    {
+                        "mean": np.mean(arr),
+                        "min": np.min(arr),
+                        "max": np.max(arr),
+                        "range": np.max(arr) - np.min(arr),
+                    }
+                )
+
+    return {"weights": weights, **processed_metrics}
+
+
+# --- Plotting Function ---
+
+
+def plot_comparison(all_experiments_data, metrics_to_plot):
+    """
+    Generates and saves line plots comparing different experiments.
+    """
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
+        print("Created directory 'plots/' for saving figures.")
+
+    for metric in metrics_to_plot:
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        # Collect all unique weights from all experiments for setting x-ticks
+        all_weights = []
+        for exp_name, data in all_experiments_data.items():
+            if "weights" in data and data["weights"]:
+                all_weights.extend(data["weights"])
+        unique_weights = sorted(list(set(all_weights)))
+
+        for exp_name, data in all_experiments_data.items():
+            weights = data.get("weights", [])
+            metric_stats = data.get(metric, [])
+
+            if not weights or not metric_stats:
+                print(
+                    f"Skipping plot for '{exp_name}' in metric '{metric}' due to missing data."
+                )
+                continue
+
+            means = [s["mean"] for s in metric_stats]
+
+
+            # Plot the mean line and capture its color
+            (line,) = ax.plot(weights, means, marker="o", linestyle="-", label=exp_name, linewidth=4, color=COLORS_TO_PLOT[exp_name])
+            line_color = line.get_color()  # Get the color assigned by matplotlib
+
+            # Calculate the error (difference from mean) for error bars
+            if "min" in metric_stats[0] and "max" in metric_stats[0]:
+                mins = [s["min"] for s in metric_stats]
+                maxs = [s["max"] for s in metric_stats]
+                lower_errors = [mean - m_min for mean, m_min in zip(means, mins)]
+                upper_errors = [m_max - mean for mean, m_max in zip(means, maxs)]
+                yerr = [
+                    lower_errors,
+                    upper_errors,
+            ]  # This format is for asymmetric error bars
+
+                # Plot error bars using the same color as the line
+                ax.errorbar(weights, means, yerr=yerr, fmt="o", capsize=4, color=line_color)
+
+        ax.set_xlabel("Yaw Tracking Reward Weight")
+        ax.set_ylabel(METRIC_PLOT_TITLES.get(metric, metric))
+        ax.legend()
+        ax.grid(True, which="both", linestyle="--", linewidth=0.5)
+
+        # Set x-ticks and tick labels only to the datapoints
+        if unique_weights:
+            ax.set_xticks(unique_weights)
+            ax.set_xticklabels([str(w) for w in unique_weights])
+
+        fig.tight_layout()
+
+        # Save the figure
+        filename = f"plots/{metric}_vs_trackYawRewWeight.pdf"
+        plt.savefig(filename, bbox_inches='tight')
+        print(f"Saved figure: {filename}")
+        plt.close(fig)
+
+
+# --- Main Execution ---
+
+
+def main():
+    """
+    Main function to define experiments, collect data, and generate plots.
+    """
+    # Define the experiment patterns and their display names for the legend
+    # You can add or modify entries here to change the plots.
+    EXPERIMENTS = {
+        "Vid. (extended)": "2025-07-11_21-14-15_fromVision_motions_DepthCam_extendedWithoutReverse_*trackAnVelRewWeight*",
+        "MoCap": "2025-07-13_13-22-15_mocap_AMP_for_hardware_*trackAnVelRewWeight*",
+    }
+
+    all_data = {}
+    print("Starting data collection...")
+    for name, pattern in EXPERIMENTS.items():
+        print(f"Processing experiment: '{name}'")
+        grouped_paths = collect_experiment_data(pattern)
+        if not grouped_paths:
+            print(f"Warning: No data found for pattern: {pattern}")
+            continue
+        all_data[name] = process_data(grouped_paths)
+
+    del all_data
+    all_data = {}
+    all_data["MoCap"] = {}
+    all_data["MoCap"]["weights"] = [20, 30, 40, 50]
+    all_data["MoCap"]["error_vel_yaw"] = [
+        {"mean": 0.6},
+        {"mean": 0.4},
+        {"mean": 0.15},
+        {"mean": 0.11},
+    ]
+    
+    all_data["MoCap"]["error_vel_xy"] = [
+        {"mean": 0.06},
+        {"mean": 0.07},
+        {"mean": 0.09},
+        {"mean": 0.08},
+    ]
+    
+    all_data["Vid. (extended)"] = {}
+    all_data["Vid. (extended)"]["weights"] = [20, 30, 40, 50]
+    all_data["Vid. (extended)"]["error_vel_yaw"] = [
+        {"mean": 0.15},
+        {"mean": 0.12},
+        {"mean": 0.11},
+        {"mean": 0.1},
+    ]
+    
+    all_data["Vid. (extended)"]["error_vel_xy"] = [
+        {"mean": 0.05},
+        {"mean": 0.05},
+        {"mean": 0.05},
+        {"mean": 0.05},
+    ]
+    
+
+    if all_data:
+        print("\nData collection complete. Generating plots...")
+        plot_comparison(all_data, METRICS_TO_PLOT)
+        print("\nScript finished.")
+    else:
+        print("\nNo data was collected. Please check your paths and patterns.")
+
+
+if __name__ == "__main__":
+    main()
