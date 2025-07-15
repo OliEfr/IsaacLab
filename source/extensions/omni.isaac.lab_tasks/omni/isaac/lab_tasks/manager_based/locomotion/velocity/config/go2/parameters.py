@@ -129,16 +129,16 @@ def set_rewards_complex(cfg):
     cfg.rewards.lin_vel_z_l2.weight = -2.0
     cfg.rewards.ang_vel_xy_l2.weight = -0.05
     cfg.rewards.dof_torques_l2.weight = -0.0002
-    cfg.rewards.dof_acc_l2.weight = -2.5e-7
+    cfg.rewards.dof_acc_l2.weight = -2.5e-7  # do not use for ResRL
     cfg.rewards.action_rate_l2.weight = -0.01
     cfg.rewards.feet_air_time.weight = (
-        10  # consider reducing this to 7.5 if performance on task reward is bad
+        10  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
     )
     cfg.rewards.undesired_contacts_thigh.weight = -1.0
     cfg.rewards.undesired_contacts_calf.weight = -1.0
     cfg.rewards.contact_forces.weight = -1.0
     cfg.rewards.flat_orientation_l2.weight = -0.01
-    cfg.rewards.joint_pos_limits.weight = -10.0
+    cfg.rewards.joint_pos_limits.weight = -10.0 # do not use for ResRL
     cfg.rewards.torque_limits.weight = -1.0e-5
     cfg.rewards.joint_deviation_l1.weight = (
         -0.75

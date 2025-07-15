@@ -48,6 +48,7 @@ from rsl_rl.datasets.motion_loader import AMPLoader
 from rsl_rl.utils import utils
 
 from omni.isaac.lab.terrains.config.stairs import STAIRS_TERRAINS_CFG  # isort:skip
+from omni.isaac.lab.terrains.config.box import BOX_TERRAINS_CFG  # isort:skip
 from omni.isaac.lab.terrains import TerrainImporter, TerrainImporterCfg
 
 from scipy.spatial.transform import Rotation as R
@@ -59,15 +60,25 @@ from scipy.spatial.transform import Rotation as R
 from omni.isaac.lab_assets.unitree import UNITREE_GO2_CFG  # isort:skip
 
 UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity = True
-robot_z_offset = (
-    0.5  # avoid ground floor penetration (might prevent ground collision forces)
-)
-scene = "flat"
-trajectory_z_rot = 0  # degree
+
+scene = "box"
+
+robot_local_offset = torch.tensor([0, 0, 0.3], device="cuda") # this is default from unitree.py
+if scene == "stairs":
+    trajectory_z_rot = 90  # degree
+    robot_local_offset = torch.tensor([-1.0, -1.0, 0.5], device="cuda")
+elif scene == "flat":
+    trajectory_z_rot = 0  # degree
+    robot_local_offset = torch.tensor([-1.0, -1.0, 0.5], device="cuda")
+elif scene == "box":
+    trajectory_z_rot = 90  # degree
+    robot_local_offset = torch.tensor([0, 0, 0.25], device="cuda")
+else:
+    raise Exception("Unknown scene: {}".format(scene))
 
 # Recorded jpos path
-recording_path = "datasets/fromVision_motions_DepthCamStairs/stairs_1_5199540000_amp.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
-freq = 0.2  # replay frequency in Hz for the recorded trajectory
+recording_path = "datasets/fromVision_motions_DepthCam_obstacle/obstacle_2_3126098000_amp.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+freq = 2  # replay frequency in Hz for the recorded trajectory
 
 
 def quat_isaac_to_scipy(quat):
@@ -94,8 +105,8 @@ def define_origins(num_origins: int, spacing: float) -> list[list[float]]:
     env_origins[:, 1] = (
         spacing * yy.flatten()[:num_origins] - spacing * (num_cols - 1) / 2
     )
-    env_origins[:, 2] = robot_z_offset
     # return the origins
+    env_origins[:, :] += robot_local_offset.unsqueeze(0).cpu()
     return env_origins.tolist()
 
 
@@ -163,8 +174,48 @@ def design_stairs_scene() -> tuple[dict, list[list[float]]]:
         "unitree_go2": unitree_go2,
         "terrain": terrain_importer,
     }
+
     return scene_entities, terrain_importer.env_origins
 
+def design_box_scene() -> tuple[dict, list[list[float]]]:
+    """Designs the scene."""
+    # Lights
+    cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
+    cfg.func("/World/Light", cfg)
+
+    terrain_cfg = BOX_TERRAINS_CFG
+    terrain_cfg.num_rows = 1
+    terrain_cfg.num_cols = 1
+    terrain_cfg.sub_terrains["box"].box_height_range = (0.3, 0.3)
+
+    # Handler for terrains importing
+    terrain_importer_cfg = TerrainImporterCfg(
+        num_envs=1,
+        env_spacing=3.0,
+        prim_path="/World/ground",
+        max_init_terrain_level=None,
+        terrain_type="generator",
+        terrain_generator=terrain_cfg,
+        debug_vis=True,
+    )
+    terrain_importer = TerrainImporter(terrain_importer_cfg)
+
+    # Origin with Unitree Go2
+    prim_utils.create_prim(
+        "/World/Origin1", "Xform", translation=terrain_importer.env_origins[0]
+    )
+    # -- Robot
+    unitree_go2 = Articulation(
+        UNITREE_GO2_CFG.replace(prim_path="/World/Origin1/Robot")
+    )
+
+    # return the scene information
+    scene_entities = {
+        "unitree_go2": unitree_go2,
+        "terrain": terrain_importer,
+    }
+
+    return scene_entities, terrain_importer.env_origins
 
 def run_simulator(
     sim: sim_utils.SimulationContext,
@@ -225,24 +276,25 @@ def run_simulator(
         jpos_end = AMPLoader.get_joint_pose(motion_data[idx1])
 
         pos_interpolated = AMPLoader.slerp(pos_start, pos_end, alpha)
+        pos_interpolated += origins[0] # move robot to terrain origin (should be indexed by 0)
         rot_interpolated = utils.quaternion_slerp(rot_start, rot_end, alpha)
         jpos_interpolated = AMPLoader.slerp(jpos_start, jpos_end, alpha)
-        pos_interpolated_relative_to_origin = pos_interpolated - AMPLoader.get_root_pos(
-            motion_data[0]
-        )
+        # pos_interpolated_relative_to_origin = pos_interpolated - AMPLoader.get_root_pos(
+        #     motion_data[0]
+        # )
 
         # apply states to the robot
         for index, robot in enumerate(entities.values()):
             if not isinstance(robot, Articulation):
                 continue
             robot.write_joint_state_to_sim(
-                jpos_interpolated, torch.zeros_like(jpos_interpolated)
+                jpos_interpolated.clone(), torch.zeros_like(jpos_interpolated)
             )
 
             # Rotate trajectory (pos)
             pos_rotated = torch.matmul(
                 global_trajectory_rot_matrix.float(),
-                pos_interpolated_relative_to_origin.float(),
+                pos_interpolated.float(),
             ).squeeze(-1)
 
             # Rotate trajectory (rot)
@@ -252,16 +304,15 @@ def run_simulator(
             rot_combined_quat = torch.tensor(
                 quat_scipy_to_isaac(rot_combined.as_quat()), device=sim.device
             )
-
+            
             # Combine new root pose
             root_state = torch.cat(
                 [
-                    (pos_rotated + origins[index]).unsqueeze(0),
+                    (pos_rotated + robot_local_offset).unsqueeze(0),
                     rot_combined_quat.unsqueeze(0),
                 ],
                 dim=-1,
             )
-            # root_state[:, 2] += robot_z_offset
             robot.write_root_pose_to_sim(root_state)
         # perform step
         sim.step()
@@ -272,7 +323,7 @@ def run_simulator(
                 continue
             robot.update(sim_dt)
 
-        print(f"Frame: {count % num_frames}")
+        # print(f"Frame: {count % num_frames}")
         sleep_duration = sim_dt - (time.time() - start_time)
         if sleep_duration > 0:
             time.sleep(sleep_duration)
@@ -282,7 +333,7 @@ def run_simulator(
 def main():
     """Main function."""
 
-    global recording_path
+    global recording_path, robot_local_offset
 
     # Initialize the simulation context
     sim = sim_utils.SimulationContext(sim_utils.SimulationCfg(dt=0.01))
@@ -291,9 +342,12 @@ def main():
     # design scene
     if scene == "stairs":
         scene_entities, scene_origins = design_stairs_scene()
-    else:
+    elif scene == "flat":
         scene_entities, scene_origins = design_scene()
-    scene_origins = torch.tensor(scene_origins, device=sim.device)
+        scene_origins = torch.tensor(scene_origins, device=sim.device)
+    elif scene == "box":
+        scene_entities, scene_origins = design_box_scene()
+        scene_origins = torch.tensor(scene_origins, device=sim.device)
     # Play the simulator
     sim.reset()
 

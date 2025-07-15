@@ -7,7 +7,9 @@ import glob
 
 from omni.isaac.lab.utils import configclass
 
-from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
+from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
+    LocomotionVelocityRoughEnvCfg,
+)
 
 
 from . import parameters
@@ -15,17 +17,18 @@ from . import parameters
 ####################################################################
 # Flat simple reward
 
+
 @configclass
 class UnitreeGo2FlatEnvCfgSimpleReward(LocomotionVelocityRoughEnvCfg):
     def __post_init__(self):
-        
-        
+
         # post init of parent
         super().__post_init__()
-        
+
         self.terrain_type = "flat"
         parameters.set_terrain(self)
         parameters.set_rewards_simple(self)
+
 
 @configclass
 class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
@@ -39,15 +42,14 @@ class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
 #######################################################################
 # Flat complex reward
 
+
 @configclass
 class UnitreeGo2FlatEnvCfgComplexReward(UnitreeGo2FlatEnvCfgSimpleReward):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
-        parameters.set_rewards_complex(self)
 
-        
+        parameters.set_rewards_complex(self)
 
 
 @configclass
@@ -55,31 +57,34 @@ class UnitreeGo2FlatEnvCfgComplexReward_PLAY(UnitreeGo2FlatEnvCfgComplexReward):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
+
         parameters.set_play_settings_flat(self)
-        
-        
+
+
 #######################################################################
 # Flat AMP
-        
+
+
 @configclass
 class AMPUnitreeGo2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
+
         self.terrain_type = "flat"
         parameters.set_terrain(self)
 
         parameters.set_velocity_rewards_amp(self)
 
-        self.scene.num_envs = 2 * 4096  # 5480
+        self.scene.num_envs = 2 * 4096  # with DR: 2 * 4096; without DR: 5480
 
         # style
         self.action_manager_class = "ActionManager"  # Default action manager
 
         parameters.set_amp_settings(self)
-    
+        # parameters.disable_domain_randomization(self) # for reproducibility of old exps
+        # self.terminations.bad_orientation = None # for reproducibility of old exps
+
     def update_motion_files(self):
         motion_files = glob.glob(self.amp_motion_folder)
         self.amp_motion_files = motion_files
@@ -99,4 +104,3 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         parameters.set_play_settings_flat(self)
 
         self.amp_motion_folder = "datasets/dummy/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training
-    
