@@ -21,8 +21,8 @@ plt.rcParams.update({
 
 # Define the metrics to be plotted from the yaml files
 METRICS_TO_PLOT = [
-    "error_vel_yaw",
     "error_vel_xy",
+    "error_vel_yaw",
 ]
 
 # Define user-friendly names for plot titles
@@ -36,7 +36,8 @@ all_run_names = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 cmap = plt.cm.get_cmap('tab10', len(all_run_names))
 COLORS_TO_PLOT = {
     "MoCap": cmap.colors[1],
-    "Vid. (extended)": cmap.colors[3],
+    "MoCap (AMP)": cmap.colors[1],
+    "Vid. (extended) (AMP)": cmap.colors[3],
 }
 
 # --- Data Loading and Processing Functions ---
@@ -108,7 +109,7 @@ def process_data(grouped_paths):
         metrics_per_seed = {metric: [] for metric in METRICS_TO_PLOT}
 
         for path in paths:
-            yaml_path = os.path.join(path, "metrics.yaml")
+            yaml_path = os.path.join(path, "None_metrics.yaml")
             data = load_yaml_file(yaml_path)
 
             for metric in METRICS_TO_PLOT:
@@ -185,7 +186,8 @@ def plot_comparison(all_experiments_data, metrics_to_plot):
 
         ax.set_xlabel("Yaw Tracking Reward Weight")
         ax.set_ylabel(METRIC_PLOT_TITLES.get(metric, metric))
-        ax.legend()
+        if metric == "error_vel_yaw":
+            ax.legend()
         ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
         # Set x-ticks and tick labels only to the datapoints
@@ -212,8 +214,8 @@ def main():
     # Define the experiment patterns and their display names for the legend
     # You can add or modify entries here to change the plots.
     EXPERIMENTS = {
-        "Vid. (extended)": "2025-07-11_21-14-15_fromVision_motions_DepthCam_extendedWithoutReverse_*trackAnVelRewWeight*",
-        "MoCap": "2025-07-13_13-22-15_mocap_AMP_for_hardware_*trackAnVelRewWeight*",
+        "Vid. (extended) (AMP)": "2025-07-11_21-14-15_fromVision_motions_DepthCam_extendedWithoutReverse_*trackAnVelRewWeight*",
+        "MoCap (AMP)": "2025-07-13_13-22-15_mocap_AMP_for_hardware_*trackAnVelRewWeight*",
     }
 
     all_data = {}
@@ -226,39 +228,25 @@ def main():
             continue
         all_data[name] = process_data(grouped_paths)
 
-    del all_data
-    all_data = {}
-    all_data["MoCap"] = {}
-    all_data["MoCap"]["weights"] = [20, 30, 40, 50]
-    all_data["MoCap"]["error_vel_yaw"] = [
-        {"mean": 0.6},
-        {"mean": 0.4},
-        {"mean": 0.15},
-        {"mean": 0.11},
-    ]
+    # prepend datapoint (yaw)
+    all_data["MoCap (AMP)"]["weights"] = [20] + all_data["MoCap (AMP)"]["weights"]
+    all_data["MoCap (AMP)"]["error_vel_yaw"]  = [
+        {"mean": 0.64500141143, "min": 0.5899317264556885, "max": 0.6824547648429871},
+    ] + all_data["MoCap (AMP)"]["error_vel_yaw"]
     
-    all_data["MoCap"]["error_vel_xy"] = [
-        {"mean": 0.06},
-        {"mean": 0.07},
-        {"mean": 0.09},
-        {"mean": 0.08},
-    ]
+    all_data["MoCap (AMP)"]["error_vel_xy"]  = [
+        {"mean": 0.06239856034, "min": 0.06087314337491989, "max": 0.06330526620149612},
+    ] + all_data["MoCap (AMP)"]["error_vel_xy"]
     
-    all_data["Vid. (extended)"] = {}
-    all_data["Vid. (extended)"]["weights"] = [20, 30, 40, 50]
-    all_data["Vid. (extended)"]["error_vel_yaw"] = [
-        {"mean": 0.15},
-        {"mean": 0.12},
-        {"mean": 0.11},
-        {"mean": 0.1},
-    ]
+    # prepend datapoint (xy vel)
+    all_data["Vid. (extended) (AMP)"]["weights"] = [20] + all_data["Vid. (extended) (AMP)"]["weights"]
+    all_data["Vid. (extended) (AMP)"]["error_vel_yaw"]  = [
+        {"mean": 0.12919001529, "min": 0.1237926259636879, "max": 0.13561595976352692},
+    ] + all_data["Vid. (extended) (AMP)"]["error_vel_yaw"]
     
-    all_data["Vid. (extended)"]["error_vel_xy"] = [
-        {"mean": 0.05},
-        {"mean": 0.05},
-        {"mean": 0.05},
-        {"mean": 0.05},
-    ]
+    all_data["Vid. (extended) (AMP)"]["error_vel_xy"]  = [
+        {"mean": 0.04806786527, "min": 0.04705556482076645, "max": 0.04966380074620247},
+    ] + all_data["Vid. (extended) (AMP)"]["error_vel_xy"]
     
 
     if all_data:
