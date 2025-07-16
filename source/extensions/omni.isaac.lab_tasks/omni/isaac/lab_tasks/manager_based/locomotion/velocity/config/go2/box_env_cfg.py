@@ -6,7 +6,11 @@ import glob
 
 from omni.isaac.lab.utils import configclass
 
-from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
+from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
+    LocomotionVelocityRoughEnvCfg,
+)
+from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
+import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 
 from . import parameters
 
@@ -88,9 +92,15 @@ class AMPUnitreeGo2BoxEnvCfg(LocomotionVelocityRoughEnvCfg):
         # style
         self.action_manager_class = "ActionManager"  # Default action manager
 
-        parameters.set_amp_settings(self)
-        assert False, "No correct motion files exist yet."
-    
+        rsi_params = {
+            "reference_states": ["joints", "base"],
+            "reference_trajectory_yaw_rot": 210,
+            "reference_trajectory_offset": torch.tensor([0.0, 0.4, 0.2]),
+            "reference_trajectory_scaling": torch.tensor([1.0, 1.8, 1.0]),
+        }
+        parameters.set_amp_settings(self, **rsi_params)
+        self.amp_motion_folder = "datasets/fromVision_motions_DepthCam_obstacle/*"
+
     def update_motion_files(self):
         motion_files = glob.glob(self.amp_motion_folder)
         self.amp_motion_files = motion_files

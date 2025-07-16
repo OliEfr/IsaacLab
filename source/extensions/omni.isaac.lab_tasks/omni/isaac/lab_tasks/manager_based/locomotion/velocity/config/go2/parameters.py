@@ -1,6 +1,7 @@
 from dataclasses import fields
 import glob
 import math
+import torch
 
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.managers import EventTermCfg as EventTerm
@@ -121,7 +122,7 @@ def set_pose2d_rewards_amp(cfg):
 
     # set only task reward
     cfg.rewards.orientation_tracking.weight = -20
-    cfg.rewards.position_tracking.weight = 30
+    cfg.rewards.position_tracking.weight = 40
     cfg.rewards.position_tracking_fine_grained.weight = 30
 
 
@@ -181,8 +182,8 @@ def set_box_env_cfg_cmds(cfg):
             pos_x=(0.0, 0.0),
             pos_y=(2.0, 2.0),
             heading=(
-                math.pi / 2 - math.radians(20),
-                math.pi / 2 + math.radians(20),
+                math.pi / 2, # - math.radians(20),
+                math.pi / 2, # + math.radians(20),
             ),  # global heading "up the stairs" is in y direction, which is math.pi/2
         ),
     )
@@ -222,9 +223,12 @@ def set_stairs_env_cfg_reset_base(cfg):
 
 def set_box_env_cfg_reset_base(cfg):
     cfg.events.reset_base.params["pose_range"] = {
-                "x": (-0.5, 0.5),
-                "y": (-0.15, 0.15),
-                "yaw": (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)),
+                "x": (-0.0, 0.0),
+                "y": (0.04, 0.06),
+                "yaw": (math.pi / 2, math.pi / 2),
+                # "x": (-0.5, 0.5),
+                # "y": (-0.15, 0.15),
+                # "yaw": (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)),
             }
 
 def add_relative_position_on_stairs_observation(cfg):
@@ -240,23 +244,24 @@ def add_box_parameters_observation(cfg):
     cfg.observations.policy.box_parameters = ObsTerm(func=mdp.box_parameters)
 
 
-def set_amp_settings(cfg):
+def set_amp_settings(cfg, **kwargs):
     cfg.is_amp_env = True
-    
+
     cfg.amp_motion_folder = "datasets/fromVision_motions_3/*"
     cfg.amp_motion_files = glob.glob(cfg.amp_motion_folder)
 
-    # use reference state initialization
-    cfg.events.reset_robot_joints = None
-    cfg.events.reference_state_initialization = EventTerm(
-        func=mdp.reference_state_initialization,
-        mode="reset",
-        params={
+    params = {
             "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
             "device": cfg.sim.device,
             "time_between_frames": cfg.decimation * cfg.sim.dt,
             "motion_files": cfg.amp_motion_files,
-        },
+    }
+    params.update(kwargs)
+
+    # use reference state initialization
+    cfg.events.reset_robot_joints = None
+    cfg.events.reference_state_initialization = EventTerm(
+        func=mdp.reference_state_initialization, mode="reset", params=params
     )
 
 def disable_domain_randomization(cfg):

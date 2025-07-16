@@ -46,6 +46,7 @@ class reference_state_initialization(ManagerTermBase):
         """
         super().__init__(cfg, env)
 
+        # Input params
         # extract the used quantities (to enable type-hinting)
         self.asset_cfg: SceneEntityCfg = cfg.params["asset_cfg"]
         self.asset: RigidObject | Articulation = env.scene[self.asset_cfg.name]
@@ -55,55 +56,137 @@ class reference_state_initialization(ManagerTermBase):
                 f"Randomization term 'randomize_rigid_body_material' not supported for asset: '{self.asset_cfg.name}'"
                 f" with type: '{type(self.asset)}'."
             )
-
         self.amp_loader = AMPLoader(
             motion_files=cfg.params.get("motion_files", None),
             device=cfg.params.get("device", "cuda"),
             time_between_frames=cfg.params.get("time_between_frames", None),
         )
         
+        self.reference_states = cfg.params.get(
+            "reference_states", ["joints"]
+        )  # by default we do only care about joint states for reference init
+
+        self.reference_trajectory_yaw_rot = cfg.params.get(
+            "reference_trajectory_yaw_rot", 0
+        )  # degree
+
+        self.reference_trajectory_offset = cfg.params.get(
+            "reference_trajectory_offset", torch.tensor([0.0, 0.0, 0.0])
+        ).to(device=cfg.params.get("device", "cuda"))
+        
+        self.reference_trajectory_scaling = cfg.params.get(
+            "reference_trajectory_scaling", torch.tensor([1.0, 1.0, 1.0])
+        ).to(device=cfg.params.get("device", "cuda")) # scale reference trajectory in x,y,z directions
+        
+        # derived params
+
+        self.reference_trajectory_yaw_rot_quat = math_utils.quat_from_euler_xyz(
+            roll=torch.tensor(0, device=cfg.params.get("device", "cuda")),
+            pitch=torch.tensor(0, device=cfg.params.get("device", "cuda")),
+            yaw=math_utils.deg2rad(
+                torch.tensor(
+                    self.reference_trajectory_yaw_rot,
+                    device=cfg.params.get("device", "cuda"),
+                )
+            ),
+        )
+        self.reference_trajectory_yaw_rot_matrix = math_utils.matrix_from_quat(
+            self.reference_trajectory_yaw_rot_quat
+        )
+        
+
+
     def __call__(
         self,
         env: ManagerBasedEnv,
         env_ids: torch.Tensor | None,
-        # needs to list all arguments present in params dict
+        # needs to list all arguments present in params dict, else error is thrown
         asset_cfg: SceneEntityCfg,
         motion_files: list[str] | None = None,
         device: str = "cuda",
         time_between_frames: float | None = None,
+        reference_states: list[str] | None = None,
+        reference_trajectory_yaw_rot: float | None = None,
+        reference_trajectory_offset: torch.Tensor | None = None,
+        reference_trajectory_scaling: torch.Tensor | None = None,
     ):
+
         # resolve environment ids
         if env_ids is None:
             env_ids = torch.arange(env.scene.num_envs, device=device)
-            
+
         frames = self.amp_loader.get_full_frame_batch(len(env_ids))
-        joint_pos = AMPLoader.get_joint_pose_batch(frames)
-        joint_vel = AMPLoader.get_joint_vel_batch(frames)
-        
-        # check if joint position limits are reached
-        joint_pos_limits = self.asset.data.soft_joint_pos_limits[env_ids]
-        joint_pos_min = joint_pos_limits[..., 0]
-        joint_pos_max = joint_pos_limits[..., 1]
-        joint_pos_limit_reached = (joint_pos <= joint_pos_min) | (joint_pos >= joint_pos_max)
-        # if joint_pos_limit_reached.any():
-        #     violated_indices = torch.nonzero(joint_pos_limit_reached, as_tuple=False)
-        #     for idx in violated_indices:
-        #         env_idx, joint_idx = idx[0].item(), idx[1].item()
-        #         pos_value = joint_pos[env_idx, joint_idx].item()
-        #         min_limit = joint_pos_min[env_idx, joint_idx].item()
-        #         max_limit = joint_pos_max[env_idx, joint_idx].item()
-        #         print(f"Violation at env {env_idx}, joint {joint_idx}: pos = {pos_value:.6f}, min = {min_limit:.6f}, max = {max_limit:.6f}")
-        # assert not joint_pos_limit_reached.any(), "Joint position limits reached in init."
-        
-        # clamp joint pos to limits
-        joint_pos = joint_pos.clamp_(joint_pos_limits[..., 0], joint_pos_limits[..., 1])
 
-        # clamp joint vel to limits
-        joint_vel_limits = self.asset.data.soft_joint_vel_limits[env_ids]
-        joint_vel = joint_vel.clamp_(-joint_vel_limits, joint_vel_limits)
+        if "joints" in self.reference_states:
 
-        # set into the physics simulation
-        self.asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
+            joint_pos = AMPLoader.get_joint_pose_batch(frames)
+            joint_vel = AMPLoader.get_joint_vel_batch(frames)
+
+            # check if joint position limits are reached
+            joint_pos_limits = self.asset.data.soft_joint_pos_limits[env_ids]
+            # joint_pos_min = joint_pos_limits[..., 0]
+            # joint_pos_max = joint_pos_limits[..., 1]
+            # joint_pos_limit_reached = (joint_pos <= joint_pos_min) | (joint_pos >= joint_pos_max)
+            # if joint_pos_limit_reached.any():
+            #     violated_indices = torch.nonzero(joint_pos_limit_reached, as_tuple=False)
+            #     for idx in violated_indices:
+            #         env_idx, joint_idx = idx[0].item(), idx[1].item()
+            #         pos_value = joint_pos[env_idx, joint_idx].item()
+            #         min_limit = joint_pos_min[env_idx, joint_idx].item()
+            #         max_limit = joint_pos_max[env_idx, joint_idx].item()
+            #         print(f"Violation at env {env_idx}, joint {joint_idx}: pos = {pos_value:.6f}, min = {min_limit:.6f}, max = {max_limit:.6f}")
+            # assert not joint_pos_limit_reached.any(), "Joint position limits reached in init."
+
+            # clamp joint pos to limits
+            joint_pos = joint_pos.clamp_(
+                joint_pos_limits[..., 0], joint_pos_limits[..., 1]
+            )
+
+            # clamp joint vel to limits
+            joint_vel_limits = self.asset.data.soft_joint_vel_limits[env_ids]
+            joint_vel = joint_vel.clamp_(-joint_vel_limits, joint_vel_limits)
+
+            # set into the physics simulation
+            self.asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
+
+        if "base" in self.reference_states:
+            base_pos = AMPLoader.get_root_pos_batch(frames) * self.reference_trajectory_scaling
+            base_rot = AMPLoader.get_root_rot_batch(frames)
+            base_vel = AMPLoader.get_linear_vel_batch(frames)
+            base_ang_vel = AMPLoader.get_angular_vel_batch(frames)  # TODO this is zero as it is not contained in retargeting data at the moment
+
+            pos_rotated = torch.matmul(
+                base_pos.float(),
+                self.reference_trajectory_yaw_rot_matrix.float().T,
+            ).squeeze(-1)
+
+            vel_rotated = torch.matmul(
+                base_vel.float(),
+                self.reference_trajectory_yaw_rot_matrix.float().T,
+            ).squeeze(-1)
+
+            # Rotate trajectory (rot)
+            rot_combined_quat = math_utils.quat_mul(
+                self.reference_trajectory_yaw_rot_quat.repeat(base_rot.shape[0], 1),
+                base_rot,
+            )
+
+            # Combine new root pose
+            root_state = torch.cat(
+                [
+                    pos_rotated
+                    + env.scene.env_origins[env_ids]
+                    + self.reference_trajectory_offset,  # offset to env origin
+                    rot_combined_quat,
+                    vel_rotated,
+                    torch.zeros_like(
+                        base_ang_vel
+                    ),  # TODO is not included in retargeted data for now
+                ],
+                dim=-1,
+            )
+
+            self.asset.write_root_state_to_sim(root_state, env_ids=env_ids)
 
 
 class randomize_rigid_body_material(ManagerTermBase):
@@ -1076,7 +1159,6 @@ def reset_joints_by_offset(
 
     # set into the physics simulation
     asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
-
 
 
 def reset_nodal_state_uniform(

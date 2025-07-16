@@ -40,6 +40,8 @@ import json
 import time
 
 import omni.isaac.core.utils.prims as prim_utils
+import omni.isaac.lab.utils.math as math_utils
+
 
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.assets import Articulation
@@ -51,8 +53,6 @@ from omni.isaac.lab.terrains.config.stairs import STAIRS_TERRAINS_CFG  # isort:s
 from omni.isaac.lab.terrains.config.box import BOX_TERRAINS_CFG  # isort:skip
 from omni.isaac.lab.terrains import TerrainImporter, TerrainImporterCfg
 
-from scipy.spatial.transform import Rotation as R
-
 ##
 # Pre-defined configs
 ##
@@ -63,7 +63,7 @@ UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity = True
 
 scene = "box"
 
-robot_local_offset = torch.tensor([0, 0, 0.3], device="cuda") # this is default from unitree.py
+robot_local_offset = torch.tensor([0, 0, 0.3], device="cuda") # this is default from unitree.py; NOTE somehow env origins here and thus robot_local_offset are defined differently in the RL train / play envs, and in this script. Need to fix in the future.
 if scene == "stairs":
     trajectory_z_rot = 90  # degree
     robot_local_offset = torch.tensor([-1.0, -1.0, 0.5], device="cuda")
@@ -71,22 +71,14 @@ elif scene == "flat":
     trajectory_z_rot = 0  # degree
     robot_local_offset = torch.tensor([-1.0, -1.0, 0.5], device="cuda")
 elif scene == "box":
-    trajectory_z_rot = 90  # degree
-    robot_local_offset = torch.tensor([0, 0, 0.25], device="cuda")
+    trajectory_z_rot = 210  # degree; this rotation is about terrain origin for now
+    robot_local_offset = torch.tensor([.8, -2.65, 0.25], device="cuda")
 else:
     raise Exception("Unknown scene: {}".format(scene))
 
 # Recorded jpos path
 recording_path = "datasets/fromVision_motions_DepthCam_obstacle/obstacle_2_3126098000_amp.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
-freq = 2  # replay frequency in Hz for the recorded trajectory
-
-
-def quat_isaac_to_scipy(quat):
-    return np.array([quat[1], quat[2], quat[3], quat[0]])
-
-
-def quat_scipy_to_isaac(quat):
-    return np.array([quat[3], quat[0], quat[1], quat[2]])
+freq = 0.5  # replay frequency in Hz for the recorded trajectory
 
 
 def define_origins(num_origins: int, spacing: float) -> list[list[float]]:
@@ -228,10 +220,12 @@ def run_simulator(
     sim_dt = sim.get_physics_dt()
     count = 0
     global freq
-    global_trajectory_rot = R.from_euler("z", trajectory_z_rot, degrees=True)
-    global_trajectory_rot_matrix = torch.tensor(
-        global_trajectory_rot.as_matrix(), dtype=torch.float32, device=sim.device
+    global_trajectory_rot_quat = math_utils.quat_from_euler_xyz(
+        roll = torch.tensor([0], device="cuda"),
+        pitch = torch.tensor([0], device="cuda"),
+        yaw = torch.tensor([math_utils.deg2rad(torch.tensor([trajectory_z_rot], device="cuda"))], device="cuda")
     )
+    global_trajectory_rot_matrix = math_utils.matrix_from_quat(global_trajectory_rot_quat)
 
     motion_data = torch.tensor(motion_data, device=sim.device)
 
@@ -293,23 +287,17 @@ def run_simulator(
 
             # Rotate trajectory (pos)
             pos_rotated = torch.matmul(
-                global_trajectory_rot_matrix.float(),
                 pos_interpolated.float(),
+                global_trajectory_rot_matrix.float().T,
             ).squeeze(-1)
 
-            # Rotate trajectory (rot)
-            rot_combined = global_trajectory_rot * R.from_quat(
-                quat_isaac_to_scipy(rot_interpolated.cpu().numpy())
-            )
-            rot_combined_quat = torch.tensor(
-                quat_scipy_to_isaac(rot_combined.as_quat()), device=sim.device
-            )
+            rot_combined_quat = math_utils.quat_mul(global_trajectory_rot_quat, rot_interpolated.unsqueeze(0))
             
             # Combine new root pose
             root_state = torch.cat(
                 [
                     (pos_rotated + robot_local_offset).unsqueeze(0),
-                    rot_combined_quat.unsqueeze(0),
+                    rot_combined_quat,
                 ],
                 dim=-1,
             )

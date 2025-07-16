@@ -76,7 +76,7 @@ class UnitreeGo2AMPFlatPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.amp_task_reward_lerp = 0.3 # weighting factor of task reward (style reward is 1-task_reward_lerp)
         self.amp_discr_hidden_dims = [1024, 512]
 
-        self.min_normalized_std = [0.05] * 4 + [0.02] * 4 +[0.05] * 4
+        self.min_normalized_std = [0.05] * 4 + [0.02] * 4 +[0.05] * 4#  + [0.05] # for ResidualRL
 
         self.algorithm.amp_replay_buffer_size = 1_000_000
         self.algorithm.num_learning_epochs = 5
@@ -119,6 +119,12 @@ class UnitreeGo2StairsPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
         self.experiment_name = "unitree_go2_Stairs" 
         
 # This class only exists to provide self.experiment_name for logging.
+@configclass
+class UnitreeGo2BoxPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
+    def __post_init__(self):
+        super().__post_init__()
+        self.experiment_name = "unitree_go2_Box" 
+        
 @configclass
 class UnitreeGo2StairsResidualRLPPORunnerCfg(UnitreeGo2FlatPPORunnerCfg):
     def __post_init__(self):

@@ -17,6 +17,10 @@ from typing import Literal
 """
 General
 """
+@torch.jit.script
+def deg2rad(degrees: torch.Tensor) -> torch.Tensor:
+    """Convert degrees to radians (element-wise)"""
+    return degrees * (torch.pi / 180)
 
 
 @torch.jit.script

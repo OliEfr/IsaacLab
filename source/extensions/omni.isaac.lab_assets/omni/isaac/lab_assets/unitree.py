@@ -168,6 +168,21 @@ UNITREE_GO2_CFG = ArticulationCfg(
             "R[L,R]_thigh_joint": 1.0,
             ".*_calf_joint": -1.5,
         },
+        # Below init pos ResidualRL Box
+        # joint_pos={
+        #     "FL_hip_joint": -0.1185,
+        #     "FL_thigh_joint": -0.1388,
+        #     "FL_calf_joint": -0.0658,
+        #     "FR_hip_joint": 0.0242,
+        #     "FR_thigh_joint": 0.7761,
+        #     "FR_calf_joint": -0.9089,
+        #     "RL_hip_joint": 0.4135,
+        #     "RL_thigh_joint": 0.4928,
+        #     "RL_calf_joint": -1.0590,
+        #     "RR_hip_joint": -1.2846,
+        #     "RR_thigh_joint": -1.3806,
+        #     "RR_calf_joint": -1.4402,
+        # },
         # default unitree (corresponds to unitree joint ordering)
         # joint_pos={
         #     "FL_hip_joint": 0.05573350936174393,
