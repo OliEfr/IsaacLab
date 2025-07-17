@@ -61,7 +61,7 @@ class reference_state_initialization(ManagerTermBase):
             device=cfg.params.get("device", "cuda"),
             time_between_frames=cfg.params.get("time_between_frames", None),
         )
-        
+
         self.reference_states = cfg.params.get(
             "reference_states", ["joints"]
         )  # by default we do only care about joint states for reference init
@@ -73,11 +73,11 @@ class reference_state_initialization(ManagerTermBase):
         self.reference_trajectory_offset = cfg.params.get(
             "reference_trajectory_offset", torch.tensor([0.0, 0.0, 0.0])
         ).to(device=cfg.params.get("device", "cuda"))
-        
+
         self.reference_trajectory_scaling = cfg.params.get(
             "reference_trajectory_scaling", torch.tensor([1.0, 1.0, 1.0])
         ).to(device=cfg.params.get("device", "cuda")) # scale reference trajectory in x,y,z directions
-        
+
         # derived params
 
         self.reference_trajectory_yaw_rot_quat = math_utils.quat_from_euler_xyz(
@@ -93,7 +93,6 @@ class reference_state_initialization(ManagerTermBase):
         self.reference_trajectory_yaw_rot_matrix = math_utils.matrix_from_quat(
             self.reference_trajectory_yaw_rot_quat
         )
-        
 
 
     def __call__(
@@ -115,7 +114,26 @@ class reference_state_initialization(ManagerTermBase):
         if env_ids is None:
             env_ids = torch.arange(env.scene.num_envs, device=device)
 
-        frames = self.amp_loader.get_full_frame_batch(len(env_ids))
+        frames, times = self.amp_loader.get_full_frame_batch(len(env_ids), return_times=True)
+        
+        # reference phase initialization for ResidualRL phases
+        # TODO check if phase reset yields correcto obs in manager_base_rl_env
+        if env.cfg.action_manager_class == "ResidualRLActionManager":
+            reference_phases = (
+                (
+                    2
+                    * torch.pi
+                    * torch.tensor(times, device=device)
+                    / torch.tensor(self.amp_loader.trajectory_lens, device=device)
+                )
+                .float()
+                .unsqueeze(-1)
+            )
+            assert (reference_phases >= 0).all() and (
+                reference_phases <= 2 * torch.pi
+            ).all(), "Error: Some reference phases are outside the range [0, 2pi]."
+
+            env.action_manager.phases[env_ids] = reference_phases
 
         if "joints" in self.reference_states:
 

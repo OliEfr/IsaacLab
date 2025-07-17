@@ -589,7 +589,7 @@ def relative_position_to_box(
         ].y_coordinate_origin_relative_to_box_start # needs to be ADDED according to definition
     )
 
-    # # This is privileged information -> potential omit this, or only use yaw.
+    # This is privileged information -> potential omit this, or only use yaw.
     root_rot = asset.data.root_quat_w
 
     return torch.cat([root_pos_y.unsqueeze(1), root_rot], dim=1)

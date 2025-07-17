@@ -769,7 +769,10 @@ class PhaseActionManager(ActionManager):
 
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
-        self.phases[env_ids] = 0.0
+        # TODO Check if resetting the phase here yields the correct obs for the rl env
+        # if RSI is used, phase reset will be handled there!
+        if not hasattr(self._env.cfg.events, 'reference_state_initialization'):
+            self.phases[env_ids] = 0.0
         self.sin_cos_phases = torch.cat(
             (
                 torch.sin(self.phases),
@@ -789,7 +792,7 @@ class ResidualRLActionManager(PhaseActionManager):
         super().__init__(cfg, env)
 
         assert hasattr(env.cfg, "residual_rl_data"), "Expected a motion file to be provided for residual RL action manager."
-        
+
         # buffers
         self._action = torch.zeros((self.num_envs,  13), device=self.device) # need to overwrite as it is set to self.action_term_dim by default
         self._prev_action = torch.zeros_like(self._action)
@@ -807,9 +810,9 @@ class ResidualRLActionManager(PhaseActionManager):
         self.reference_jpos = torch.tensor(self.reference_jpos, device=self.device)
         self.num_frames = self.reference_jpos.shape[0]
 
-        self.mean_freq = torch.ones_like(self._freqs) * 1.5
+        self.mean_freq = torch.ones_like(self._freqs) * 0.75
         self.range_freq = torch.ones_like(self._freqs) * 1.0
-        
+
         self._prev_freq = torch.zeros_like(self._freqs)
 
     def process_action(self, action: torch.Tensor):
@@ -820,26 +823,24 @@ class ResidualRLActionManager(PhaseActionManager):
         self._prev_action[:] = self._action
         self._prev_freq[:] = self._freqs
         self._action[:] = action.to(self.device)
-        
+
         # frequency is last action
-        self._freqs = self.mean_freq + self.range_freq * torch.clamp(action[:, 12].unsqueeze(-1), -1.0, 1.0)
+        self._freqs = self.mean_freq + self.range_freq * torch.clamp(
+            action[:, 12].unsqueeze(-1), -1.0, 1.0
+        )
 
         # freq dependent phase
-        self.phases = self.phases + self._env.step_dt * 2 * torch.pi * torch.clamp(self._freqs, -1.0, 1.0)
-        
-        # reset phases for envs where episode length is 0; possibly not required, as its handled by reset method of this class
-        self.phases[torch.where(self._env.episode_length_buf == 0, True, False)] = (
-            0.0
-        )
+        self.phases = self.phases + self._env.step_dt * 2 * torch.pi * self._freqs
+
         # perform linear interpolation between two frames
         unscaled_index = (self.phases / (2 * torch.pi)) * self.num_frames
         idx0 = torch.floor(unscaled_index).long() % self.num_frames
         idx1 = (idx0 + 1) % self.num_frames
         alpha = (unscaled_index - torch.floor(unscaled_index))
-        
+
         idx0 = idx0.squeeze()
         idx1 = idx1.squeeze()
-        
+
         pos0 = self.reference_jpos[idx0]
         pos1 = self.reference_jpos[idx1]
         interpolated_reference_jpos = AMPLoader.slerp(pos0, pos1, alpha)
@@ -862,11 +863,11 @@ class ResidualRLActionManager(PhaseActionManager):
             term._offset = interpolated_reference_jpos
             term.process_actions(term_actions)
             idx += term.action_dim
-            
+
     @property
     def prev_freq(self) -> torch.Tensor:
         return self._prev_freq
-    
+
     # This is queried by the policy to get output dimension. Its seems save to modify this variable.
     @property
     def action_term_dim(self) -> list[int]:
