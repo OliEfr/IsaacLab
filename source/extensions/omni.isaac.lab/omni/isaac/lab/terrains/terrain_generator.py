@@ -263,9 +263,20 @@ class TerrainGenerator:
                 difficulty = (sub_row + self.np_rng.uniform()) / self.cfg.num_rows
                 difficulty = lower + (upper - lower) * difficulty
                 # generate terrain
-                mesh, origin = self._get_terrain_mesh(difficulty, sub_terrains_cfgs[sub_indices[sub_col]])
+                mesh, origin, terrain_params = self._get_terrain_mesh(difficulty, sub_terrains_cfgs[sub_indices[sub_col]])
                 # add to sub-terrains
                 self._add_sub_terrain(mesh, origin, sub_row, sub_col, sub_terrains_cfgs[sub_indices[sub_col]])
+                # bookkeeping of terrain parameters
+                if terrain_params is not None:
+                    for key in terrain_params.keys():
+                        # Create key if doesn't exist yet
+                        if not key in self.terrain_params:
+                            assert sub_col == 0 and sub_row == 0, "Only expect new keys at the first iteration."
+                            self.terrain_params[key] = torch.zeros(
+                                (self.cfg.num_rows, self.cfg.num_cols), device=self.device
+                            )
+                        # Populate values
+                        self.terrain_params[key][sub_row, sub_col] = terrain_params[key]
 
     """
     Internal helper functions.
