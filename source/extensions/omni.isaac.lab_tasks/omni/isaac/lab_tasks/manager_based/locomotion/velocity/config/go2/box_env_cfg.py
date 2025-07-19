@@ -79,27 +79,26 @@ class AMPUnitreeGo2BoxEnvCfg(LocomotionVelocityRoughEnvCfg):
         
         self.terrain_type = "box"
         
+        parameters.disable_domain_randomization(self)
         parameters.set_terrain(self)
         parameters.set_box_env_cfg_reset_base(self)
         parameters.add_relative_position_to_box_observation(self)
         parameters.add_box_parameters_observation(self)
         parameters.set_box_env_cfg_cmds(self) # calling this last is the savest way
         
-        parameters.set_pose2d_rewards_amp(self)
+        parameters.set_velocity_rewards_amp(self)
 
-        self.scene.num_envs = 2 * 4096  # 5480
+        self.scene.num_envs = 5480  # w/o DR: 5480; w/ DR: 2 * 4096
+        
+        self.episode_length_s = 10.0
 
         # style
         self.action_manager_class = "ActionManager"  # Default action manager
 
         rsi_params = {
             "reference_states": ["joints", "base"],
-            "reference_trajectory_yaw_rot": 210,
-            "reference_trajectory_offset": torch.tensor([0.0, 0.4, 0.2]),
-            "reference_trajectory_scaling": torch.tensor([1.0, 1.8, 1.0]),
         }
-        parameters.set_amp_settings(self, **rsi_params)
-        self.amp_motion_folder = "datasets/fromVision_motions_DepthCam_obstacle/*"
+        parameters.set_amp_settings(self, motion_folder = "datasets/fromVision_motions_DepthCam_obstacle/*", **rsi_params)
 
     def update_motion_files(self):
         motion_files = glob.glob(self.amp_motion_folder)
@@ -108,7 +107,8 @@ class AMPUnitreeGo2BoxEnvCfg(LocomotionVelocityRoughEnvCfg):
         assert (
             self.events.reference_state_initialization is not None
         ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
-        self.events.reference_state_initialization.params["motion_files"] = motion_files
+        # self.events.reference_state_initialization.params["motion_files"] = motion_files
+
 
 
 @configclass
@@ -118,7 +118,7 @@ class AMPUnitreeGo2BoxEnvCfg_PLAY(AMPUnitreeGo2BoxEnvCfg):
         super().__post_init__()
 
         parameters.set_play_settings_flat(self)
-        parameters.set_play_settings_rough(self)
+        # parameters.set_play_settings_rough(self)
 
         self.amp_motion_folder = "datasets/dummy/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training
 

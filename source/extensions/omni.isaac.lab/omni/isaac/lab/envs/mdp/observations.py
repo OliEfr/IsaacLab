@@ -581,6 +581,7 @@ def relative_position_to_box(
     asset: RigidObject = env.scene[asset_cfg.name]
 
     # It is important to define the following value well so that sim2real is possible. The observation is the distance of the robot to the start of the box in y direction. Negative values mean the robot is in front of the box.
+    # TODO should be clipped so that robot doesnt need to learn locomotion policy for each y value
     root_pos_y = (
         asset.data.root_pos_w[:, 1]
         - env.scene.env_origins[:, 1]

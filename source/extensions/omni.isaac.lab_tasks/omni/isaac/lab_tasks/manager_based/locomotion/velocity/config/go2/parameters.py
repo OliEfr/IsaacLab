@@ -180,7 +180,7 @@ def set_box_env_cfg_cmds(cfg):
         debug_vis=cfg.commands.base_velocity.debug_vis,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
             lin_vel_x=(-0.1, 0.1),
-            lin_vel_y=(0.5, 0.5),
+            lin_vel_y=(0.4, 0.6),
             ang_vel_z=(0, 0),
             heading=(
                 math.pi / 2, #- math.radians(20),
@@ -243,11 +243,12 @@ def set_stairs_env_cfg_reset_base(cfg):
 
 def set_box_env_cfg_reset_base(cfg):
     cfg.events.reset_base.params["pose_range"] = {
-                "x": (-0.0, 0.0),
-                "y": (0.04, 0.06),
+                # "x": (-0.0, 0.0),
+                # "y": (0.04, 0.06),
+                # "yaw": (math.pi / 2, math.pi / 2),
+                "x": (-0.5, 0.5),
+                "y": (-0.15, 0.15),
                 "yaw": (math.pi / 2, math.pi / 2),
-                # "x": (-0.5, 0.5),
-                # "y": (-0.15, 0.15),
                 # "yaw": (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)),
             }
 

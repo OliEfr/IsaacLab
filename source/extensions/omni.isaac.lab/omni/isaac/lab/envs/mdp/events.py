@@ -141,6 +141,7 @@ class reference_state_initialization(ManagerTermBase):
             # set into the physics simulation
             self.asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
 
+        # NOTE this pos initialization should depend on terrain levels in the future to avoid floating above terrain or collision with terrain.
         if "base" in self.reference_states:
             base_pos = AMPLoader.get_root_pos_batch(frames) 
             base_rot = AMPLoader.get_root_rot_batch(frames)
