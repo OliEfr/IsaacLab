@@ -60,39 +60,13 @@ class reference_state_initialization(ManagerTermBase):
             motion_files=cfg.params.get("motion_files", None),
             device=cfg.params.get("device", "cuda"),
             time_between_frames=cfg.params.get("time_between_frames", None),
+            transform_root_trajectory=True,
         )
 
         self.reference_states = cfg.params.get(
             "reference_states", ["joints"]
         )  # by default we do only care about joint states for reference init
 
-        self.reference_trajectory_yaw_rot = cfg.params.get(
-            "reference_trajectory_yaw_rot", 0
-        )  # degree
-
-        self.reference_trajectory_offset = cfg.params.get(
-            "reference_trajectory_offset", torch.tensor([0.0, 0.0, 0.0])
-        ).to(device=cfg.params.get("device", "cuda"))
-
-        self.reference_trajectory_scaling = cfg.params.get(
-            "reference_trajectory_scaling", torch.tensor([1.0, 1.0, 1.0])
-        ).to(device=cfg.params.get("device", "cuda")) # scale reference trajectory in x,y,z directions
-
-        # derived params
-
-        self.reference_trajectory_yaw_rot_quat = math_utils.quat_from_euler_xyz(
-            roll=torch.tensor(0, device=cfg.params.get("device", "cuda")),
-            pitch=torch.tensor(0, device=cfg.params.get("device", "cuda")),
-            yaw=math_utils.deg2rad(
-                torch.tensor(
-                    self.reference_trajectory_yaw_rot,
-                    device=cfg.params.get("device", "cuda"),
-                )
-            ),
-        )
-        self.reference_trajectory_yaw_rot_matrix = math_utils.matrix_from_quat(
-            self.reference_trajectory_yaw_rot_quat
-        )
 
 
     def __call__(
@@ -168,35 +142,18 @@ class reference_state_initialization(ManagerTermBase):
             self.asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
 
         if "base" in self.reference_states:
-            base_pos = AMPLoader.get_root_pos_batch(frames) * self.reference_trajectory_scaling
+            base_pos = AMPLoader.get_root_pos_batch(frames) 
             base_rot = AMPLoader.get_root_rot_batch(frames)
             base_vel = AMPLoader.get_linear_vel_batch(frames)
             base_ang_vel = AMPLoader.get_angular_vel_batch(frames)  # TODO this is zero as it is not contained in retargeting data at the moment
 
-            pos_rotated = torch.matmul(
-                base_pos.float(),
-                self.reference_trajectory_yaw_rot_matrix.float().T,
-            ).squeeze(-1)
-
-            vel_rotated = torch.matmul(
-                base_vel.float(),
-                self.reference_trajectory_yaw_rot_matrix.float().T,
-            ).squeeze(-1)
-
-            # Rotate trajectory (rot)
-            rot_combined_quat = math_utils.quat_mul(
-                self.reference_trajectory_yaw_rot_quat.repeat(base_rot.shape[0], 1),
-                base_rot,
-            )
-
             # Combine new root pose
             root_state = torch.cat(
                 [
-                    pos_rotated
-                    + env.scene.env_origins[env_ids]
-                    + self.reference_trajectory_offset,  # offset to env origin
-                    rot_combined_quat,
-                    vel_rotated,
+                    base_pos
+                    + env.scene.env_origins[env_ids],
+                    base_rot,
+                    base_vel,
                     torch.zeros_like(
                         base_ang_vel
                     ),  # TODO is not included in retargeted data for now

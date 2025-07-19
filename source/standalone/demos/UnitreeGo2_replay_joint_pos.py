@@ -62,22 +62,11 @@ from omni.isaac.lab_assets.unitree import UNITREE_GO2_CFG  # isort:skip
 UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity = True
 
 scene = "box"
-
-robot_local_offset = torch.tensor([0, 0, 0.3], device="cuda") # this is default from unitree.py; NOTE somehow env origins here and thus robot_local_offset are defined differently in the RL train / play envs, and in this script. Need to fix in the future.
-if scene == "stairs":
-    trajectory_z_rot = 90  # degree
-    robot_local_offset = torch.tensor([-1.0, -1.0, 0.5], device="cuda")
-elif scene == "flat":
-    trajectory_z_rot = 0  # degree
-    robot_local_offset = torch.tensor([-1.0, -1.0, 0.5], device="cuda")
-elif scene == "box":
-    trajectory_z_rot = 210  # degree; this rotation is about terrain origin for now
-    robot_local_offset = torch.tensor([.8, -2.65, 0.25], device="cuda")
-else:
-    raise Exception("Unknown scene: {}".format(scene))
+box_height = 0.3
 
 # Recorded jpos path
-recording_path = "datasets/fromVision_motions_DepthCam_obstacle/obstacle_2_3126098000_amp.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+recording_path = "datasets/temp/obstacle_3_3015061000_amp_increased_feet_z.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+
 freq = 0.5  # replay frequency in Hz for the recorded trajectory
 
 
@@ -97,8 +86,6 @@ def define_origins(num_origins: int, spacing: float) -> list[list[float]]:
     env_origins[:, 1] = (
         spacing * yy.flatten()[:num_origins] - spacing * (num_cols - 1) / 2
     )
-    # return the origins
-    env_origins[:, :] += robot_local_offset.unsqueeze(0).cpu()
     return env_origins.tolist()
 
 
@@ -176,9 +163,10 @@ def design_box_scene() -> tuple[dict, list[list[float]]]:
     cfg.func("/World/Light", cfg)
 
     terrain_cfg = BOX_TERRAINS_CFG
+    terrain_cfg.sub_terrains["box"].box_height_range = (box_height, box_height)
     terrain_cfg.num_rows = 1
     terrain_cfg.num_cols = 1
-    terrain_cfg.sub_terrains["box"].box_height_range = (0.3, 0.3)
+
 
     # Handler for terrains importing
     terrain_importer_cfg = TerrainImporterCfg(
@@ -220,12 +208,6 @@ def run_simulator(
     sim_dt = sim.get_physics_dt()
     count = 0
     global freq
-    global_trajectory_rot_quat = math_utils.quat_from_euler_xyz(
-        roll = torch.tensor([0], device="cuda"),
-        pitch = torch.tensor([0], device="cuda"),
-        yaw = torch.tensor([math_utils.deg2rad(torch.tensor([trajectory_z_rot], device="cuda"))], device="cuda")
-    )
-    global_trajectory_rot_matrix = math_utils.matrix_from_quat(global_trajectory_rot_quat)
 
     motion_data = torch.tensor(motion_data, device=sim.device)
 
@@ -260,6 +242,13 @@ def run_simulator(
         unscaled_index = (phase / (2 * torch.pi)) * num_frames
         idx0 = torch.floor(unscaled_index).long() % num_frames
         idx1 = (idx0 + 1) % num_frames
+        
+        # Check to not loop through from end to beginning of trajectory
+        if not idx0 + 1 == idx1:
+            assert idx0 == num_frames - 1
+            idx1 = idx0
+        
+        
         alpha = (unscaled_index - torch.floor(unscaled_index)).unsqueeze(-1)
 
         pos_start = AMPLoader.get_root_pos(motion_data[idx0])
@@ -268,10 +257,12 @@ def run_simulator(
         rot_end = AMPLoader.get_root_rot(motion_data[idx1])
         jpos_start = AMPLoader.get_joint_pose(motion_data[idx0])
         jpos_end = AMPLoader.get_joint_pose(motion_data[idx1])
+        
 
         pos_interpolated = AMPLoader.slerp(pos_start, pos_end, alpha)
         pos_interpolated += origins[0] # move robot to terrain origin (should be indexed by 0)
-        rot_interpolated = utils.quaternion_slerp(rot_start, rot_end, alpha)
+        rot_interpolated = utils.quaternion_slerp(rot_start.clone(), rot_end.clone(), alpha)
+
         jpos_interpolated = AMPLoader.slerp(jpos_start, jpos_end, alpha)
         # pos_interpolated_relative_to_origin = pos_interpolated - AMPLoader.get_root_pos(
         #     motion_data[0]
@@ -282,26 +273,18 @@ def run_simulator(
             if not isinstance(robot, Articulation):
                 continue
             robot.write_joint_state_to_sim(
-                jpos_interpolated.clone(), torch.zeros_like(jpos_interpolated)
+                jpos_interpolated.clone(), torch.zeros_like(jpos_interpolated).clone()
             )
 
-            # Rotate trajectory (pos)
-            pos_rotated = torch.matmul(
-                pos_interpolated.float(),
-                global_trajectory_rot_matrix.float().T,
-            ).squeeze(-1)
-
-            rot_combined_quat = math_utils.quat_mul(global_trajectory_rot_quat, rot_interpolated.unsqueeze(0))
-            
             # Combine new root pose
             root_state = torch.cat(
                 [
-                    (pos_rotated + robot_local_offset).unsqueeze(0),
-                    rot_combined_quat,
+                    pos_interpolated,
+                    rot_interpolated,
                 ],
                 dim=-1,
             )
-            robot.write_root_pose_to_sim(root_state)
+            robot.write_root_pose_to_sim(root_state.clone())
         # perform step
         sim.step()
 
@@ -341,21 +324,23 @@ def main():
 
     with open(recording_path, "r") as f:
         motion_json = json.load(f)
-        motion_data = np.array(motion_json["Frames"])
-        motion_data = AMPLoader.reorder_from_pybullet_to_isaac_lab(motion_data)
+        
+    recording_dt = float(motion_json["FrameDuration"])
+    assert (
+        recording_dt == 0.03334 or recording_dt == 0.01667 or recording_dt == 0.021
+    )  # should be 30Hz (video) or 60Hz (mocap)
+    # recording_dt *= 5 if recording_dt == 0.01667 else 5 # slow down a little
+    
+    motion_data = AMPLoader("cuda", recording_dt, motion_files=[recording_path], transform_root_trajectory=True)
+    
+    assert len(motion_data.trajectories_full) == 1, "Only support one motion file for replay."
+    motion_data = motion_data.trajectories_full[0]
     
     lin_vel = AMPLoader.get_linear_vel_batch(motion_data)
     lin_vel = torch.tensor(lin_vel, device=sim.device)
     mean_speed = torch.norm(lin_vel, dim=1).mean().item()
     print(f"[INFO]: Mean speed of the robot: {mean_speed:.2f} m/s")
 
-    recording_dt = float(motion_json["FrameDuration"])
-
-    assert (
-        recording_dt == 0.03334 or recording_dt == 0.01667 or recording_dt == 0.021
-    )  # should be 30Hz (video) or 60Hz (mocap)
-
-    # recording_dt *= 5 if recording_dt == 0.01667 else 5 # slow down a little
 
     # Now we are ready!
     print("[INFO]: Setup complete...")

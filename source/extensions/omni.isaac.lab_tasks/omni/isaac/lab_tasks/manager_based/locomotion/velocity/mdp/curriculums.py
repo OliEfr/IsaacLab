@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 def terrain_levels_vel(
-    env: ManagerBasedRLEnv, env_ids: Sequence[int], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    env: ManagerBasedRLEnv, env_ids: Sequence[int], asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"), custom_required_distance_for_move_up: float | None= None,
 ) -> torch.Tensor:
     """Curriculum based on the distance the robot walked when commanded to move at a desired velocity.
 
@@ -45,7 +45,10 @@ def terrain_levels_vel(
     # compute the distance the robot walked
     distance = torch.norm(asset.data.root_pos_w[env_ids, :2] - env.scene.env_origins[env_ids, :2], dim=1)
     # robots that walked far enough progress to harder terrains
-    move_up = distance > terrain.cfg.terrain_generator.size[0] / 2
+    if custom_required_distance_for_move_up is not None:
+        move_up = distance > custom_required_distance_for_move_up
+    else:
+        move_up = distance > terrain.cfg.terrain_generator.size[0] / 2
     # robots that walked less than half of their required distance go to simpler terrains
     move_down = distance < torch.norm(command[env_ids, :2], dim=1) * env.max_episode_length_s * 0.5
     move_down *= ~move_up

@@ -299,7 +299,9 @@ def main():
     if env_cfg.is_amp_env:
 
         # Expert trajectories are required to compute agent_expert_distances metrics
-        expert_trajectories = env.unwrapped.event_manager.get_term_cfg("reference_state_initialization").func.amp_loader.trajectories # this is a list of trajectories: [(n_frames, n_amp_obs),...]
+        # expert_trajectories = env.unwrapped.event_manager.get_term_cfg("reference_state_initialization").func.amp_loader.trajectories # this is a list of trajectories: [(n_frames, n_amp_obs),...]
+        # Better retrieve the expert trajectories from the ppo_runner, as RSI might not be used in some cases.
+        expert_trajectories = ppo_runner.alg.amp_data.trajectories
 
         # interpolate trajectories to calculate distances more precisely
         interpolated_expert_trajectories = []

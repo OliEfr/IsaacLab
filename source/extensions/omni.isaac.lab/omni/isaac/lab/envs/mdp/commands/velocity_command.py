@@ -94,6 +94,8 @@ class UniformVelocityCommand(CommandTerm):
 
         self.metrics["mean_vel_x"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["mean_vel_y"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["mean_vel_x_w"] = torch.zeros(self.num_envs, device=self.device)
+        self.metrics["mean_vel_y_w"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["mean_speed"]  = torch.zeros(self.num_envs, device=self.device)
         self.metrics["mean_yaw"] = torch.zeros(self.num_envs, device=self.device)
         self.metrics["target_velocity_x"] = torch.zeros(self.num_envs, device=self.device)
@@ -178,6 +180,8 @@ class UniformVelocityCommand(CommandTerm):
 
         self.metrics["mean_vel_x"] += self.robot.data.root_lin_vel_b[:, 0] / max_command_step
         self.metrics["mean_vel_y"] += self.robot.data.root_lin_vel_b[:, 1] / max_command_step
+        self.metrics["mean_vel_x_w"] += self.robot.data.root_lin_vel_w[:, 0] / max_command_step
+        self.metrics["mean_vel_y_w"] += self.robot.data.root_lin_vel_w[:, 1] / max_command_step
         self.metrics["mean_speed"] += speed / max_command_step
         self.metrics["mean_yaw"] += self.robot.data.root_ang_vel_b[:, 2] / max_command_step
         self.metrics["target_velocity_x"] += self.vel_command_b[:, 0] / max_command_step

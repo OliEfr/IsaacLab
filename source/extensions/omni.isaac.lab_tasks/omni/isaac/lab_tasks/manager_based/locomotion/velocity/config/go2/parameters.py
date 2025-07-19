@@ -23,7 +23,7 @@ from omni.isaac.lab.terrains.config.stairs import STAIRS_TERRAINS_CFG  # isort: 
 from omni.isaac.lab.terrains.config.box import BOX_TERRAINS_CFG  # isort: skip
 
 def set_play_settings_flat(cfg):
-    cfg.scene.num_envs = 50
+    cfg.scene.num_envs = 100
     cfg.scene.env_spacing = 2.5
     cfg.observations.policy.enable_corruption = False
     cfg.events.base_external_force_torque = None
@@ -72,7 +72,6 @@ def set_terrain(cfg):
         cfg.scene.terrain.terrain_generator = BOX_TERRAINS_CFG
         cfg.scene.height_scanner = None
         cfg.observations.policy.height_scan = None
-        cfg.curriculum.terrain_levels = None
     elif cfg.terrain_type == "flat_noisy":
         # TODO
         raise ValueError(f"Untested.")
@@ -170,48 +169,69 @@ def set_stairs_env_cfg_cmds(cfg):
 
 def set_box_env_cfg_cmds(cfg):
 
-    # command
-    cfg.commands.base_velocity = None
-    # NOTE could add z height to command to guidance during learning
-    cfg.commands.pose_command = mdp.UniformPose2dCommandCfg(
-        asset_name="robot",
-        simple_heading=True,
-        resampling_time_range=(20.0, 20.0), # >= episode length = no resampling
-        debug_vis=True,
-        ranges=mdp.UniformPose2dCommandCfg.Ranges(
-            pos_x=(0.0, 0.0),
-            pos_y=(2.0, 2.0),
+    cfg.commands.base_velocity = mdp.Global3DUniformVelocityCommandCfg(
+        # inherit parameters where possible
+        asset_name=cfg.commands.base_velocity.asset_name,
+        resampling_time_range=cfg.commands.base_velocity.resampling_time_range,
+        rel_standing_envs=cfg.commands.base_velocity.rel_standing_envs,
+        rel_heading_envs=cfg.commands.base_velocity.rel_heading_envs,
+        heading_command=cfg.commands.base_velocity.heading_command,
+        heading_control_stiffness=cfg.commands.base_velocity.heading_control_stiffness,
+        debug_vis=cfg.commands.base_velocity.debug_vis,
+        ranges=mdp.UniformVelocityCommandCfg.Ranges(
+            lin_vel_x=(-0.1, 0.1),
+            lin_vel_y=(0.5, 0.5),
+            ang_vel_z=(0, 0),
             heading=(
-                math.pi / 2, # - math.radians(20),
-                math.pi / 2, # + math.radians(20),
+                math.pi / 2, #- math.radians(20),
+                math.pi / 2, #+ math.radians(20),
             ),  # global heading "up the stairs" is in y direction, which is math.pi/2
         ),
     )
-
-    # observation
-    cfg.observations.policy.velocity_commands = None
-    cfg.observations.policy.pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
-
-    # reward; omit orientation tracking for now
-    cfg.rewards.track_lin_vel_xy_exp = None
-    cfg.rewards.track_ang_vel_z_exp = None
-    cfg.rewards.position_tracking = RewTerm(
-        func=position_command_error_tanh,
-        weight=30,
-        params={"std": 2.0, "command_name": "pose_command"},
-    )
-    cfg.rewards.position_tracking_fine_grained = RewTerm(
-        func=position_command_error_tanh,
-        weight=30,
-        params={"std": 0.2, "command_name": "pose_command"},
-    )
-    cfg.rewards.orientation_tracking = RewTerm(
-        func=heading_command_error_abs,
-        weight=-20,
-        params={"command_name": "pose_command"},
-    )
     
-    assert cfg.curriculum.terrain_levels == None, "Curriculum not supported for box environment as it is velocity dependent in the base environment config (vel_env_cfg.py)."
+    # PoseTracking Command
+    # command
+    # cfg.commands.base_velocity = None
+    # # NOTE could add z height to command to guidance during learning
+    # cfg.commands.pose_command = mdp.UniformPose2dCommandCfg(
+    #     asset_name="robot",
+    #     simple_heading=True,
+    #     resampling_time_range=(20.0, 20.0), # >= episode length = no resampling
+    #     debug_vis=True,
+    #     ranges=mdp.UniformPose2dCommandCfg.Ranges(
+    #         pos_x=(0.0, 0.0),
+    #         pos_y=(2.0, 2.0),
+    #         heading=(
+    #             math.pi / 2, # - math.radians(20),
+    #             math.pi / 2, # + math.radians(20),
+    #         ),  # global heading "up the stairs" is in y direction, which is math.pi/2
+    #     ),
+    # )
+
+    # # observation
+    # cfg.observations.policy.velocity_commands = None
+    # cfg.observations.policy.pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "pose_command"})
+
+    # # reward; omit orientation tracking for now
+    # cfg.rewards.track_lin_vel_xy_exp = None
+    # cfg.rewards.track_ang_vel_z_exp = None
+    # cfg.rewards.position_tracking = RewTerm(
+    #     func=position_command_error_tanh,
+    #     weight=30,
+    #     params={"std": 2.0, "command_name": "pose_command"},
+    # )
+    # cfg.rewards.position_tracking_fine_grained = RewTerm(
+    #     func=position_command_error_tanh,
+    #     weight=30,
+    #     params={"std": 0.2, "command_name": "pose_command"},
+    # )
+    # cfg.rewards.orientation_tracking = RewTerm(
+    #     func=heading_command_error_abs,
+    #     weight=-20,
+    #     params={"command_name": "pose_command"},
+    # )
+    
+    # assert cfg.curriculum.terrain_levels == None, "Curriculum not supported for box environment as it is velocity dependent in the base environment config (vel_env_cfg.py).
 
 
 def set_stairs_env_cfg_reset_base(cfg):
@@ -244,10 +264,10 @@ def add_box_parameters_observation(cfg):
     cfg.observations.policy.box_parameters = ObsTerm(func=mdp.box_parameters)
 
 
-def set_amp_settings(cfg, **kwargs):
+def set_amp_settings(cfg, motion_folder="datasets/fromVision_motions_3/*", **kwargs):
     cfg.is_amp_env = True
 
-    cfg.amp_motion_folder = "datasets/fromVision_motions_3/*"
+    cfg.amp_motion_folder = motion_folder
     cfg.amp_motion_files = glob.glob(cfg.amp_motion_folder)
 
     params = {
