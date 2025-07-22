@@ -13,6 +13,8 @@ from omni.isaac.lab.managers import RewardTermCfg as RewTerm
 
 from omni.isaac.lab_tasks.manager_based.navigation.mdp.rewards import position_command_error_tanh, heading_command_error_abs
 
+from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+
 ##
 # Pre-defined configs
 ##
@@ -188,6 +190,9 @@ def set_box_env_cfg_cmds(cfg):
             ),  # global heading "up the stairs" is in y direction, which is math.pi/2
         ),
     )
+    
+    # TODO this observation should be added
+    # cfg.observations.policy.root_lin_vel_w = ObsTerm(func=mdp.root_lin_vel_w, noise=Unoise(n_min=-0.1, n_max=0.1))
     
     # PoseTracking Command
     # command

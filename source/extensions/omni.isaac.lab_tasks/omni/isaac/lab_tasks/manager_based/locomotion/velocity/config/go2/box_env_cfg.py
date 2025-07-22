@@ -34,9 +34,8 @@ class UnitreeGo2BoxEnvCfgSimpleReward(LocomotionVelocityRoughEnvCfg):
         parameters.add_box_parameters_observation(self)
         parameters.set_box_env_cfg_cmds(self) # calling this last is the savest way
         parameters.set_rewards_simple(self)
-        self.rewards.track_lin_vel_xy_exp.weight = 10.0 # need to increase to force agent to move
         
-        self.scene.num_envs = 4096  # 5480
+        self.scene.num_envs = 4096 # 4096  # 5480
         self.episode_length_s = 10.0
 
         # RSI        
@@ -88,6 +87,7 @@ class UnitreeGo2BoxEnvCfgComplexReward(UnitreeGo2BoxEnvCfgSimpleReward):
         super().__post_init__()
 
         parameters.set_rewards_complex(self)
+        # self.rewards.dof_torques_l2.weight = -0.0001 # use this to make it a bit worse
         
 
 @configclass
@@ -133,9 +133,9 @@ class AMPUnitreeGo2BoxEnvCfg(LocomotionVelocityRoughEnvCfg):
         motion_files = glob.glob(self.amp_motion_folder)
         self.amp_motion_files = motion_files
 
-        assert (
-            self.events.reference_state_initialization is not None
-        ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
+        # assert (
+        #     self.events.reference_state_initialization is not None
+        # ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
 
 
 
