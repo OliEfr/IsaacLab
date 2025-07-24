@@ -6,15 +6,17 @@ from collections import defaultdict
 import plot_DEFINITIONS
 
 # Set global plot styling
-plt.rcParams.update({
-    'font.size': 40,           # Default font size
-    'axes.labelsize': 40,      # Axes labels font size
-    'xtick.labelsize': 24,     # X-tick label size
-    'ytick.labelsize': 24,     # Y-tick label size
-    'legend.fontsize': 24,     # Legend font size
-    'axes.titlesize': 24,      # Axes titles font size
-    'axes.titleweight': 'bold',  # Axes titles font weight
-})
+plt.rcParams.update(
+    {
+        "font.size": 40,  # Default font size
+        "axes.labelsize": 40,  # Axes labels font size
+        "xtick.labelsize": 24,  # X-tick label size
+        "ytick.labelsize": 24,  # Y-tick label size
+        "legend.fontsize": 24,  # Legend font size
+        "axes.titlesize": 24,  # Axes titles font size
+        "axes.titleweight": "bold",  # Axes titles font weight
+    }
+)
 
 
 metrics_to_plot = [
@@ -29,7 +31,7 @@ metrics_to_plot = [
 
 def load_yaml_file(file_path):
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             data = yaml.safe_load(f)
             if data is None:
                 data = {}
@@ -37,6 +39,7 @@ def load_yaml_file(file_path):
     except Exception as e:
         print(f"Error loading {file_path}: {e}")
         return {}
+
 
 def collect_metrics_per_run(runs_dict):
     """
@@ -56,7 +59,9 @@ def collect_metrics_per_run(runs_dict):
 
         for key, values in all_metrics_per_seed.items():
             if type(values[0]) == str:
-                print(f"Metric '{key}' is a string. Skipping. This is is only an info message: no action required.")
+                print(
+                    f"Metric '{key}' is a string. Skipping. This is is only an info message: no action required."
+                )
                 continue
             arr = np.array(values)
             mean_val = np.mean(arr)
@@ -66,14 +71,15 @@ def collect_metrics_per_run(runs_dict):
 
     return metrics
 
+
 def plot_metrics(metrics, runs, save_file_name):
     n_metrics = len(metrics_to_plot)
     if n_metrics == 0:
         print("No metrics to plot.")
         return
 
-    cols = n_metrics # int(np.ceil(np.sqrt(n_metrics)))
-    rows = 1 # int(np.ceil(n_metrics / cols))
+    cols = n_metrics  # int(np.ceil(np.sqrt(n_metrics)))
+    rows = 1  # int(np.ceil(n_metrics / cols))
 
     fig = plt.figure(figsize=(5 * cols, 4 * rows))
     # fig.suptitle("Mean and Range Between Seeds", fontsize=16, y=0.995)
@@ -94,7 +100,7 @@ def plot_metrics(metrics, runs, save_file_name):
         means = [v[1] for v in values]
         mins = [v[2] for v in values]
         maxs = [v[3] for v in values]
-        errors = [ [mean - mn, mx - mean] for mean, mn, mx in zip(means, mins, maxs) ]
+        errors = [[mean - mn, mx - mean] for mean, mn, mx in zip(means, mins, maxs)]
         errors = np.array(errors).T  # shape (2, N)
 
         x_pos = np.arange(len(run_names))
@@ -110,39 +116,62 @@ def plot_metrics(metrics, runs, save_file_name):
         )
 
         ax.set_xticks(x_pos)
-        ax.set_xticklabels(run_names, rotation=45, ha='right', fontsize=8)
+        ax.set_xticklabels(run_names, rotation=45, ha="right", fontsize=8)
         ax.set_xticklabels([])
         ax.set_xticks([])
 
         # Set ymax, because value for AnimalAvatar is so large
         if metric == "error_vel_xy":
-            y_max =  0.105
-            ax.set_ylim(0,y_max)
+            y_max = 0.105
+            ax.set_ylim(0, y_max)
             for x, mean, mn, mx in zip(x_pos, means, mins, maxs):
                 # add value in plot
                 if mx > y_max:
-                    ax.text(x, y_max-0.02, f"{mx:.2f}\n+-{mean - mn + (mx - mean):.2f}", ha='center', va='bottom', fontsize=12)
+                    ax.text(
+                        x,
+                        y_max - 0.02,
+                        f"{mx:.2f}\n+-{mean - mn + (mx - mean):.2f}",
+                        ha="center",
+                        va="bottom",
+                        fontsize=12,
+                    )
         if metric == "mean_mechanical_cot":
-            y_max =  5.0
-            ax.set_ylim(0,y_max)
+            y_max = 5.0
+            ax.set_ylim(0, y_max)
             for x, mean, mn, mx in zip(x_pos, means, mins, maxs):
                 # add value in plot
                 if mx > y_max:
-                    ax.text(x, y_max-1.5, f"{mx:.2f}\n+-{mean - mn + (mx - mean):.2f}", ha='center', va='bottom', fontsize=12)
-        
+                    ax.text(
+                        x,
+                        y_max - 1.5,
+                        f"{mx:.2f}\n+-{mean - mn + (mx - mean):.2f}",
+                        ha="center",
+                        va="bottom",
+                        fontsize=12,
+                    )
 
-        ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric],  y=1.07)
+        ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], y=1.07)
         # ax.set_ylabel(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
-        ax.grid(axis='y', linestyle='--', alpha=0.7)
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
 
-    handles = [plt.Rectangle((0,0),1,1, color= plot_DEFINITIONS.get_color_for_experiment_name(run)) for run in all_run_names]
-    fig.legend(handles, all_run_names,
-               bbox_to_anchor=(0.51, 0.05), loc='upper center',
-               ncol=2, frameon=False)
+    handles = [
+        plt.Rectangle(
+            (0, 0), 1, 1, color=plot_DEFINITIONS.get_color_for_experiment_name(run)
+        )
+        for run in all_run_names
+    ]
+    fig.legend(
+        handles,
+        all_run_names,
+        bbox_to_anchor=(0.51, 0.05),
+        loc="upper center",
+        ncol=2,
+        frameon=False,
+    )
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.1 + 0.02 * (len(all_run_names) // 5))
-    plt.savefig(f"plots/{save_file_name}", bbox_inches='tight')
+    plt.savefig(f"plots/{save_file_name}", bbox_inches="tight")
     print(f"Saved figure with selected metrics as 'plots/{save_file_name}'")
     plt.close()
 
@@ -215,13 +244,14 @@ runs_flat = {
 
 
 def main():
-    
+
     save_file_name = "selected_metrics_box.pdf"
-    
+
     runs = runs_box
-    
+
     metrics = collect_metrics_per_run(runs)
     plot_metrics(metrics, runs, save_file_name)
+
 
 if __name__ == "__main__":
     main()

@@ -2,14 +2,13 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 
 
-
 METRIC_FIELD_PLOT_TITLE_MAPPING = {
     "mean_mechanical_cot": "Cost of Transport [1]",
     "error_vel_xy": "Tracking Error Vel. [m/s]",
     "agent_expert_distances": "Imitation score ↓",
     "heading_error": "Heading Error [rad]",
     "error_vel_yaw": "Tracking Error Yaw [rad]",
-    "real_curriculum_state": "Mean successful\nbox height [m]", # TODO needs to be adjusted based on terrain
+    "real_curriculum_state": "Mean successful\nbox height [m]",  # TODO needs to be adjusted based on terrain
 }
 
 XY_FIELD_XY_LABEL_MAPPING = {
@@ -18,6 +17,7 @@ XY_FIELD_XY_LABEL_MAPPING = {
     "heading_target": "Target Heading [rad]",
     "target_yaw": "Target Ang. Vel. z [rad]",
 }
+
 
 @dataclass
 class DataSourceNames:
@@ -28,9 +28,9 @@ class DataSourceNames:
     mocap2 = "MoCap2"
     mocap3 = "MoCap3"
     mocap4 = "MoCap4"
-    
+
+
 @dataclass
-    
 @dataclass
 class ExperimentNames:
     manual_trajectory = "Manual Trajectory (AMP)"
@@ -45,10 +45,10 @@ class ExperimentNames:
     drl_simple_reward = "Simple Reward (PPO)"
     drl_complex_reward = "Complex Reward (PPO)"
     animal_avatar = "Animal Avatar (AMP)"
-    
+
     def map_experiment_dir_to_experiment_name(self, experiment_dir):
         # Currently this function is used by plot_errorOnTargetDistribution.py
-        
+
         # NOTE order matters for this elif chain
         if "mocap_AMP_for_hardware" in experiment_dir:
             return self.mocap
@@ -68,9 +68,10 @@ class ExperimentNames:
             return self.video_depth_cam
         else:
             raise ValueError(f"Unknown experiment dir: {experiment_dir}.")
-        
+
+
 def get_color_for_experiment_name(experiment_name):
-    cmap = plt.cm.get_cmap('tab10', 10)
+    cmap = plt.cm.get_cmap("tab10", 10)
     if experiment_name == ExperimentNames.manual_trajectory:
         return cmap(0)
     elif experiment_name == ExperimentNames.video_depth_cam:
@@ -78,7 +79,7 @@ def get_color_for_experiment_name(experiment_name):
     elif experiment_name == ExperimentNames.drl_complex_reward:
         return cmap(2)
     elif experiment_name == ExperimentNames.drl_simple_reward:
-        return cmap(8) # cmap(4) is red -> avoid
+        return cmap(8)  # cmap(4) is red -> avoid
     elif experiment_name == ExperimentNames.animal_avatar:
         return cmap(4)
     elif experiment_name == ExperimentNames.mocap:
@@ -88,7 +89,6 @@ def get_color_for_experiment_name(experiment_name):
     elif experiment_name == ExperimentNames.video_depth_model:
         return cmap(7)
     else:
-        raise ValueError(f"Unknown experiment name for colormapping: {experiment_name}.")
-            
-
-        
+        raise ValueError(
+            f"Unknown experiment name for colormapping: {experiment_name}."
+        )
