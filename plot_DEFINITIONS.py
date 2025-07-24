@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+import matplotlib.pyplot as plt
+
 
 
 METRIC_FIELD_PLOT_TITLE_MAPPING = {
@@ -7,6 +9,7 @@ METRIC_FIELD_PLOT_TITLE_MAPPING = {
     "agent_expert_distances": "Imitation score ↓",
     "heading_error": "Heading Error [rad]",
     "error_vel_yaw": "Tracking Error Yaw [rad]",
+    "real_curriculum_state": "Mean successful\nbox height [m]", # TODO needs to be adjusted based on terrain
 }
 
 XY_FIELD_XY_LABEL_MAPPING = {
@@ -25,6 +28,8 @@ class DataSourceNames:
     mocap2 = "MoCap2"
     mocap3 = "MoCap3"
     mocap4 = "MoCap4"
+    
+@dataclass
     
 @dataclass
 class ExperimentNames:
@@ -63,5 +68,27 @@ class ExperimentNames:
             return self.video_depth_cam
         else:
             raise ValueError(f"Unknown experiment dir: {experiment_dir}.")
+        
+def get_color_for_experiment_name(experiment_name):
+    cmap = plt.cm.get_cmap('tab10', 10)
+    if experiment_name == ExperimentNames.manual_trajectory:
+        return cmap(0)
+    elif experiment_name == ExperimentNames.video_depth_cam:
+        return cmap(1)
+    elif experiment_name == ExperimentNames.drl_complex_reward:
+        return cmap(2)
+    elif experiment_name == ExperimentNames.drl_simple_reward:
+        return cmap(8) # cmap(4) is red -> avoid
+    elif experiment_name == ExperimentNames.animal_avatar:
+        return cmap(4)
+    elif experiment_name == ExperimentNames.mocap:
+        return cmap(5)
+    elif experiment_name == ExperimentNames.video_depth_cam_extendedWithoutReverse:
+        return cmap(6)
+    elif experiment_name == ExperimentNames.video_depth_model:
+        return cmap(7)
+    else:
+        raise ValueError(f"Unknown experiment name for colormapping: {experiment_name}.")
+            
 
         
