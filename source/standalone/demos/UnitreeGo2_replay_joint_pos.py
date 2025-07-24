@@ -260,7 +260,6 @@ def run_simulator(
         
 
         pos_interpolated = AMPLoader.slerp(pos_start, pos_end, alpha)
-        pos_interpolated += origins[0] # move robot to terrain origin (should be indexed by 0)
         rot_interpolated = utils.quaternion_slerp(rot_start.clone(), rot_end.clone(), alpha)
 
         jpos_interpolated = AMPLoader.slerp(jpos_start, jpos_end, alpha)
@@ -279,8 +278,8 @@ def run_simulator(
                                 # Combine new root pose
             root_state = torch.cat(
                 [
-                    pos_start + origins[0],
-                    rot_start,
+                    pos_interpolated + origins[0],
+                    rot_interpolated,
                     torch.zeros_like(pos_start), # base lin vel
                     torch.zeros_like(pos_start), # base ang vel
                 ],
@@ -288,6 +287,7 @@ def run_simulator(
             ).unsqueeze(0)
 
             robot.write_root_state_to_sim(root_state)
+
         # perform step
         sim.step()
         
