@@ -62,12 +62,12 @@ from omni.isaac.lab_assets.unitree import UNITREE_GO2_CFG  # isort:skip
 UNITREE_GO2_CFG.spawn.rigid_props.disable_gravity = True
 
 scene = "box"
-box_height = 0.3
+box_height = 0.2
 
 # Recorded jpos path
-recording_path = "datasets/temp/obstacle_3_3015061000_amp_increased_feet_z.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
+recording_path = "datasets/fromVision_motions_DepthCam_standUp_feetZAmpl/stand_up_2431270000_amp.txt"  # "datasets/fromVision_motions/fromVision_amp.txt" || datasets/mocap_motions/trot2_amp.txt
 
-freq = 0.5  # replay frequency in Hz for the recorded trajectory
+freq = 0.2  # replay frequency in Hz for the recorded trajectory
 
 
 def define_origins(num_origins: int, spacing: float) -> list[list[float]]:
@@ -275,18 +275,24 @@ def run_simulator(
             robot.write_joint_state_to_sim(
                 jpos_interpolated.clone(), torch.zeros_like(jpos_interpolated).clone()
             )
-
-            # Combine new root pose
+            
+                                # Combine new root pose
             root_state = torch.cat(
                 [
-                    pos_interpolated,
-                    rot_interpolated,
+                    pos_start + origins[0],
+                    rot_start,
+                    torch.zeros_like(pos_start), # base lin vel
+                    torch.zeros_like(pos_start), # base ang vel
                 ],
                 dim=-1,
-            )
-            robot.write_root_pose_to_sim(root_state.clone())
+            ).unsqueeze(0)
+
+            robot.write_root_state_to_sim(root_state)
         # perform step
         sim.step()
+        
+        
+
 
         # update buffers
         for robot in entities.values():
