@@ -394,6 +394,11 @@ class RewardsCfg:
     # style_jpos = RewTerm(func=mdp.style_jpos, weight=0.0, params={"factor": -2.0})
     # style_jvel = RewTerm(func=mdp.style_jvel, weight=0.0, params={"factor": -0.1})
     # TODO add foot z-height style penalty
+    
+    base_height_l2 = RewTerm(func=mdp.base_height_l2, weight=-0.0, params={"target_height": 0.4})
+    
+    head_height_l2 = RewTerm(func=mdp.head_height_l2, weight=-0.0)
+    feet_height_l2 = RewTerm(func=mdp.feet_height_l2, weight=-0.0)
 
 @configclass
 class TerminationsCfg:

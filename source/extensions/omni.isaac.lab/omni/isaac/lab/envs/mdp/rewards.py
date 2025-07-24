@@ -110,6 +110,31 @@ def base_height_l2(
     # TODO: Fix this for rough-terrain.
     return torch.square(asset.data.root_pos_w[:, 2] - target_height)
 
+def head_height_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    asset : RigidObject = env.scene[asset_cfg.name]
+    
+    target_height = 0.7
+    
+    head_indices = asset.find_bodies(["Head_upper"]) # "Head_lower"
+    head_height = asset.data.body_pos_w[:,head_indices[0], 2]
+    
+    head_height_error = torch.sum(torch.square(head_height - target_height), dim=1)
+    
+    return torch.exp(-head_height_error / 0.3**2)
+    
+def feet_height_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+    asset : RigidObject = env.scene[asset_cfg.name]
+    
+    target_height = 0.7
+    
+        
+    feet_indices = asset.find_bodies(["FR_foot", "FL_foot"])
+    feet_height = asset.data.body_pos_w[:,feet_indices[0], 2]
+    
+    feet_height_error = torch.sum(torch.square(feet_height - target_height), dim=1)
+    
+    return torch.exp(-feet_height_error / 0.6**2)
+    
 
 def body_lin_acc_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize the linear acceleration of bodies using L2-kernel."""

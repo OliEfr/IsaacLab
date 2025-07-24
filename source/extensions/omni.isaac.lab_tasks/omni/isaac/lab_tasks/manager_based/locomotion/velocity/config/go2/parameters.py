@@ -10,6 +10,8 @@ from omni.isaac.lab.managers import SceneEntityCfg
 import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
 from omni.isaac.lab.managers import RewardTermCfg as RewTerm
+from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
+
 
 from omni.isaac.lab_tasks.manager_based.navigation.mdp.rewards import position_command_error_tanh, heading_command_error_abs
 
@@ -95,6 +97,17 @@ def set_rewards_simple(cfg):
     cfg.rewards.track_ang_vel_z_exp.weight = (
         1.5  # was 0.75 before adding actuator delay
     )
+    
+def set_rewards_standing(cfg):
+    # disable rewards
+    for field in fields(cfg.rewards):
+        reward_obj = getattr(cfg.rewards, field.name)
+        reward_obj.weight = 0.0
+        
+    # cfg.rewards.base_height_l2.weight = 1.0
+    cfg.rewards.head_height_l2.weight = 1.0
+    cfg.rewards.feet_height_l2.weight = 1.0
+        
 
 
 def set_velocity_rewards_amp(cfg):
@@ -321,3 +334,18 @@ def disable_domain_randomization(cfg):
     print("[INFO] Domain Randomization disabled. Note that you can probably train with much lower max_iterations compared to when using Domain Randomization.")
 
     assert not cfg.terrain_type == "flat_noisy", "flat_noisy is only for Domain Randomization."
+    
+def set_standing_env_terminations(cfg):
+    cfg.terminations.bad_orientation = None
+    cfg.termination.head_contact = DoneTerm(
+        func=mdp.illegal_contact,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["Head_upper", "Head_lower"]), "threshold": 1.0},
+    )
+    cfg.terminations.hip_contact = DoneTerm(
+        func=mdp.illegal_contact,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["FL_hip", "FR_hip", "RL_hip", "RR_hip"]), "threshold": 1.0},
+    )
+    cfg.terminations.root_height = DoneTerm(
+        func=mdp.root_height_below_minimum,
+        params={"minimum_height": 0.15},
+    )

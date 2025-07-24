@@ -73,6 +73,26 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: Play Standing Environment",
+            "type": "python",
+            "request": "launch",
+            "args": [
+                "--task",
+                "Isaac-Velocity-Standing-SimpleReward-Unitree-Go2-v0",
+                "--num_envs",
+                "200",
+                "--load_run", "TEST_4_SEED_1",
+                // "--headless"
+                // "--x_speed", ".5",
+                // "--y_speed", ".5",
+                // "--yaw", "0.0",
+                // "--evaluate",
+                // "--eval_config", "TargetXHeadingDistribution",
+            ],
+            "program": "${workspaceFolder}/source/standalone/workflows/rsl_rl/play.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Play Stairs Environment",
             "type": "python",
             "request": "launch",
