@@ -79,6 +79,11 @@ parser.add_argument(
     default=None,
     help="Target max_delay for evaluation. For Huawei experiments.",
 )
+parser.add_argument(
+    "--disable_rsi",
+    action="store_true",
+    help="Disable RSI. If set, RSI will be disabled.",
+)
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -185,10 +190,21 @@ def main():
         env_cfg.scene.robot.actuators['base_legs'].max_delay = int(args_cli.max_delay)
         print(env_cfg.scene.robot.actuators['base_legs'].max_delay)
 
+    # Overwrite RSI
+    if args_cli.disable_rsi:
+        env_cfg.events.reference_state_initialization = None
+        # TODO would need to replace by random initialization.
+
     # Load the stored agent config. We replace some parameters in agent_cfg with the stored values later in the code.
     f = open(os.path.join(log_dir, "params", "agent.yaml"))
     loaded_agent_cfg = yaml.load(f, Loader=yaml.FullLoader)
     f.close()
+
+    f = open(os.path.join(log_dir, "params", "env.yaml"))
+    loaded_env_cfg = yaml.load(f, Loader=yaml.UnsafeLoader)
+    f.close()
+
+    # Get curriculu
 
     # Previous policies have been trained with different configuration.
     agent_cfg.policy.actor_hidden_dims = loaded_agent_cfg["policy"]["actor_hidden_dims"]
@@ -417,7 +433,7 @@ def main():
 
             if dones.any():
                 if args_cli.evaluate:
-                    # get metrics like that
+                    # command_manager metrics
                     for (
                         metric_name,
                         metric_value,
@@ -425,6 +441,9 @@ def main():
                         "base_velocity"
                     ].episode_metrics.items():
                         eval_episode_metrics.setdefault(metric_name, []).extend(metric_value[dones==1.0].cpu().tolist())
+                    # Curriculum state
+                    if hasattr(env.unwrapped, 'curriculum_manager'):
+                        eval_episode_metrics["curriculum_state"] = env.unwrapped.curriculum_manager._curriculum_state["terrain_levels"]
                     # amp rewards
                     # eval_episode_metrics.setdefault("amp_rewards", []).extend(
                     #     (
@@ -461,15 +480,16 @@ def main():
             if timestep == args_cli.video_length:
                 break
 
-        # Calculate the elapsed real-world time for this loop iteration
-        elapsed_real_time = time.time() - current_time
+        if not args_cli.evaluate:
+            # Calculate the elapsed real-world time for this loop iteration
+            elapsed_real_time = time.time() - current_time
 
-        # Sleep for the remaining time to match the simulated step time
-        sleep_time = simulated_step_time - elapsed_real_time
-        if sleep_time > 0:
-            time.sleep(sleep_time)
-        # else:
-        #     print(f"WARNING: Simulation slower than real time for {sleep_time}s!")
+            # Sleep for the remaining time to match the simulated step time
+            sleep_time = simulated_step_time - elapsed_real_time
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+            # else:
+            #     print(f"WARNING: Simulation slower than real time for {sleep_time}s!")
 
         if args_cli.evaluate:
             if total_num_steps >= NUM_EVAL_STEPS:
@@ -483,6 +503,25 @@ def main():
 
         for key, value in eval_episode_metrics.items():
             eval_episode_metrics[key] = torch.mean(torch.tensor(value)).item()
+
+        # get real values for curriculum
+        if hasattr(env.unwrapped, "curriculum_manager"):
+            if (
+                "box"
+                in loaded_env_cfg["scene"]["terrain"]["terrain_generator"][
+                    "sub_terrains"
+                ]
+            ):
+                curr_min_max = loaded_env_cfg["scene"]["terrain"]["terrain_generator"][
+                    "sub_terrains"
+                ]["box"]["box_height_range"]
+            else:
+                raise ValueError("Unknown terrain type to calculate real curriculum values.")
+            eval_episode_metrics["real_curriculum_state"] = (
+                (eval_episode_metrics["curriculum_state"] - 0) /
+                loaded_env_cfg["scene"]["terrain"]["terrain_generator"]["num_rows"]
+            ) * (curr_min_max[1] - curr_min_max[0]) + curr_min_max[0]
+
         # other stats
         eval_episode_metrics["num_eval_steps"] = NUM_EVAL_STEPS
         eval_episode_metrics["num_envs"] = env.env.num_envs

@@ -29,4 +29,4 @@ BOX_TERRAINS_CFG = TerrainGeneratorCfg(
         )
     },
 )
-"""Stair terrains configuration."""
+"""Box terrains configuration."""
