@@ -5,10 +5,12 @@ import os
 import glob
 from collections import defaultdict
 import re
+import plot_DEFINITIONS
+
 
 # --- Plotting Configuration & Definitions ---
 
-# Set global plot styling 
+# Set global plot styling
 plt.rcParams.update({
     'font.size': 32,           # Default font size
     'axes.labelsize': 32,      # Axes labels font size
@@ -37,7 +39,7 @@ cmap = plt.cm.get_cmap('tab10', len(all_run_names))
 COLORS_TO_PLOT = {
     "MoCap": cmap.colors[1],
     "MoCap (AMP)": cmap.colors[1],
-    "Vid. (extended) (AMP)": cmap.colors[3],
+    "Video w. Depth Camera (extended) (AMP)": cmap.colors[3],
 }
 
 # --- Data Loading and Processing Functions ---
@@ -165,9 +167,16 @@ def plot_comparison(all_experiments_data, metrics_to_plot):
 
             means = [s["mean"] for s in metric_stats]
 
-
             # Plot the mean line and capture its color
-            (line,) = ax.plot(weights, means, marker="o", linestyle="-", label=exp_name, linewidth=4, color=COLORS_TO_PLOT[exp_name])
+            (line,) = ax.plot(
+                weights,
+                means,
+                marker="o",
+                linestyle="-",
+                label=exp_name,
+                linewidth=4,
+                color=plot_DEFINITIONS.get_color_for_experiment_name(exp_name),
+            )
             line_color = line.get_color()  # Get the color assigned by matplotlib
 
             # Calculate the error (difference from mean) for error bars
@@ -214,7 +223,7 @@ def main():
     # Define the experiment patterns and their display names for the legend
     # You can add or modify entries here to change the plots.
     EXPERIMENTS = {
-        "Vid. (extended) (AMP)": "2025-07-11_21-14-15_fromVision_motions_DepthCam_extendedWithoutReverse_*trackAnVelRewWeight*",
+        "Video w. Depth Camera (extended) (AMP)": "2025-07-11_21-14-15_fromVision_motions_DepthCam_extendedWithoutReverse_*trackAnVelRewWeight*",
         "MoCap (AMP)": "2025-07-13_13-22-15_mocap_AMP_for_hardware_*trackAnVelRewWeight*",
     }
 
@@ -239,14 +248,14 @@ def main():
     ] + all_data["MoCap (AMP)"]["error_vel_xy"]
     
     # prepend datapoint (xy vel)
-    all_data["Vid. (extended) (AMP)"]["weights"] = [20] + all_data["Vid. (extended) (AMP)"]["weights"]
-    all_data["Vid. (extended) (AMP)"]["error_vel_yaw"]  = [
+    all_data["Video w. Depth Camera (extended) (AMP)"]["weights"] = [20] + all_data["Video w. Depth Camera (extended) (AMP)"]["weights"]
+    all_data["Video w. Depth Camera (extended) (AMP)"]["error_vel_yaw"]  = [
         {"mean": 0.12919001529, "min": 0.1237926259636879, "max": 0.13561595976352692},
-    ] + all_data["Vid. (extended) (AMP)"]["error_vel_yaw"]
+    ] + all_data["Video w. Depth Camera (extended) (AMP)"]["error_vel_yaw"]
     
-    all_data["Vid. (extended) (AMP)"]["error_vel_xy"]  = [
+    all_data["Video w. Depth Camera (extended) (AMP)"]["error_vel_xy"]  = [
         {"mean": 0.04806786527, "min": 0.04705556482076645, "max": 0.04966380074620247},
-    ] + all_data["Vid. (extended) (AMP)"]["error_vel_xy"]
+    ] + all_data["Video w. Depth Camera (extended) (AMP)"]["error_vel_xy"]
     
 
     if all_data:
