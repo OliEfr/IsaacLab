@@ -89,6 +89,13 @@ class UnitreeGo2BoxEnvCfgComplexReward(UnitreeGo2BoxEnvCfgSimpleReward):
         parameters.set_rewards_complex(self)
         # self.rewards.dof_torques_l2.weight = -0.0001 # use this to make it a bit worse
         
+        
+        # RSI
+        # rsi_params = {
+        #     "reference_states": ["joints", "base"],
+        # }
+        # parameters.set_amp_settings(self, motion_folder = "datasets/fromVision_motions_DepthCam_obstacle/*", **rsi_params)
+        
 
 @configclass
 class UnitreeGo2BoxEnvCfgComplexReward_PLAY(UnitreeGo2BoxEnvCfgComplexReward):

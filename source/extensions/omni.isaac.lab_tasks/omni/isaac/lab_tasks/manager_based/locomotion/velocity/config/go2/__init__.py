@@ -372,3 +372,26 @@ gym.register(
         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_flat_ppo_cfg.yaml",
     },
 )
+
+"""""" """""" """""" """""" """""" """""" """""" """""" ""
+
+
+gym.register(
+    id="Isaac-Velocity-AMPStanding-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.standing_env_cfg:AMPUnitreeGo2StandingEnvCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPStandingPPORunnerCfg",
+    },
+)
+
+gym.register(
+    id="Isaac-Velocity-AMPStanding-Unitree-Go2-Play-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.standing_env_cfg:AMPUnitreeGo2StandingEnvCfg_PLAY",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPStandingPPORunnerCfg",
+    },
+)
