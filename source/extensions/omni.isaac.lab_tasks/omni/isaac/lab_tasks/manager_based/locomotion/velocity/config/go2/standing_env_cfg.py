@@ -32,6 +32,17 @@ class UnitreeGo2StandingEnvCfgSimpleReward(LocomotionVelocityRoughEnvCfg):
         parameters.set_rewards_standing(self)
         parameters.set_standing_env_terminations(self)
         
+        self.episode_length_s = 5.0
+        
+        
+        # RSI        
+        # rsi_params = {
+        #     "reference_states": ["joints", "base"],
+        # }
+        # parameters.set_amp_settings(self, motion_folder = "datasets/fromVision_motions_DepthCam_standUp_feetZAmpl/stand_up_2431270000_amp.txt", **rsi_params)
+        
+        # self.is_amp_env = False
+
 
 @configclass
 class UnitreeGo2StandingEnvCfgSimpleReward_PLAY(UnitreeGo2StandingEnvCfgSimpleReward):
@@ -75,31 +86,28 @@ class AMPUnitreeGo2StandingEnvCfg(LocomotionVelocityRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
-        
-        assert False, "To be implemented"
 
         self.terrain_type = "flat"
         parameters.set_terrain(self)
+        parameters.set_rewards_standing_amp(self)
+        parameters.set_standing_env_terminations(self)
 
-        parameters.set_velocity_rewards_amp(self)
+        self.episode_length_s = 5.0
+        self.scene.num_envs = 5480  # with DR: 2 * 4096; without DR: 5480
 
-        self.scene.num_envs = 2 * 4096  # with DR: 2 * 4096; without DR: 5480
-
-        # style
-        self.action_manager_class = "ActionManager"  # Default action manager
-
-        parameters.set_amp_settings(self)
-        # parameters.disable_domain_randomization(self) # for reproducibility of old exps
-        # self.terminations.bad_orientation = None # for reproducibility of old exps
+        rsi_params = {
+            "reference_states": ["joints", "base"],
+        }
+        parameters.set_amp_settings(self, motion_folder = "datasets/fromVision_motions_DepthCam_standUp_feetZAmpl/*", **rsi_params)
 
     def update_motion_files(self):
         motion_files = glob.glob(self.amp_motion_folder)
         self.amp_motion_files = motion_files
 
-        assert (
-            self.events.reference_state_initialization is not None
-        ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
-        self.events.reference_state_initialization.params["motion_files"] = motion_files
+        # assert (
+        #     self.events.reference_state_initialization is not None
+        # ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
+        # self.events.reference_state_initialization.params["motion_files"] = motion_files
 
 
 @configclass
@@ -110,4 +118,4 @@ class AMPUnitreeGo2StandingEnvCfg_PLAY(AMPUnitreeGo2StandingEnvCfg):
 
         parameters.set_play_settings_flat(self)
 
-        self.amp_motion_folder = "datasets/dummy/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training
+        self.amp_motion_folder = "datasets/fromVision_motions_DepthCam_standUp_feetZAmpl/*" # required otherwise it wont start; it is recomended to use same motion files as used for training

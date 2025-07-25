@@ -7,7 +7,6 @@ import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.managers import EventTermCfg as EventTerm
 from omni.isaac.lab.managers import SceneEntityCfg
 
-import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
 from omni.isaac.lab.managers import RewardTermCfg as RewTerm
 from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
@@ -97,17 +96,35 @@ def set_rewards_simple(cfg):
     cfg.rewards.track_ang_vel_z_exp.weight = (
         1.5  # was 0.75 before adding actuator delay
     )
-    
+
 def set_rewards_standing(cfg):
     # disable rewards
     for field in fields(cfg.rewards):
         reward_obj = getattr(cfg.rewards, field.name)
         reward_obj.weight = 0.0
         
-    # cfg.rewards.base_height_l2.weight = 1.0
     cfg.rewards.head_height_l2.weight = 1.0
     cfg.rewards.feet_height_l2.weight = 1.0
+    
+    # Make robot stand still, i.e., avoid drift
+    cfg.commands.base_velocity.ranges.lin_vel_x=(0.0, 0.0)
+    cfg.commands.base_velocity.ranges.lin_vel_y=(0.0, 0.0)
+    cfg.rewards.track_lin_vel_xy_exp.weight = 0.3
+    
+def set_rewards_standing_amp(cfg):
+    # disable rewards
+    for field in fields(cfg.rewards):
+        reward_obj = getattr(cfg.rewards, field.name)
+        reward_obj.weight = 0.0
         
+    # cfg.rewards.base_height_l2.weight = 1.0
+    cfg.rewards.head_height_l2.weight = 45.0
+    cfg.rewards.feet_height_l2.weight = 45.0
+    
+    # Make robot stand still, i.e., avoid drift
+    cfg.commands.base_velocity.ranges.lin_vel_x=(0.0, 0.0)
+    cfg.commands.base_velocity.ranges.lin_vel_y=(0.0, 0.0)
+    cfg.rewards.track_lin_vel_xy_exp.weight = 20
 
 
 def set_velocity_rewards_amp(cfg):
@@ -203,10 +220,10 @@ def set_box_env_cfg_cmds(cfg):
             ),  # global heading "up the stairs" is in y direction, which is math.pi/2
         ),
     )
-    
+
     # TODO this observation should be added
     # cfg.observations.policy.root_lin_vel_w = ObsTerm(func=mdp.root_lin_vel_w, noise=Unoise(n_min=-0.1, n_max=0.1))
-    
+
     # PoseTracking Command
     # command
     # cfg.commands.base_velocity = None
@@ -248,7 +265,7 @@ def set_box_env_cfg_cmds(cfg):
     #     weight=-20,
     #     params={"command_name": "pose_command"},
     # )
-    
+
     # assert cfg.curriculum.terrain_levels == None, "Curriculum not supported for box environment as it is velocity dependent in the base environment config (vel_env_cfg.py).
 
 
@@ -334,10 +351,10 @@ def disable_domain_randomization(cfg):
     print("[INFO] Domain Randomization disabled. Note that you can probably train with much lower max_iterations compared to when using Domain Randomization.")
 
     assert not cfg.terrain_type == "flat_noisy", "flat_noisy is only for Domain Randomization."
-    
+
 def set_standing_env_terminations(cfg):
     cfg.terminations.bad_orientation = None
-    cfg.termination.head_contact = DoneTerm(
+    cfg.terminations.head_contact = DoneTerm(
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=["Head_upper", "Head_lower"]), "threshold": 1.0},
     )

@@ -327,8 +327,17 @@ def main():
                 interpolate_trajectory(trajectory, num_interpolations)
             )
 
+        interpolated_expert_trajectories_list = interpolated_expert_trajectories
         interpolated_expert_trajectories = torch.cat(
             interpolated_expert_trajectories, dim=0
+        )
+
+        agent_expert_distances_individual = torch.zeros(
+            (
+                int(env_cfg.episode_length_s / env.unwrapped.step_dt),
+                len(interpolated_expert_trajectories_list),
+            ),
+            device=env.unwrapped.device,
         )
 
         # amp_obs = env.unwrapped.get_amp_observations().to(env.unwrapped.device)
@@ -409,6 +418,10 @@ def main():
                 amp_observations = env.unwrapped.get_amp_observations()
                 agent_expert_distances += torch.cdist(amp_observations, interpolated_expert_trajectories).min(dim=1).values
 
+                # for i, traj in enumerate(interpolated_expert_trajectories_list):
+                #     assert amp_observations.shape[0] == 1, "Expect only one environment."
+                #     agent_expert_distances_individual[timestep, i] = torch.cdist(amp_observations, traj).min(dim=1).values[0]
+
                 # NOTE using the discriminator output to calculate style imitation is suboptimal. Its better to introduce the agent_expert_distances metric.
                 # next_amp_obs_with_term = torch.clone(next_amp_obs)
                 # next_amp_obs_with_term[rest_env_ids] = terminal_amp_states
@@ -474,8 +487,8 @@ def main():
             obs_history_storage.add(obs)
             obs_history = obs_history_storage.get()
 
+        timestep += 1
         if args_cli.video:
-            timestep += 1
             # Exit the play loop after recording one video
             if timestep == args_cli.video_length:
                 break
