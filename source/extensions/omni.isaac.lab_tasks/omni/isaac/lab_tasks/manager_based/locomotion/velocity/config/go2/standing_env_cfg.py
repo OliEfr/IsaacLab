@@ -27,6 +27,8 @@ class UnitreeGo2StandingEnvCfgSimpleReward(LocomotionVelocityRoughEnvCfg):
 
         self.terrain_type = "flat"
         
+        # TODO DR: set timing for random pushes
+        
         self.scene.num_envs = 4096  # with DR: 2 * 4096; without DR: 5480
         parameters.set_terrain(self)
         parameters.set_rewards_standing(self)

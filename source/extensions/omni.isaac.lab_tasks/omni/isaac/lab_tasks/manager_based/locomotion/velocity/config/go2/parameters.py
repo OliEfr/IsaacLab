@@ -307,10 +307,10 @@ def set_amp_settings(cfg, motion_folder="datasets/fromVision_motions_3/*", **kwa
     cfg.amp_motion_files = glob.glob(cfg.amp_motion_folder)
 
     params = {
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
-            "device": cfg.sim.device,
-            "time_between_frames": cfg.decimation * cfg.sim.dt,
-            "motion_files": cfg.amp_motion_files,
+        "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
+        "device": cfg.sim.device,
+        "time_between_frames": cfg.decimation * cfg.sim.dt,
+        "motion_files": cfg.amp_motion_files, # by default RSI motion files are equal to AMP motion files. Overwrite this using the argument **kwargs!
     }
     params.update(kwargs)
 
