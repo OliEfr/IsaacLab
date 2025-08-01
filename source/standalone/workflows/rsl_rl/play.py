@@ -457,7 +457,7 @@ def main():
                         eval_episode_metrics.setdefault(metric_name, []).extend(metric_value[dones==1.0].cpu().tolist())
                     # Curriculum state
                     if hasattr(env.unwrapped, "curriculum_manager"):
-                        if hasattr(env.unwrapped.curriculum_manager._curriculum_state, "terrain_levels"):
+                        if "terrain_levels" in env.unwrapped.curriculum_manager._curriculum_state:
                             eval_episode_metrics["curriculum_state"] = (
                                 env.unwrapped.curriculum_manager._curriculum_state[
                                     "terrain_levels"

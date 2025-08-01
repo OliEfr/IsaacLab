@@ -191,6 +191,22 @@ def plot_metrics(metrics, runs, save_file_name):
     plt.close()
 
 
+runs_standing = {
+    plot_DEFINITIONS.ExperimentNames.video_depth_cam: [
+        "logs/rsl_rl/unitree_go2_AMPstanding/2025-07-26_17-52-05_RSI_SEED_1",
+        "logs/rsl_rl/unitree_go2_AMPstanding/2025-07-26_17-52-05_RSI_SEED_2",
+        "logs/rsl_rl/unitree_go2_AMPstanding/2025-07-26_17-52-05_RSI_SEED_3",
+    ],
+    plot_DEFINITIONS.ExperimentNames.drl_simple_reward: [
+        # "logs/rsl_rl/unitree_go2_Box/2025-07-23_15-13-01_SimpleRew_Curr_SEED_1",
+        "logs/rsl_rl/unitree_go2_standing/2025-07-25_13-00-01_SimpleRew_SEED_1",
+        "logs/rsl_rl/unitree_go2_standing/2025-07-25_13-00-01_SimpleRew_SEED_2",
+        "logs/rsl_rl/unitree_go2_standing/2025-07-25_13-00-01_SimpleRew_SEED_3",
+    ],
+    plot_DEFINITIONS.ExperimentNames.drl_complex_reward: None,
+    plot_DEFINITIONS.ExperimentNames.mocap: None, # specify "N/A" plotting like this
+}
+
 runs_box = {
     plot_DEFINITIONS.ExperimentNames.video_depth_cam: [
         "logs/rsl_rl/unitree_go2_AMPBox/2025-07-19_12-52-33_Curr_RSI_SEED_1",
@@ -207,7 +223,11 @@ runs_box = {
         "logs/rsl_rl/unitree_go2_Box/2025-07-23_15-13-01_ComplexRew_Curr_SEED_2",
         "logs/rsl_rl/unitree_go2_Box/2025-07-23_15-13-01_ComplexRew_Curr_SEED_3",
     ],
-    plot_DEFINITIONS.ExperimentNames.mocap: None, # specify "N/A" plotting like this
+    plot_DEFINITIONS.ExperimentNames.mocap: [
+        "logs/rsl_rl/unitree_go2_AMPBox/2025-07-30_18-44-03_MoCapAMP_reduced_data_SEED_1", 
+        "logs/rsl_rl/unitree_go2_AMPBox/2025-07-30_18-44-03_MoCapAMP_reduced_data_SEED_2", 
+        "logs/rsl_rl/unitree_go2_AMPBox/2025-07-30_18-44-03_MoCapAMP_reduced_data_SEED_3", 
+    ]
 }
 
 runs_flat = {
