@@ -343,6 +343,24 @@ def set_amp_settings(cfg, motion_folder="datasets/fromVision_motions_3/*", **kwa
         func=mdp.reference_state_initialization, mode="reset", params=params
     )
 
+
+# NOTE this function keeps track of DR params that were used to train previous policies. Consider this function legacy. It should only be used if you know what you are doing.
+def previous_domain_randomization_params(cfg):
+    cfg.events.physics_material.params["static_friction_range"] = (0.6, 3.0)
+    cfg.events.physics_material.params["dynamic_friction_range"] = (0.6, 1.2)
+    cfg.events.physics_material.params["restitution_range"] = (0.0, 0.1)
+    cfg.events.randomize_link_mass.params["mass_distribution_params"] = (0.9, 1.1)
+    cfg.events.push_robot.params["velocity_range"] = {
+        "x": (-0.5, 0.5),
+        "y": (-0.5, 0.5),
+    }
+    cfg.events.base_com = None
+    cfg.events.links_com = None
+    cfg.events.reset_gravity = None
+    cfg.events.actuator_gains.params["stiffness_distribution_params"] = (0.8, 1.2)
+    cfg.events.actuator_gains.params["damping_distribution_params"] = (0.8, 1.2)
+
+
 def disable_domain_randomization(cfg):
     cfg.scene.robot.actuators["base_legs"].min_delay = 0
     cfg.scene.robot.actuators["base_legs"].max_delay = 0
@@ -368,6 +386,9 @@ def disable_domain_randomization(cfg):
     cfg.events.randomize_link_mass = None
     cfg.events.actuator_gains = None
     cfg.events.joint_limits = None
+    cfg.events.base_com = None
+    cfg.events.links_com = None
+    cfg.events.reset_gravity = None
     
     cfg.disable_domain_randomization = True
 
