@@ -76,8 +76,11 @@ def set_terrain(cfg):
         cfg.scene.height_scanner = None
         cfg.observations.policy.height_scan = None
     elif cfg.terrain_type == "flat_noisy":
-        # TODO
-        raise ValueError(f"Untested.")
+        cfg.scene.terrain.terrain_generator = None
+        cfg.curriculum.terrain_levels = None
+        cfg.scene.height_scanner = None
+        cfg.observations.policy.height_scan = None
+        cfg.scene.terrain.terrain_generator = FLAT_TERRAINS_CFG
     else:
         raise ValueError(f"Unknown terrain type: {cfg.terrain_type}.")
 
