@@ -6,6 +6,8 @@
 from __future__ import annotations
 
 import torch
+import numpy as np
+import matplotlib.pyplot as plt
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -205,6 +207,8 @@ class DCMotor(IdealPDActuator):
         if self.cfg.velocity_limit is None:
             raise ValueError("The velocity limit must be provided for the DC motor actuator model.")
 
+        self.effort_log = []
+
     """
     Operations.
     """
@@ -231,6 +235,36 @@ class DCMotor(IdealPDActuator):
         min_effort = torch.clip(min_effort, min=-self.effort_limit, max=self._zeros_effort)
 
         # clip the torques based on the motor limits
+        # self.effort_log.append(
+        #     torch.clip(effort, min=min_effort, max=max_effort).cpu().numpy().tolist()
+        # )
+
+        # efforts = np.array(self.effort_log).squeeze(axis=1)  # shape: (523, 12)
+
+        # joint_names = [
+        #     'FL_hip_joint', 'FR_hip_joint', 'RL_hip_joint', 'RR_hip_joint',
+        #     'FL_thigh_joint', 'FR_thigh_joint', 'RL_thigh_joint', 'RR_thigh_joint',
+        #     'FL_calf_joint', 'FR_calf_joint', 'RL_calf_joint', 'RR_calf_joint'
+        # ]
+
+        # timesteps = np.arange(efforts.shape[0])
+        # num_joints = efforts.shape[1]
+
+        # fig, axes = plt.subplots(num_joints, 1, figsize=(10, 2 * num_joints), sharex=True)
+
+        # for i in range(num_joints):
+        #     axes[i].plot(timesteps, efforts[:, i])
+        #     axes[i].set_ylabel(joint_names[i])
+        #     axes[i].grid(True)
+
+        # axes[-1].set_xlabel('Timestep')
+        # fig.suptitle("Robot Joint Efforts Over Time (clipped)", fontsize=16)
+        # fig.tight_layout(rect=[0, 0, 1, 0.97])  # Leave space for the title
+        # plt.savefig("effortsClipped_ComplexRewardFlat.pdf")
+        # effort_list = effort[0].cpu().tolist()
+        # rounded_effort = [round(val) for val in effort_list]
+        # print(rounded_effort)
+
         return torch.clip(effort, min=min_effort, max=max_effort)
 
 
