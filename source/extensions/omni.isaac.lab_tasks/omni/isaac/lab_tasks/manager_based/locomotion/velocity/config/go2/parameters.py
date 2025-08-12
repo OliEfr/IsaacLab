@@ -113,7 +113,7 @@ def set_rewards_standing(cfg):
     cfg.commands.base_velocity.ranges.lin_vel_x=(0.0, 0.0)
     cfg.commands.base_velocity.ranges.lin_vel_y=(0.0, 0.0)
     cfg.rewards.track_lin_vel_xy_exp.weight = 0.3
-    
+
 def set_rewards_standing_amp(cfg):
     # disable rewards
     for field in fields(cfg.rewards):
@@ -145,6 +145,21 @@ def set_velocity_rewards_amp(cfg):
     cfg.rewards.track_lin_vel_xy_exp.params["std"] = (
         0.22  # TODO should this be ang_vel?
     )
+    
+    cfg.rewards.feet_air_time.weight = (
+        100  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
+    )
+    cfg.rewards.flat_orientation_l2.weight = -25
+    cfg.rewards.feet_slide.weight = -5.0
+    cfg.rewards.dof_torques_l2.weight = -0.006
+    cfg.rewards.torque_limits.weight = -35
+    cfg.rewards.torque_limits_2.weight = -100
+    cfg.rewards.dof_acc_l2.weight = -5e-6
+    
+    cfg.rewards.undesired_contacts_thigh.weight = -1.0
+    cfg.rewards.undesired_contacts_calf.weight = -1.0
+    cfg.rewards.contact_forces.weight = -1.0
+
 
 def set_pose2d_rewards_amp(cfg):
     # disable rewards
@@ -179,7 +194,10 @@ def set_rewards_complex(cfg):
         -0.75
     )  # consider reducing this in case performance on task reward is bad
     
-    
+    cfg.rewards.feet_slide.weight = -0.05
+    # TODO: desired base height
+
+
 def set_rewards_standing_complex(cfg):
     # cfg.rewards.lin_vel_z_l2.weight = -2.0
     # cfg.rewards.ang_vel_xy_l2.weight = -0.05
