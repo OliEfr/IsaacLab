@@ -199,6 +199,8 @@ class DCMotor(IdealPDActuator):
             self._saturation_effort = self.cfg.saturation_effort
         else:
             self._saturation_effort = torch.inf
+        self.clip_effort_factor = self.cfg.clip_effort_factor
+        assert self.clip_effort_factor is None or self.clip_effort_factor > 0, "The clip effort factor must be greater than 0. You can use 'None' if you dont want to perform any clipping."
         # prepare joint vel buffer for max effort computation
         self._joint_vel = torch.zeros_like(self.computed_effort)
         # create buffer for zeros effort
@@ -226,12 +228,16 @@ class DCMotor(IdealPDActuator):
     """
 
     def _clip_effort(self, effort: torch.Tensor) -> torch.Tensor:
+        if self.clip_effort_factor is None:
+            # we try to not clip the effort explicitely, as this is also not done in DOOM
+            return effort
+        
         # compute torque limits
         # -- max limit
-        max_effort = self._saturation_effort * (1.0 - self._joint_vel / self.velocity_limit)
+        max_effort = self.clip_effort_factor * self._saturation_effort * (1.0 - self._joint_vel / self.velocity_limit)
         max_effort = torch.clip(max_effort, min=self._zeros_effort, max=self.effort_limit)
         # -- min limit
-        min_effort = self._saturation_effort * (-1.0 - self._joint_vel / self.velocity_limit)
+        min_effort = self.clip_effort_factor * self._saturation_effort * (-1.0 - self._joint_vel / self.velocity_limit)
         min_effort = torch.clip(min_effort, min=-self.effort_limit, max=self._zeros_effort)
 
         # clip the torques based on the motor limits
@@ -266,7 +272,6 @@ class DCMotor(IdealPDActuator):
         # print(rounded_effort)
 
         return torch.clip(effort, min=min_effort, max=max_effort)
-
 
 class DelayedPDActuator(IdealPDActuator):
     """Ideal PD actuator with delayed command application.
@@ -372,7 +377,6 @@ class DelayedDCMotor(DCMotor):
         control_action.joint_efforts = self.efforts_delay_buffer.compute(control_action.joint_efforts)
         # compte actuator model
         return super().compute(control_action, joint_pos, joint_vel)
-    
 
 
 class RemotizedPDActuator(DelayedPDActuator):

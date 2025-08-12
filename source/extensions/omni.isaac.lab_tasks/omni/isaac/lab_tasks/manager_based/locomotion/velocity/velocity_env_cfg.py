@@ -396,6 +396,18 @@ class RewardsCfg:
     torque_limits = RewTerm(
         func=applied_torque_limits,
         weight=-0.0,
+        params={
+            "limit": UNITREE_GO2_CFG.actuators["base_legs"].saturation_effort
+        }
+    )
+    
+    torque_limits_2 = RewTerm(
+        func=applied_torque_limits,
+        weight=-0.0,
+        params={
+            "limit": 2 * UNITREE_GO2_CFG.actuators["base_legs"].saturation_effort
+        }
+
     )
 
     # residual_action_l2 = RewTerm(
