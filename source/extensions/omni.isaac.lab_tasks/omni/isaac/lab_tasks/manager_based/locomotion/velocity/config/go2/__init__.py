@@ -172,6 +172,44 @@ gym.register(
     },
 )
 
+""
+
+gym.register(
+    id="Isaac-Velocity-AMPFlatMinimalReward1-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.flat_env_cfg:AMPUnitreeGo2FlatEnvCfgMinimalReward1",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPFlatPPORunnerCfg",
+    },
+)
+
+""
+
+gym.register(
+    id="Isaac-Velocity-AMPFlatMinimalReward2-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.flat_env_cfg:AMPUnitreeGo2FlatEnvCfgMinimalReward2",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPFlatPPORunnerCfg",
+    },
+)
+
+
+""
+
+gym.register(
+    id="Isaac-Velocity-AMPFlatNoViconObs-Unitree-Go2-v0",
+    entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.flat_env_cfg:AMPUnitreeGo2FlatEnvCfgNoViconObs",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:UnitreeGo2AMPFlatPPORunnerCfg",
+    },
+)
+
+
 """"""""""""""""""""""""""""""""""""""""""""""""""
 # TODO move from my_cfgs_amp to dedicated file
 gym.register(

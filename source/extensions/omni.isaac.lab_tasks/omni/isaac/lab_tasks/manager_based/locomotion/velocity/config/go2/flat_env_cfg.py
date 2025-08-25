@@ -93,8 +93,47 @@ class AMPUnitreeGo2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
             self.events.reference_state_initialization is not None
         ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
         self.events.reference_state_initialization.params["motion_files"] = motion_files
+        
+        
+@configclass
+class AMPUnitreeGo2FlatEnvCfgMinimalReward1(AMPUnitreeGo2FlatEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
 
+    
+        self.rewards.feet_air_time.weight = 0.0
+        self.rewards.flat_orientation_l2.weight = 0.0
+        self.rewards.feet_slide.weight = 0.0
+        self.rewards.dof_acc_l2.weight = 0.0
+        
+        self.rewards.undesired_contacts_thigh.weight = 0.0
+        self.rewards.undesired_contacts_calf.weight = 0.0
+        self.rewards.contact_forces.weight = 0.0
+        
+@configclass
+class AMPUnitreeGo2FlatEnvCfgMinimalReward2(AMPUnitreeGo2FlatEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
 
+    
+        self.rewards.flat_orientation_l2.weight = 0.0
+        self.rewards.dof_acc_l2.weight = 0.0
+        
+        self.rewards.undesired_contacts_thigh.weight = 0.0
+        self.rewards.undesired_contacts_calf.weight = 0.0
+        self.rewards.contact_forces.weight = 0.0
+
+        
+@configclass
+class AMPUnitreeGo2FlatEnvCfgNoViconObs(AMPUnitreeGo2FlatEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+
+        del self.observations.policy.base_lin_vel
+        
 @configclass
 class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
