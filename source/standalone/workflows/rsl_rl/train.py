@@ -192,7 +192,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     env.close()
     
     # save the policy
-    export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
+    export_model_dir = os.path.join(os.path.dirname(log_dir), "exported")
     export_policy_as_jit(
         runner.alg.actor_critic,
         runner.obs_normalizer,

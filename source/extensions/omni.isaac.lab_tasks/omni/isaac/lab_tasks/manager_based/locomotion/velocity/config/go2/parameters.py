@@ -10,6 +10,8 @@ from omni.isaac.lab.managers import SceneEntityCfg
 from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
 from omni.isaac.lab.managers import RewardTermCfg as RewTerm
 from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
+from omni.isaac.lab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+
 
 
 from omni.isaac.lab_tasks.manager_based.navigation.mdp.rewards import position_command_error_tanh, heading_command_error_abs
@@ -128,6 +130,11 @@ def set_rewards_standing_amp(cfg):
     cfg.commands.base_velocity.ranges.lin_vel_x=(0.0, 0.0)
     cfg.commands.base_velocity.ranges.lin_vel_y=(0.0, 0.0)
     cfg.rewards.track_lin_vel_xy_exp.weight = 20
+    
+    cfg.rewards.dof_torques_l2.weight = -0.006 # -2.8
+    cfg.rewards.torque_limits.weight = -70 # -0.5
+    cfg.rewards.torque_limits_2.weight = -200 # -0.005
+    cfg.rewards.dof_acc_l2.weight = -5e-6
 
 
 def set_velocity_rewards_amp(cfg):
@@ -346,7 +353,9 @@ def set_amp_settings(cfg, motion_folder="datasets/fromVision_motions_3/*", **kwa
 
     cfg.amp_motion_folder = motion_folder
     cfg.amp_motion_files = glob.glob(cfg.amp_motion_folder)
+    
 
+    use_rsi = kwargs.pop("use_rsi", True) # you can use this key to disable rsi
     params = {
         "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
         "device": cfg.sim.device,
@@ -354,12 +363,13 @@ def set_amp_settings(cfg, motion_folder="datasets/fromVision_motions_3/*", **kwa
         "motion_files": cfg.amp_motion_files, # by default RSI motion files are equal to AMP motion files. Overwrite this using the argument **kwargs!
     }
     params.update(kwargs)
-
+    
     # use reference state initialization
-    cfg.events.reset_robot_joints = None
-    cfg.events.reference_state_initialization = EventTerm(
-        func=mdp.reference_state_initialization, mode="reset", params=params
-    )
+    if use_rsi:
+        cfg.events.reset_robot_joints = None
+        cfg.events.reference_state_initialization = EventTerm(
+            func=mdp.reference_state_initialization, mode="reset", params=params
+        )
 
 
 # NOTE this function keeps track of DR params that were used to train previous policies. Consider this function legacy. It should only be used if you know what you are doing.
