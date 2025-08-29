@@ -153,19 +153,49 @@ def set_velocity_rewards_amp(cfg):
         0.22  # TODO should this be ang_vel?
     )
     
-    cfg.rewards.feet_air_time.weight = (
-        100  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
-    )
-    cfg.rewards.flat_orientation_l2.weight = -25
-    cfg.rewards.feet_slide.weight = -5.0
+    # cfg.rewards.feet_air_time.weight = (
+    #     100  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
+    # )
+    # cfg.rewards.flat_orientation_l2.weight = -25
+    # cfg.rewards.feet_slide.weight = -5.0
     cfg.rewards.dof_torques_l2.weight = -0.006
     cfg.rewards.torque_limits.weight = -35
     cfg.rewards.torque_limits_2.weight = -100
-    cfg.rewards.dof_acc_l2.weight = -5e-6
+    # cfg.rewards.dof_acc_l2.weight = -5e-6
     
-    cfg.rewards.undesired_contacts_thigh.weight = -1.0
-    cfg.rewards.undesired_contacts_calf.weight = -1.0
-    cfg.rewards.contact_forces.weight = -1.0
+    # cfg.rewards.undesired_contacts_thigh.weight = -1.0
+    # cfg.rewards.undesired_contacts_calf.weight = -1.0
+    # cfg.rewards.contact_forces.weight = -1.0
+    
+def set_box_rewards_amp(cfg):
+    # disable rewards
+    for field in fields(cfg.rewards):
+        reward_obj = getattr(cfg.rewards, field.name)
+        # we need to check this because some reward terms might have been deleted previously depending on the environment and task
+        if reward_obj is not None:
+            reward_obj.weight = 0.0
+
+    # set only task reward
+    cfg.rewards.track_lin_vel_xy_exp.weight = 60
+    cfg.rewards.track_lin_vel_xy_exp.params["std"] = 0.22
+    cfg.rewards.track_ang_vel_z_exp.weight = 20
+    cfg.rewards.track_lin_vel_xy_exp.params["std"] = (
+        0.22  # TODO should this be ang_vel?
+    )
+    
+    # cfg.rewards.feet_air_time.weight = (
+    #     100  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
+    # )
+    # # cfg.rewards.flat_orientation_l2.weight = -25
+    # cfg.rewards.feet_slide.weight = -5.0
+    cfg.rewards.dof_torques_l2.weight = -0.006
+    cfg.rewards.torque_limits.weight = -35
+    cfg.rewards.torque_limits_2.weight = -100
+    # cfg.rewards.dof_acc_l2.weight = -5e-6
+    
+    # cfg.rewards.undesired_contacts_thigh.weight = -1.0
+    # cfg.rewards.undesired_contacts_calf.weight = -1.0
+    # cfg.rewards.contact_forces.weight = -1.0
 
 
 def set_pose2d_rewards_amp(cfg):
