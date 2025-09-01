@@ -183,7 +183,7 @@ class Delayed5GPDActuatorCfg(IdealPDActuatorCfg):
     min_delay: int = 0
     # The 'rate' for the exponential distribution. The average *additional* delay will be 1/rate.
     # e.g., rate=0.25 -> avg additional delay of 4 steps -> total avg delay of 2+4=6 steps
-    delay_rate: float = 0.75 # 0.19 did not work, 0.25 also not, 1.0 worked, 0.5 didnt work
+    delay_rate: float = 0.75 # with min_delay=0:0.19 did not work, 0.25 also not, 1.0 worked, 0.5 didnt work, 0.75 seemed to be the treshold of it still converges
     
 @configclass
 class DelayedDCMotorCfg(DCMotorCfg):
