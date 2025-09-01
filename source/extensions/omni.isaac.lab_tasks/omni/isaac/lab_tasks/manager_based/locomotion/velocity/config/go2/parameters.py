@@ -290,7 +290,7 @@ def set_box_env_cfg_cmds(cfg):
         debug_vis=cfg.commands.base_velocity.debug_vis,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
             lin_vel_x=(-0.1, 0.1),
-            lin_vel_y=(0.4, 0.6),
+            lin_vel_y=(0.4, 0.8),
             ang_vel_z=(0, 0),
             heading=(
                 math.pi / 2, #- math.radians(20),
@@ -360,7 +360,7 @@ def set_box_env_cfg_reset_base(cfg):
                 # "y": (0.04, 0.06),
                 # "yaw": (math.pi / 2, math.pi / 2),
                 "x": (-0.5, 0.5),
-                "y": (-0.15, 0.15),
+                "y": (-0.25, 0.15),
                 "yaw": (math.pi / 2, math.pi / 2),
                 # "yaw": (math.pi / 2 - math.radians(20), math.pi / 2 + math.radians(20)),
             }
@@ -369,13 +369,13 @@ def add_relative_position_on_stairs_observation(cfg):
     cfg.observations.policy.relative_position_on_stairs = ObsTerm(func=mdp.relative_position_on_stairs)
 
 def add_relative_position_to_box_observation(cfg):
-    cfg.observations.policy.relative_position_to_box = ObsTerm(func=mdp.relative_position_to_box)
+    cfg.observations.policy.relative_position_to_box = ObsTerm(func=mdp.relative_position_to_box, noise=Unoise(n_min=-0.02, n_max=0.02))
 
 def add_stair_parameters_observation(cfg):
     cfg.observations.policy.stair_parameters = ObsTerm(func=mdp.stair_parameters)
 
 def add_box_parameters_observation(cfg):
-    cfg.observations.policy.box_parameters = ObsTerm(func=mdp.box_parameters)
+    cfg.observations.policy.box_parameters = ObsTerm(func=mdp.box_parameters, noise=Unoise(n_min=-0.01, n_max=0.01))
 
 
 def set_amp_settings(cfg, motion_folder="datasets/fromVision_motions_3/*", **kwargs):
@@ -417,6 +417,11 @@ def previous_domain_randomization_params(cfg):
     cfg.events.reset_gravity = None
     cfg.events.actuator_gains.params["stiffness_distribution_params"] = (0.8, 1.2)
     cfg.events.actuator_gains.params["damping_distribution_params"] = (0.8, 1.2)
+    
+def standing_domain_randomization(cfg):
+    cfg.events.add_base_mass.params["mass_distribution_params"] = (-2.0, 2.0)
+    cfg.events.base_com.params["com_range"]["z"] = (-0.02, 0.04) # robot false to the bag - so higher COM in z should help
+    
 
 
 def disable_domain_randomization(cfg):

@@ -420,6 +420,10 @@ def main():
             
             # Environment stepping
             obs, _, dones, extras, *optional_values = env.step(actions)
+            # d = env.unwrapped.observation_manager._group_obs_term_cfgs['policy'][-2].func(env.unwrapped).item()
+            # print(
+            #     f"relative_distance_to_box: {d:.4f}"
+            # )
             if env_cfg.is_amp_env:
 
                 amp_observations = env.unwrapped.get_amp_observations()
@@ -521,13 +525,13 @@ def main():
             if sleep_time > 0:
                 time.sleep(sleep_time)
             else:
-                # print(f"WARNING: Simulation slower than real time for {sleep_time}s!")
+                print(f"WARNING: Simulation slower than real time for {sleep_time}s!")
                 pass
 
         if args_cli.evaluate:
             if total_num_steps >= NUM_EVAL_STEPS:
                 break
-            
+
     # Assuming action_log is already defined and has shape (523, 1, 12)
     # Example: action_log = np.random.rand(523, 1, 12)
     # actions = np.array(action_log).squeeze(axis=1)  # shape: (523, 12)

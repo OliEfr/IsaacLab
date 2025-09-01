@@ -217,7 +217,7 @@ UNITREE_GO2_CFG = ArticulationCfg(
     ),
     soft_joint_pos_limit_factor=0.9,
     actuators={
-        "base_legs": Delayed5GPDActuatorCfg(
+        "base_legs": DelayedDCMotorCfg(
         # "base_legs": DCMotorCfg(
             joint_names_expr=[".*_hip_joint", ".*_thigh_joint", ".*_calf_joint"],
             effort_limit=23.5,
@@ -227,8 +227,8 @@ UNITREE_GO2_CFG = ArticulationCfg(
             stiffness=25.0, # was 70 for previous exp (latent action priors), and also for previous AMP experiments. Is 25.0 by default
             damping=0.5,
             # friction=0.02, # for larger values it does not converge. 0.02 was the largest value I managed to converge. However, this does not seem to improve transfer to mujoco.
-            # min_delay=0,  # physics time steps (min: 5.0ms * 0 = 0.0ms)
-            # max_delay=4,  # physics time steps (max: 5.0ms * 4 = 20.0ms)
+            min_delay=0,  # physics time steps (min: 5.0ms * 0 = 0.0ms)
+            max_delay=4,  # physics time steps (max: 5.0ms * 4 = 20.0ms)
         ),
     },
 )
