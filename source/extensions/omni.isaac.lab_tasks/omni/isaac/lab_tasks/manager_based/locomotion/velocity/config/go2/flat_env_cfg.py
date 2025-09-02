@@ -10,6 +10,12 @@ from omni.isaac.lab.utils import configclass
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
     LocomotionVelocityRoughEnvCfg,
 )
+from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
+from omni.isaac.lab.envs.mdp.terminations import root_height_below_minimum
+from omni.isaac.lab.managers import SceneEntityCfg
+
+
+import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 
 
 from . import parameters
@@ -56,6 +62,55 @@ class UnitreeGo2FlatOscillators(LocomotionVelocityRoughEnvCfg):
         parameters.zero_domain_randomization(self)
         self.action_manager_class = "OscillatorActionManager"
 
+        self.scene.robot.init_state.pos = (0, 0, 0.35)
+        self.scene.robot.init_state.joint_pos = {
+            ".*L_hip_joint": 0.0,
+            ".*R_hip_joint": -0.0,
+            "F[L,R]_thigh_joint": 0.7651,
+            "R[L,R]_thigh_joint": 0.7651,
+            ".*_calf_joint": -1.1630,
+        }
+        self.scene.robot.actuators["base_legs"].stiffness = 50
+        self.actions.joint_pos.scale = 1.0
+        self.actions.joint_pos.offset = 0.0
+        self.actions.joint_pos.use_default_offset = False
+
+
+####################################################################
+# Torque control
+
+
+@configclass
+class UnitreeGo2FlatTorque(LocomotionVelocityRoughEnvCfg):
+    def __post_init__(self):
+
+        # post init of parent
+        super().__post_init__()
+
+        self.terrain_type = "flat"
+        parameters.set_terrain(self)
+        parameters.set_rewards_simple(self)
+        parameters.zero_domain_randomization(self)
+        self.actions.joint_pos = None
+        self.actions.joint_effort = mdp.JointEffortActionCfg(
+            asset_name="robot", joint_names=[".*"], scale=15.0
+        )  # torque control; also change Go2 config actuator damping and stiffness to 0.0!
+
+        self.scene.robot.init_state.pos = (0, 0, 0.35)
+        self.scene.robot.init_state.joint_pos = {
+            ".*L_hip_joint": 0.0,
+            ".*R_hip_joint": -0.0,
+            "F[L,R]_thigh_joint": 0.7651,
+            "R[L,R]_thigh_joint": 0.7651,
+            ".*_calf_joint": -1.1630,
+        }
+        self.scene.robot.actuators["base_legs"].stiffness = 0
+        self.scene.robot.actuators["base_legs"].damping = 0
+
+        self.terminations.root_height_below_minimum = DoneTerm(
+            func=root_height_below_minimum,
+            params={"asset_cfg": SceneEntityCfg("robot"), "minimum_height": 0.10},
+        )
 
 
 #######################################################################
