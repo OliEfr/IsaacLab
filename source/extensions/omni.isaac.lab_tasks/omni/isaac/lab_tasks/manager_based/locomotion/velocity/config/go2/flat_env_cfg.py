@@ -37,6 +37,25 @@ class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
         super().__post_init__()
 
         parameters.set_play_settings_flat(self)
+        
+        
+####################################################################
+# Oscillators
+
+
+@configclass
+class UnitreeGo2FlatOscillators(LocomotionVelocityRoughEnvCfg):
+    def __post_init__(self):
+
+        # post init of parent
+        super().__post_init__()
+
+        self.terrain_type = "flat"
+        parameters.set_terrain(self)
+        parameters.set_rewards_simple(self)
+        parameters.zero_domain_randomization(self)
+        self.action_manager_class = "OscillatorActionManager"
+
 
 
 #######################################################################
@@ -59,9 +78,6 @@ class UnitreeGo2FlatEnvCfgComplexReward_PLAY(UnitreeGo2FlatEnvCfgComplexReward):
         super().__post_init__()
 
         parameters.set_play_settings_flat(self)
-
-
-#######################################################################
 # Flat AMP
 
 
@@ -143,3 +159,5 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         parameters.set_play_settings_flat(self)
 
         self.amp_motion_folder = "datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl_minimal_feet_forward/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training
+        
+        

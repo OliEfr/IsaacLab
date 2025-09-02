@@ -153,6 +153,8 @@ def set_velocity_rewards_amp(cfg):
         0.22  # TODO should this be ang_vel?
     )
     
+    assert False, "Rewards"
+    
     # cfg.rewards.feet_air_time.weight = (
     #     100  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
     # )
@@ -183,6 +185,7 @@ def set_box_rewards_amp(cfg):
         0.22  # TODO should this be ang_vel?
     )
     
+    assert False, "Rewards"
     # cfg.rewards.feet_air_time.weight = (
     #     100  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
     # )
@@ -456,6 +459,42 @@ def disable_domain_randomization(cfg):
     cfg.disable_domain_randomization = True
 
     print("[INFO] Domain Randomization disabled. Note that you can probably train with much lower max_iterations compared to when using Domain Randomization.")
+
+    assert not cfg.terrain_type == "flat_noisy", "flat_noisy is only for Domain Randomization."
+    
+def zero_domain_randomization(cfg):
+    cfg.scene.robot.actuators["base_legs"].min_delay = 0
+    cfg.scene.robot.actuators["base_legs"].max_delay = 0
+    cfg.events.push_robot = None
+    cfg.events.add_base_mass.params["mass_distribution_params"] = (0.0, 0.0)
+    if cfg.events.reset_robot_joints is not None: # its None for AMP
+        cfg.events.reset_robot_joints.params["position_range"] = (1.0, 1.0)
+    cfg.events.reset_base.params = {
+        "pose_range": {"x": (0.0, 0.0), "y": (0.0, 0.0), "yaw": (0.0, 0.0)},
+        "velocity_range": {
+            "x": (-0.0, 0.0),
+            "y": (-0.0, 0.0),
+            "z": (-0.0, 0.0),
+            "roll": (-0.0, 0.0),
+            "pitch": (-0.0, 0.0),
+            "yaw": (-0.0, 0.0),
+        },
+    }
+
+    cfg.events.physics_material.params["static_friction_range"] = (0.8, 0.8)
+    cfg.events.physics_material.params["dynamic_friction_range"] = (0.6, 0.6)
+    cfg.events.physics_material.params["restitution_range"] = (0.0, 0.0)
+    cfg.events.randomize_link_mass = None
+    cfg.events.add_base_mass = None
+    cfg.events.actuator_gains = None
+    cfg.events.joint_limits = None
+    cfg.events.base_com = None
+    cfg.events.links_com = None
+    cfg.events.reset_gravity = None
+    
+    cfg.disable_domain_randomization = True
+
+    print("[INFO] Zero Domain Randomization. This setting is not meant for any DRL training.")
 
     assert not cfg.terrain_type == "flat_noisy", "flat_noisy is only for Domain Randomization."
 
