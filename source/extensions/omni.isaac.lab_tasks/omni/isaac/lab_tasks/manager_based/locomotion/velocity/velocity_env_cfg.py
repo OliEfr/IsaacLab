@@ -439,6 +439,7 @@ class RewardsCfg:
     # TODO add foot z-height style penalty
     
     base_height_l2 = RewTerm(func=mdp.base_height_l2, weight=-0.0, params={"target_height": 0.4})
+    base_height_exp = RewTerm(func=mdp.base_height_exp, weight=0.0, params={"target_height": 0.37})
     
     head_height_l2 = RewTerm(func=mdp.head_height_l2, weight=-0.0)
     feet_height_l2 = RewTerm(func=mdp.feet_height_l2, weight=-0.0)

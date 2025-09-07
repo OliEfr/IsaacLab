@@ -5,13 +5,16 @@
 
 import glob
 
+
 from omni.isaac.lab.utils import configclass
 
 from omni.isaac.lab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
     LocomotionVelocityRoughEnvCfg,
 )
 from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
+from omni.isaac.lab.managers import RewardTermCfg as RewTerm
 from omni.isaac.lab.envs.mdp.terminations import root_height_below_minimum
+from omni.isaac.lab.envs.mdp.rewards import joint_deviation_l1
 from omni.isaac.lab.managers import SceneEntityCfg
 
 
@@ -19,6 +22,8 @@ import omni.isaac.lab_tasks.manager_based.locomotion.velocity.mdp as mdp
 
 
 from . import parameters
+
+from omni.isaac.lab_assets.unitree import UNITREE_GO2_CFG  # isort: skip
 
 ####################################################################
 # Flat simple reward
@@ -86,31 +91,85 @@ class UnitreeGo2FlatTorque(LocomotionVelocityRoughEnvCfg):
 
         # post init of parent
         super().__post_init__()
-
+        
+        self.decimation = 2
+        self.sim.dt = 0.001
+        
         self.terrain_type = "flat"
         parameters.set_terrain(self)
-        parameters.set_rewards_simple(self)
-        parameters.zero_domain_randomization(self)
+        
+        self.observations.policy.base_lin_vel = None
+        del self.observations.policy.base_lin_vel
+        
         self.actions.joint_pos = None
         self.actions.joint_effort = mdp.JointEffortActionCfg(
-            asset_name="robot", joint_names=[".*"], scale=15.0
+            asset_name="robot", joint_names=[".*"], scale=10.0
         )  # torque control; also change Go2 config actuator damping and stiffness to 0.0!
 
-        self.scene.robot.init_state.pos = (0, 0, 0.35)
-        self.scene.robot.init_state.joint_pos = {
-            ".*L_hip_joint": 0.0,
-            ".*R_hip_joint": -0.0,
-            "F[L,R]_thigh_joint": 0.7651,
-            "R[L,R]_thigh_joint": 0.7651,
-            ".*_calf_joint": -1.1630,
-        }
         self.scene.robot.actuators["base_legs"].stiffness = 0
         self.scene.robot.actuators["base_legs"].damping = 0
-
+        self.scene.robot.actuators["base_legs"].clip_effort_factor = 1.0
+        # self.scene.robot.actuators["base_legs"].effort_limit = 15
+        self.scene.robot.actuators["base_legs"].min_delay = 0
+        self.scene.robot.actuators["base_legs"].max_delay = 3 # 5ms = 200Hz
+        
+        
+        # self.terminations.base_contact = None
         self.terminations.root_height_below_minimum = DoneTerm(
             func=root_height_below_minimum,
-            params={"asset_cfg": SceneEntityCfg("robot"), "minimum_height": 0.10},
+            params={"asset_cfg": SceneEntityCfg("robot"), "minimum_height": 0.17},
         )
+        # self.terminations.joint_pos_out_of_limits = DoneTerm(
+        #     func=joint_pos_out_of_limit,
+        #     params={"asset_cfg": SceneEntityCfg("robot")}
+        # )
+        # self.rewards.joint_pos_limits.weight = -100.0d
+        
+        
+        parameters.set_rewards_simple(self)
+        self.rewards.track_lin_vel_xy_exp.weight = 4.0 
+        self.rewards.track_ang_vel_z_exp.weight = 1.75
+        # parameters.set_rewards_complex(self)
+        self.rewards.joint_deviation_l1 = RewTerm(
+            func=joint_deviation_l1,
+            weight=-.25,
+            params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*hip_joint", ".*calf_joint", ".*thigh_joint"])},
+        )
+        self.rewards.base_height_exp.weight = 1.0
+        
+        # self.rewards.joint_deviation_exs = RewTerm(
+        #     func=joint_deviation_exp,
+        #     weight=1.0,
+        #     params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*hip_joint", ".*calf_joint", ".*thigh_joint"])},
+        # )
+        
+        self.rewards.termination_penalty = RewTerm(
+            func=mdp.is_terminated_term,
+            weight=-100.0,
+        )
+        
+        self.rewards.lin_vel_z_l2.weight = .1 * -2.0
+        self.rewards.ang_vel_xy_l2.weight = .1 * -0.05
+        
+        self.rewards.dof_torques_l2.weight = -0.0002
+        self.rewards.dof_acc_l2.weight = 0.01 * -2.5e-7  # make this smaller in case it doesnt learn vel tracking
+        self.rewards.action_rate_l2.weight = -0.01
+        
+        self.rewards.feet_air_time.weight = (
+            10  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
+        )
+        # self.rewards.undesired_contacts_thigh.weight = -1.0
+        # self.rewards.undesired_contacts_calf.weight = -1.0
+        # self.rewards.contact_forces.weight = -1.0
+        self.rewards.flat_orientation_l2.weight = 0.1 * -0.01
+        # self.rewards.joint_pos_limits.weight = -10.0 # do not use for ResRL
+        self.rewards.torque_limits.weight = -2.0e-5
+        # self.rewards.torque_limits.params={
+        #     "limit": UNITREE_GO2_CFG.actuators["base_legs"].effort_limit
+        # }
+        
+        # self.rewards.feet_slide.weight = -0.05
+        # TODO: desired base height
 
 
 #######################################################################
