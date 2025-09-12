@@ -137,7 +137,7 @@ def head_height_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEnti
     head_height_error = torch.sum(torch.square(head_height - target_height), dim=1)
     
     return torch.exp(-head_height_error / 0.3**2)
-    
+
 def feet_height_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     asset : RigidObject = env.scene[asset_cfg.name]
     
@@ -150,7 +150,7 @@ def feet_height_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEnti
     feet_height_error = torch.sum(torch.square(feet_height - target_height), dim=1)
     
     return torch.exp(-feet_height_error / 0.6**2)
-    
+
 
 def body_lin_acc_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """Penalize the linear acceleration of bodies using L2-kernel."""
@@ -212,7 +212,7 @@ def joint_deviation_l1(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = Scene
 #     # extract the used quantities (to enable type-hinting)
 #     asset: Articulation = env.scene[asset_cfg.name]
 #     # compute the error
-    
+
 #     error = torch.sum(
 #         torch.square(asset.data.joint_pos[:, asset_cfg.joint_ids] - asset.data.default_joint_pos[:, asset_cfg.joint_ids]),
 #         dim=1,
@@ -297,6 +297,10 @@ def action_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the rate of change of the actions using L2 squared kernel."""
     return torch.sum(torch.square(env.action_manager.action - env.action_manager.prev_action), dim=1)
 
+def action_rate_2_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    """Penalize the rate of change of the actions using L2 squared kernel."""
+    return torch.sum(torch.square(env.action_manager.action - env.action_manager.prev_prev_action), dim=1)
+
 
 def action_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Penalize the actions using L2 squared kernel."""
@@ -318,15 +322,54 @@ def style_jpos(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     asset: RigidObject = env.scene[asset_cfg.name]
-    # compute the error
-    style = torch.sum(
-        torch.square(
-            asset.data.joint_pos[:, asset_cfg.joint_ids] - env.action_manager.jpos_ref
-        ),
-        dim=1,
+    # l1
+    angle = asset.data.joint_pos - env.action_manager.jpos_ref
+    return torch.sum(torch.abs(angle), dim=1)
+
+    # exp
+    # style = torch.sum(
+    #     torch.square(
+    #         asset.data.joint_pos - env.action_manager.jpos_ref
+    #     ),
+    #     dim=1,
+    # )
+    # assert factor <= 0, "You probably want a non-positive factor"
+    # return torch.exp(factor * style)
+
+def style_feet_z(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    factor: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    # l1
+    feet_indices = asset.find_bodies(
+        ["FR_foot", "FL_foot", "RR_foot", "RL_foot"]
+    )[0]
+
+    dist = (
+        asset.data.body_pos_w[
+            :,
+            feet_indices,
+            2,
+        ]
+        - env.action_manager.feet_z_ref
     )
-    assert factor <= 0, "You probably want a non-positive factor"
-    return torch.exp(factor * style)
+    reward = torch.sum(torch.abs(dist), dim=1)
+    
+    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.05
+    return reward
+
+    # exp
+    # style = torch.sum(
+    #     torch.square(
+    #         asset.data.joint_pos - env.action_manager.jpos_ref
+    #     ),
+    #     dim=1,
+    # )
+    # assert factor <= 0, "You probably want a non-positive factor"
+    # return torch.exp(factor * style)
 
 def style_jvel(
     env: ManagerBasedRLEnv,
