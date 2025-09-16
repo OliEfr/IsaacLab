@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import matplotlib
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 # To plot joint 5 from three datasets
 data_paths = [
@@ -22,11 +26,11 @@ time_duration = 3 # seconds
 
 # Set font sizes (increased by 50%)
 plt.rcParams.update({
-    'font.size': 15,          # base font size
-    'axes.titlesize': 18,     # subplot title
-    'axes.labelsize': 18,     # axis labels
-    'xtick.labelsize': 15,    # x tick labels
-    'ytick.labelsize': 15,    # y tick labels
+    'font.size': 16,          # base font size
+    'axes.titlesize': 19,     # subplot title
+    'axes.labelsize': 19,     # axis labels
+    'xtick.labelsize': 17,    # x tick labels
+    'ytick.labelsize': 17,    # y tick labels
 })
 
 def load_torque_data(file_path):
