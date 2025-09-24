@@ -125,6 +125,42 @@ def base_height_exp(
     
     return torch.exp(-base_height_error / 0.4**2)
 
+def base_height_exp_box(
+    env: ManagerBasedRLEnv, target_height: float, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Penalize asset height from its target using L2 squared kernel.
+
+    Note:
+        Currently, it assumes a flat terrain, i.e. the target height is in the world frame.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject = env.scene[asset_cfg.name]
+    # TODO: Fix this for rough-terrain.
+    
+    # Get ground height
+    # terrain indexes for each robot
+    # row is "difficulty level", column is "terrain type"
+    # (from terrain_importer.py)
+    rows = env.scene.terrain.terrain_levels
+    cols = env.scene.terrain.terrain_types
+    box_height = env.scene.terrain.terrain_params["box_height"][rows, cols]
+    
+    # increase target base height if robot is on box
+    root_pos_y = (
+        asset.data.root_pos_w[:, 1]
+        - env.scene.env_origins[:, 1]
+        + env.cfg.scene.terrain.terrain_generator.sub_terrains[
+            "box"
+        ].y_coordinate_origin_relative_to_box_start # needs to be ADDED according to definition
+    )
+    condition = root_pos_y > -0.18 # determined by visual inspection
+    target_height = target_height + box_height * condition.float()
+    
+    
+    base_height_error = torch.square(asset.data.root_pos_w[:, 2] - target_height)
+    
+    return torch.exp(-base_height_error / 0.4**2)
+
 
 def head_height_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     asset : RigidObject = env.scene[asset_cfg.name]
@@ -361,6 +397,52 @@ def style_feet_z(
     reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.05
     return reward
 
+def style_feet_z_box(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    factor: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    # l1
+    feet_indices = asset.find_bodies(
+        ["FR_foot", "FL_foot", "RR_foot", "RL_foot"]
+    )[0]
+    
+    # Get ground height
+    # terrain indexes for each robot
+    # row is "difficulty level", column is "terrain type"
+    # (from terrain_importer.py)
+    rows = env.scene.terrain.terrain_levels
+    cols = env.scene.terrain.terrain_types
+    box_height = env.scene.terrain.terrain_params["box_height"][rows, cols]
+    
+    # increase z feet reference value if robot is on box
+    root_pos_y = (
+        asset.data.root_pos_w[:, 1]
+        - env.scene.env_origins[:, 1]
+        + env.cfg.scene.terrain.terrain_generator.sub_terrains[
+            "box"
+        ].y_coordinate_origin_relative_to_box_start # needs to be ADDED according to definition
+    )
+    condition = root_pos_y > -0.2 # determined by visual inspection
+    feet_z_ref = env.action_manager.feet_z_ref
+    feet_z_ref = feet_z_ref + (box_height * condition.float()).unsqueeze(1).expand(-1, feet_z_ref.size(1))
+
+    dist = (
+        asset.data.body_pos_w[
+            :,
+            feet_indices,
+            2,
+        ]
+        - feet_z_ref
+    )
+    reward = torch.sum(torch.abs(dist), dim=1)
+    
+    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.05
+    return reward
+
+
     # exp
     # style = torch.sum(
     #     torch.square(
@@ -432,6 +514,27 @@ def track_lin_vel_xy_exp(
         dim=1,
     )
     return torch.exp(-lin_vel_error / std**2)
+
+def track_lin_vel_xy_exp_tolerant(
+    env: ManagerBasedRLEnv, std: float, command_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Reward tracking of linear velocity commands (xy axes) with tolerance threshold."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    threshold = 0.1  # tolerance in m/s
+
+    # compute error magnitude in xy-plane
+    lin_vel_error = torch.norm(
+        env.command_manager.get_command(command_name)[:, :2] - asset.data.root_lin_vel_b[:, :2],
+        dim=1,
+    )
+
+    # reward: flat at 1 inside threshold, decays outside
+    reward = torch.where(
+        lin_vel_error <= threshold,
+        torch.ones_like(lin_vel_error),
+        torch.exp(-((lin_vel_error - threshold) ** 2) / std**2),
+    )
+    return reward
 
 
 def track_ang_vel_z_exp(
