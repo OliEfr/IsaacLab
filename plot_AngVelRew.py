@@ -1,11 +1,16 @@
 import yaml
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import os
 import glob
 from collections import defaultdict
 import re
 import plot_DEFINITIONS
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 
 
 # --- Plotting Configuration & Definitions ---
@@ -196,7 +201,8 @@ def plot_comparison(all_experiments_data, metrics_to_plot):
         ax.set_xlabel("Yaw Tracking Reward Weight")
         ax.set_ylabel(METRIC_PLOT_TITLES.get(metric, metric))
         if metric == "error_vel_yaw":
-            ax.legend()
+            # ax.legend()
+            pass
         ax.grid(True, which="both", linestyle="--", linewidth=0.5)
 
         # Set x-ticks and tick labels only to the datapoints
@@ -211,6 +217,40 @@ def plot_comparison(all_experiments_data, metrics_to_plot):
         plt.savefig(filename, bbox_inches='tight')
         print(f"Saved figure: {filename}")
         plt.close(fig)
+        
+def plot_legend_only(all_experiments_data, filename="plots/legend_only.pdf"):
+    """
+    Generates and saves a standalone legend figure.
+    
+    Args:
+        all_experiments_data (dict): Dictionary containing experiment data
+        filename (str): Output filename for the legend plot
+    """
+    fig, ax = plt.subplots(figsize=(8, 2))
+    ax.axis('off')  # Hide the axes
+    
+    # Create dummy plots to generate legend entries
+    handles = []
+    labels = []
+    for exp_name in all_experiments_data.keys():
+        line, = ax.plot([], [], marker="o", linestyle="-", linewidth=4,
+                       color=plot_DEFINITIONS.get_color_for_experiment_name(exp_name),
+                       label=exp_name)
+        handles.append(line)
+        labels.append(exp_name)
+    
+    # Create legend in the center of the figure
+    legend = ax.legend(handles, labels, loc='center', frameon=False, ncol=2)
+    
+    fig.tight_layout()
+    
+    # Save the figure
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0.01)  # Minimal padding
+    print(f"Saved legend figure: {filename}")
+    plt.close(fig)
+
 
 
 # --- Main Execution ---
@@ -264,6 +304,10 @@ def main():
         print("\nScript finished.")
     else:
         print("\nNo data was collected. Please check your paths and patterns.")
+        
+    plot_legend_only(all_data)
+        
+        
 
 
 if __name__ == "__main__":

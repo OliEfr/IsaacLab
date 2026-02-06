@@ -79,6 +79,39 @@ class UnitreeGo2StandingEnvCfgComplexReward_PLAY(UnitreeGo2StandingEnvCfgComplex
 
 
 #######################################################################
+# Standing Style
+
+@configclass
+class UnitreeGo2StandingEnvCfgStyle(LocomotionVelocityRoughEnvCfg):
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+        
+        self.scene.num_envs = 4096  # with DR: 2 * 4096; without DR: 5480
+        
+        self.terrain_type = "flat"
+        parameters.set_terrain(self)
+        parameters.set_rewards_standing_amp(self)
+        parameters.set_standing_env_terminations(self)
+        parameters.standing_domain_randomization(self)
+        
+        self.episode_length_s = 5.0
+        
+        
+        self.events.push_robot.interval_range_s = (2.0, 4.0) # TODO reduce to episode length
+        self.events.push_robot.params={"velocity_range": {"x": (-1.0, 1.0), "y": (-1.0, 1.0)}} # TODO increase
+        self.events.reset_gravity.interval_range_s = (2.0, 4.0)
+        
+        self.action_manager_class = "StyleActionManagerAMPLoader"
+        
+        # self.rewards.style_jpos.weight = -1
+        
+        # using RSI would require sampling the phase as well, which is currently not implemented.
+
+
+
+
+#######################################################################
 # Standing AMP
 
 

@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 
 
 METRIC_FIELD_PLOT_TITLE_MAPPING = {
-    "mean_mechanical_cot": "Cost of Transport [1]",
-    "error_vel_xy": "Tracking Error Vel. [m/s]",
+    "mean_mechanical_cot": "Cost of Transport\n[1]",
+    "error_vel_xy": "Tracking Error Vel.\n[m/s]",
     "agent_expert_distances": "Imitation score ↓",
-    "heading_error": "Heading Error [rad]",
-    "error_vel_yaw": "Tracking Error Yaw [rad]",
+    "heading_error": "Heading Error\n[rad]",
+    "error_vel_yaw": "Tracking Error Yaw\n[rad]",
     "real_curriculum_state": "Mean successful\nbox height [m]",  # TODO needs to be adjusted based on terrain,
-    "error_feet_height": "Feet height error [m]",
+    "error_feet_height": "Feet height error\n[m]",
     "successrate": "Success rate",
 }
 
@@ -37,6 +37,7 @@ class DataSourceNames:
 class ExperimentNames:
     manual_trajectory = "Manual Trajectory (AMP)"
     video_depth_cam = "Video w. Depth Camera (AMP)"
+    # video_depth_cam = r"$\underline{Video}$ w. Depth Camera (AMP)"
     video_depth_cam_extended = "Video w. Depth Camera (extended with reverse) (AMP)"
     video_depth_cam_extendedWithoutReverse = "Video w. Depth Camera (extended) (AMP)"
     video_depth_model = "Video w. DepthAnythingV2 (AMP)"

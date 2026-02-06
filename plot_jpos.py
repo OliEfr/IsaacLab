@@ -1,11 +1,16 @@
-from rsl_rl.datasets.motion_loader import AMPLoader
 import json
 import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import matplotlib
 from dataclasses import dataclass
 import plot_DEFINITIONS
+from rsl_rl.datasets.motion_loader import AMPLoader
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 
 
 ISAAC_LAB_ENV_DT = 0.02

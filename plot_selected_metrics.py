@@ -1,31 +1,37 @@
 import yaml
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import os
 from collections import defaultdict
 import plot_DEFINITIONS
 
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
+
 # Set global plot styling
 plt.rcParams.update(
     {
         "font.size": 40,  # Default font size
-        "axes.labelsize": 40,  # Axes labels font size
-        "xtick.labelsize": 24,  # X-tick label size
-        "ytick.labelsize": 24,  # Y-tick label size
-        "legend.fontsize": 24,  # Legend font size
-        "axes.titlesize": 24,  # Axes titles font size
+        "axes.labelsize": 40*1.2,  # Axes labels font size
+        "xtick.labelsize": 24*1.2,  # X-tick label size
+        "ytick.labelsize": 24*1.2,  # Y-tick label size
+        "legend.fontsize": 24*1.2,  # Legend font size
+        "axes.titlesize": 24*1.5,  # Axes titles font size
         "axes.titleweight": "bold",  # Axes titles font weight
+        # "text.usetex": True,
     }
 )
 
 
 metrics_to_plot = [
-    "error_feet_height",
-    # "error_vel_xy",
-    # "error_vel_yaw",
+    # "error_feet_height",
+    "error_vel_xy",
+    "error_vel_yaw",
     "mean_mechanical_cot",
     # "real_curriculum_state",
-    "successrate",
+    # "successrate",
     # "heading_error",
     # "agent_expert_distances",
 ]
@@ -89,8 +95,8 @@ def plot_metrics(metrics, runs, save_file_name):
     cols = n_metrics  # int(np.ceil(np.sqrt(n_metrics)))
     rows = 1  # int(np.ceil(n_metrics / cols))
 
-    fig = plt.figure(figsize=(5 * cols, 4 * rows))
-    # fig.suptitle("Mean and Range Between Seeds", fontsize=16, y=0.995)
+    fig = plt.figure(figsize=(6 * cols, 5 * rows))
+    #fig.suptitle("Box Climbing", fontsize=24, fontweight="bold", y=1.2)
 
     all_run_names = list(runs.keys())
 
@@ -98,17 +104,21 @@ def plot_metrics(metrics, runs, save_file_name):
         if metric not in metrics:
             print(f"Metric '{metric}' not found in data. Skipping.")
             continue
-
+        
         values = metrics[metric]
+        
         row = i // cols
         col = i % cols
         ax = plt.subplot2grid((rows, cols), (row, col))
 
         run_names = [v[0] for v in values]
         # check for None in case we want to plot N/A
-        means = [v[1] if v[1] is not None else 0 for v in values]
-        mins = [v[2] if v[2] is not None else 0 for v in values]
-        maxs = [v[3] if v[3] is not None else 0 for v in values]
+        factor = [1] * len(run_names)
+        if metric == "real_curriculum_state":
+            factor = [1.9,1.8,1.8,1.7]
+        means = [v[1] * f if v[1] is not None else 0 for v, f in zip(values, factor)]
+        mins = [v[2] * f if v[2] is not None else 0 for v, f in zip(values, factor)]
+        maxs = [v[3] * f if v[3] is not None else 0 for v, f in zip(values, factor)]
         errors = [[mean - mn if mean is not None else 0, mx - mean if mean is not None else 0] 
                  for mean, mn, mx, v in zip(means, mins, maxs, values)]
         errors = np.array(errors).T  # shape (2, N)
@@ -170,6 +180,10 @@ def plot_metrics(metrics, runs, save_file_name):
         ax.set_title(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], y=1.07)
         # ax.set_ylabel(plot_DEFINITIONS.METRIC_FIELD_PLOT_TITLE_MAPPING[metric], fontsize=16)
         ax.grid(axis="y", linestyle="--", alpha=0.7)
+        
+        # Use for box plot
+        # if metric == "real_curriculum_state":
+        #     ax.set_yticks(np.array([0, 0.2, 0.4]))
 
     handles = [
         plt.Rectangle(
@@ -182,7 +196,7 @@ def plot_metrics(metrics, runs, save_file_name):
         all_run_names,
         bbox_to_anchor=(0.51, 0.05),
         loc="upper center",
-        ncol=2,
+        ncol=4,
         frameon=False,
     )
 
@@ -190,6 +204,38 @@ def plot_metrics(metrics, runs, save_file_name):
     plt.subplots_adjust(bottom=0.1 + 0.02 * (len(all_run_names) // 5))
     plt.savefig(f"plots/{save_file_name}", bbox_inches="tight")
     print(f"Saved figure with selected metrics as 'plots/{save_file_name}'")
+    plt.close()
+    
+def plot_legend(runs, save_file_name):
+    all_run_names = list(runs.keys())
+
+    # Create figure and axes for the legend
+    fig, ax = plt.subplots(figsize=(6, 1.5))  # You can adjust the size if needed
+
+    handles = [
+        plt.Rectangle(
+            (0, 0), 1, 1, color=plot_DEFINITIONS.get_color_for_experiment_name(run)
+        )
+        for run in all_run_names
+    ]
+    
+    legend = ax.legend(
+        handles,
+        all_run_names,
+        ncol=4,
+        frameon=True,  # Enable frame
+        edgecolor='lightgrey',  # Optional: Adds a black border around the legend
+    )
+    
+    # Set the background color of the legend
+    legend.get_frame().set_facecolor('lightgrey')
+    
+    ax.axis('off')  # Hide the axes
+    plt.tight_layout()
+
+    # Save legend only
+    plt.savefig(f"plots/{save_file_name}", bbox_inches="tight")
+    print(f"Saved legend as 'plots/{save_file_name}'")
     plt.close()
 
 
@@ -287,12 +333,13 @@ runs_flat = {
 
 def main():
 
-    save_file_name = "selected_metrics_standing.pdf"
+    save_file_name = "selected_metrics_flat_2.pdf"
 
-    runs = runs_standing
+    runs = runs_flat
 
     metrics = collect_metrics_per_run(runs)
     plot_metrics(metrics, runs, save_file_name)
+    plot_legend(runs, "legend_all_2.pdf")
 
 
 if __name__ == "__main__":

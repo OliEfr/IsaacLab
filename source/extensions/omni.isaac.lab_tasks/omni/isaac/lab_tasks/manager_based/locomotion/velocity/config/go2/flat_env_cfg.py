@@ -50,8 +50,8 @@ class UnitreeGo2FlatEnvCfgSimpleReward_PLAY(UnitreeGo2FlatEnvCfgSimpleReward):
         super().__post_init__()
 
         parameters.set_play_settings_flat(self)
-        
-        
+
+
 ####################################################################
 # Oscillators
 
@@ -81,7 +81,6 @@ class UnitreeGo2FlatOscillators(LocomotionVelocityRoughEnvCfg):
         self.actions.joint_pos.scale = 1.0
         self.actions.joint_pos.offset = 0.0
         self.actions.joint_pos.use_default_offset = False
-        
 
 
 ####################################################################
@@ -94,24 +93,22 @@ class UnitreeGo2FlatTorque(LocomotionVelocityRoughEnvCfg):
 
         # post init of parent
         super().__post_init__()
-        
+
         self.decimation = 5
         self.sim.dt = 0.001
         self.scene.num_envs = 4096 * 2
-        
+
         self.action_manager_class = "StyleActionManager"
-        
+
         # terrain
         self.terrain_type = "flat"
         parameters.set_terrain(self)
-        # parameters.zero_domain_randomization(self)
-        
-        
+
         # command
         self.commands.base_velocity.ranges.lin_vel_x=(-0.6, 0.6)
         self.commands.base_velocity.ranges.lin_vel_y=(-0.3, 0.3)
         self.commands.base_velocity.ranges.ang_vel_z=(-1.0, 1.0)
-        
+
         # obs
         self.observations.policy.base_lin_vel = None
         del self.observations.policy.base_lin_vel
@@ -268,8 +265,53 @@ class UnitreeGo2FlatEnvCfgComplexReward(UnitreeGo2FlatEnvCfgSimpleReward):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
+        
+        self.action_manager_class = "StyleActionManager"
+        self.observations.policy.phases = ObsTerm(func=mdp.phases)
 
-        parameters.set_rewards_complex(self)
+        # parameters.set_rewards_complex(self)
+        self.rewards.flat_orientation_l2.weight = -0.01
+        self.rewards.joint_pos_limits.weight = -10.0 # do not use for ResRL
+        self.rewards.action_rate_l2.weight = -0.015
+        
+        self.rewards.lin_vel_z_l2.weight = -2.0
+        self.rewards.ang_vel_xy_l2.weight = -0.05
+        self.rewards.undesired_contacts_thigh.weight = -1.0
+        self.rewards.undesired_contacts_calf.weight = -1.0
+        
+        
+        self.rewards.dof_torques_l2.weight = 0.1 *-0.0002
+        self.rewards.dof_acc_l2.weight = 0.01 * -2.5e-7  # do not use for ResRL
+        # self.rewards.contact_forces.weight = -1.0
+        # self.scene.num_envs = 2000
+        
+        # self.rewards.feet_air_time.weight = (
+        #     5  # consider reducing this to 7.5 if performance on task reward is bad; do not use for ResRL
+        # )
+        
+        # regularization rewards
+        self.rewards.style_feet_z.weight = -8
+        
+        self.rewards.base_height_exp.weight = 1.0
+        self.rewards.base_height_exp.params["target_height"] = 0.375
+        # self.rewards.joint_deviation_l1.weight = 0.0
+        # self.rewards.joint_deviation_l1_calf_thigh = RewTerm(
+        #     func=joint_deviation_l1,
+        #     weight=-.01,
+        #     params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*calf_joint", ".*thigh_joint"])},
+        # )
+        self.rewards.joint_deviation_l1_hip = RewTerm(
+            func=joint_deviation_l1,
+            weight=-.5,
+            params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*hip_joint"])},
+        )
+        
+        # self.rewards.is_alive = RewTerm(
+        #     func=mdp.is_alive,
+        #     weight = 0.5
+        # )
+        
+
 
 
 @configclass
@@ -310,8 +352,8 @@ class AMPUnitreeGo2FlatEnvCfg(LocomotionVelocityRoughEnvCfg):
             self.events.reference_state_initialization is not None
         ), "Always expecting RSI. For evaluation, please use the same motion files as used for training."
         self.events.reference_state_initialization.params["motion_files"] = motion_files
-        
-        
+
+
 @configclass
 class AMPUnitreeGo2FlatEnvCfgMinimalReward1(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
@@ -327,7 +369,7 @@ class AMPUnitreeGo2FlatEnvCfgMinimalReward1(AMPUnitreeGo2FlatEnvCfg):
         self.rewards.undesired_contacts_thigh.weight = 0.0
         self.rewards.undesired_contacts_calf.weight = 0.0
         self.rewards.contact_forces.weight = 0.0
-        
+
 @configclass
 class AMPUnitreeGo2FlatEnvCfgMinimalReward2(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
@@ -342,7 +384,7 @@ class AMPUnitreeGo2FlatEnvCfgMinimalReward2(AMPUnitreeGo2FlatEnvCfg):
         self.rewards.undesired_contacts_calf.weight = 0.0
         self.rewards.contact_forces.weight = 0.0
 
-        
+
 @configclass
 class AMPUnitreeGo2FlatEnvCfgNoViconObs(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
@@ -350,7 +392,7 @@ class AMPUnitreeGo2FlatEnvCfgNoViconObs(AMPUnitreeGo2FlatEnvCfg):
         super().__post_init__()
 
         del self.observations.policy.base_lin_vel
-        
+
 @configclass
 class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
     def __post_init__(self):
@@ -360,5 +402,3 @@ class AMPUnitreeGo2FlatEnvCfg_PLAY(AMPUnitreeGo2FlatEnvCfg):
         parameters.set_play_settings_flat(self)
 
         self.amp_motion_folder = "datasets/fromVision_motions_DepthCam_extendedWithoutReverse_feetZAmpl_minimal_feet_forward/*"  # required otherwise it wont start; it is recomended to use same motion files as used for training
-        
-        

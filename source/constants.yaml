@@ -1,5 +1,5 @@
 JOINT_UNITREE_TO_ISAAC_LAB_MAPPING:
-  [3, 0, 9, 6, 4, 1, 10, 7, 5, 2, 11, 8]
+  [0, 3, 9, 6, 1, 4, 10, 7, 2, 5, 11, 8]
 JOINT_ISAAC_LAB_TO_UNITREE_MAPPING: [
     1,
     5,

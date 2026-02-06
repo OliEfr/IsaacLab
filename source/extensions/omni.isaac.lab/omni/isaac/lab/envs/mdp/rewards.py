@@ -397,6 +397,59 @@ def style_feet_z(
     reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.05
     return reward
 
+
+def feet_on_step(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_forces", body_names=".*_foot"),
+) -> torch.Tensor:
+    asset: RigidObject = env.scene[asset_cfg.name]
+    # l1
+    feet_indices = asset.find_bodies(
+        ["FR_foot", "FL_foot", "RR_foot", "RL_foot"]
+    )[0]
+    feet_pos_y =   (
+        asset.data.body_pos_w[:, feet_indices, 1]
+        - env.scene.env_origins[:, 1].unsqueeze(1)
+        + env.cfg.scene.terrain.terrain_generator.sub_terrains[
+            "box"
+        ].y_coordinate_origin_relative_to_box_start # needs to be ADDED according to definition
+    )
+
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    
+    dist = 0.05
+    is_contact = contact_sensor.data.net_forces_w[:, torch.tensor([4, 8, 14, 18], device="cuda"), 2] > 10
+    
+    condition = is_contact * (feet_pos_y > -dist) * (feet_pos_y < 0.0)
+    
+    reward = (feet_pos_y.clamp(-dist, 0.0) + dist) * condition
+    
+    return torch.sum(reward, dim=1)
+
+
+def feet_stumble(
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_forces", body_names=".*_foot"),
+) -> torch.Tensor:
+    # extract the used quantities (to enable type-hinting)
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    # forces_z = torch.abs(
+    #     contact_sensor.data.net_forces_w[
+    #         :, torch.tensor([4, 8, 14, 18], device="cuda"), 2
+    #     ]
+    # )
+    forces_xy = torch.linalg.norm(
+        contact_sensor.data.net_forces_w[
+            :, torch.tensor([4, 8, 14, 18], device="cuda"), :2
+        ],
+        dim=2,
+    )
+    # Penalize feet hitting vertical surfaces
+    reward = torch.any(forces_xy > 1, dim=1).float()
+    return reward
+
+
 def style_feet_z_box(
     env: ManagerBasedRLEnv,
     command_name: str,
@@ -416,18 +469,21 @@ def style_feet_z_box(
     rows = env.scene.terrain.terrain_levels
     cols = env.scene.terrain.terrain_types
     box_height = env.scene.terrain.terrain_params["box_height"][rows, cols]
-    
-    # increase z feet reference value if robot is on box
-    root_pos_y = (
-        asset.data.root_pos_w[:, 1]
-        - env.scene.env_origins[:, 1]
+
+    feet_pos_y =   (
+        asset.data.body_pos_w[:, feet_indices, 1]
+        - env.scene.env_origins[:, 1].unsqueeze(1)
         + env.cfg.scene.terrain.terrain_generator.sub_terrains[
             "box"
         ].y_coordinate_origin_relative_to_box_start # needs to be ADDED according to definition
     )
-    condition = root_pos_y > -0.2 # determined by visual inspection
+
+    condition = feet_pos_y > -0.2  # determined by visual inspection
     feet_z_ref = env.action_manager.feet_z_ref
-    feet_z_ref = feet_z_ref + (box_height * condition.float()).unsqueeze(1).expand(-1, feet_z_ref.size(1))
+    feet_z_ref = feet_z_ref + (box_height.unsqueeze(1) * condition.float())
+    feet_z_ref = torch.where(
+        condition, torch.max(feet_z_ref, box_height.unsqueeze(1) + 1e-5), feet_z_ref
+    )
 
     dist = (
         asset.data.body_pos_w[

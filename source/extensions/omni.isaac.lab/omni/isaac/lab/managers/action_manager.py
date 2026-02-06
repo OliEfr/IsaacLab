@@ -993,7 +993,7 @@ class PhaseActionManager(ActionManager):
     @property
     def freqs(self) -> torch.Tensor:
         return self._freqs
-    
+
 class StyleActionManager(PhaseActionManager):
     def __init__(self, cfg: object, env: ManagerBasedEnv):
         super().__init__(cfg, env)
@@ -1006,7 +1006,7 @@ class StyleActionManager(PhaseActionManager):
         assert len(self.expert_jpos.shape) == 2 and self.expert_jpos.shape[1] == 12, "Reference jpos must be of shape (num_frames, num_joints)"
         
         self.num_frames = self.expert_jpos.shape[0]
-        self._freqs = torch.ones_like(self._freqs) * 2
+        self._freqs = torch.ones_like(self._freqs) * 1.5 # 2 for torque control
         
         self.jpos_ref = self.expert_jpos[0].expand(self.num_envs, -1) #
         self.feet_z_ref = self.expert_feet_z[0].expand(self.num_envs, -1) #
@@ -1030,6 +1030,39 @@ class StyleActionManager(PhaseActionManager):
         feet0 = self.expert_feet_z[idx0]
         feet1 = self.expert_feet_z[idx1]
         self.feet_z_ref = AMPLoader.slerp(feet0, feet1, alpha).clone()
+
+class StyleActionManagerAMPLoader(PhaseActionManager):
+    def __init__(self, cfg: object, env: ManagerBasedEnv):
+        super().__init__(cfg, env)
+
+        recording_path = "datasets/fromVision_motions_DepthCam_standUp_feetZAmpl/stand_up_2431270000_amp.txt"
+        with open(recording_path, "r") as f:
+            motion_json = json.load(f)
+            motion_data = np.array(motion_json["Frames"])
+            motion_data = AMPLoader.reorder_from_pybullet_to_isaac_lab(motion_data)
+            recording_dt = float(motion_json["FrameDuration"])
+        self.reference_jpos = AMPLoader.get_joint_pose_batch(motion_data)
+        self.reference_jpos = torch.tensor(self.reference_jpos, device=self.device)
+        self.num_frames = self.reference_jpos.shape[0]
+        
+        
+        self._freqs = torch.ones_like(self._freqs) * 1/ (self.num_frames * recording_dt)
+        
+    def process_action(self, action: torch.Tensor):
+        super().process_action(action)
+
+        # perform linear interpolation between two frames
+        unscaled_index = (self.phases / (2 * torch.pi)) * self.num_frames
+        idx0 = torch.floor(unscaled_index).long() % self.num_frames
+        idx1 = (idx0 + 1) % self.num_frames
+        alpha = (unscaled_index - torch.floor(unscaled_index))
+
+        idx0 = idx0.squeeze()
+        idx1 = idx1.squeeze()
+
+        pos0 = self.reference_jpos[idx0]
+        pos1 = self.reference_jpos[idx1]
+        self.jpos_ref = AMPLoader.slerp(pos0, pos1, alpha) # used for style reward
 
 
 class ResidualRLActionManager(PhaseActionManager):

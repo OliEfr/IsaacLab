@@ -9,6 +9,10 @@ from collections import defaultdict
 from matplotlib.ticker import FuncFormatter
 import plot_DEFINITIONS
 import math
+import matplotlib
+
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 
 
 def create_plots(base_dir, experiment_dir, eval_dir_name, metric_field, ax=None):
@@ -219,7 +223,7 @@ def main():
 
     experiment_dirs = [
         "2025-05-16_21-23-07_mocap_AMP_for_hardware_SEED_*",
-        "2025-05-16_21-23-07_manuallyGenerated_SEED_*",
+        # "2025-05-16_21-23-07_manuallyGenerated_SEED_*",
         "2025-05-16_21-23-07_fromVision_motions_DepthCam_SEED_*",
         # "2025-05-16_21-23-07_fromVision_motions_AlignedDepthAnything_SEED_*",
         # "2025-05-30_18-17-23_fromVision_motions_DepthCam_extended_SEED_*",
